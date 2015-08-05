@@ -77,7 +77,7 @@ void decode_and_reconstruct_block (uint8_t *rec, int stride, int size, int qp, u
   thor_free(rblock2);
 }
 
-void copy_deblock_data(decoder_info_t *decoder_info, block_info_dec_t *block_info){
+void decode_copy_deblock_data(decoder_info_t *decoder_info, block_info_dec_t *block_info){
 
   int size = block_info->block_pos.size;
   int block_posy = block_info->block_pos.ypos/MIN_PB_SIZE;
@@ -228,7 +228,7 @@ void decode_block(decoder_info_t *decoder_info,int size,int ypos,int xpos){
           rec_v[i*rec->stride_c+j] = (uint8_t)(((int)pblock0_v[i*sizeC+j] + (int)pblock1_v[i*sizeC+j])>>1);
         }
       }
-      copy_deblock_data(decoder_info,&block_info);
+      decode_copy_deblock_data(decoder_info,&block_info);
     }
     else{
       mv = block_info.pred_data.mv_arr0[0];
@@ -251,7 +251,7 @@ void decode_block(decoder_info_t *decoder_info,int size,int ypos,int xpos){
         memcpy(&rec_u[j*rec->stride_c],&pblock_u[j*sizeC],(bwidth/2)*sizeof(uint8_t));
         memcpy(&rec_v[j*rec->stride_c],&pblock_v[j*sizeC],(bwidth/2)*sizeof(uint8_t));
       }
-      copy_deblock_data(decoder_info,&block_info);
+      decode_copy_deblock_data(decoder_info,&block_info);
     }
     return;
   }
@@ -407,7 +407,7 @@ void decode_block(decoder_info_t *decoder_info,int size,int ypos,int xpos){
   decode_and_reconstruct_block(rec_v,rec->stride_c,sizeC,qpC,pblock_v,coeff_v,tb_split&&size>8);
 
   /* Copy deblock data to frame array */
-  copy_deblock_data(decoder_info,&block_info);
+  decode_copy_deblock_data(decoder_info,&block_info);
 
   thor_free(pblock0_y);
   thor_free(pblock0_u);

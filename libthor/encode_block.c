@@ -1416,7 +1416,7 @@ void get_mv_cand(int ypos,int xpos,int width,int height,int size,int ref_idx,deb
   */
 }
 
-void copy_deblock_data(encoder_info_t *encoder_info, block_info_t *block_info){
+void encode_copy_deblock_data(encoder_info_t *encoder_info, block_info_t *block_info){
 
   int size = block_info->block_pos.size;
   int block_posy = block_info->block_pos.ypos/MIN_PB_SIZE;
@@ -2240,7 +2240,7 @@ int process_block(encoder_info_t *encoder_info,int size,int ypos,int xpos,int qp
         copy_block_to_frame(encoder_info->rec,rec_block,&block_info.block_pos);
 
         /* Store deblock information for this block to frame array */
-        copy_deblock_data(encoder_info,&block_info);
+        encode_copy_deblock_data(encoder_info,&block_info);
 
 #if TEST_AVAILABILITY
         for (k=by;k<by+bs;k++){
@@ -2320,7 +2320,7 @@ int process_block(encoder_info_t *encoder_info,int size,int ypos,int xpos,int qp
       copy_block_to_frame(encoder_info->rec, block_info.rec_block, &block_info.block_pos);
 
       /* Store deblock information for this block to frame array */
-      copy_deblock_data(encoder_info,&block_info);
+      encode_copy_deblock_data(encoder_info,&block_info);
     }    
   }
   else if (encode_rectangular_size){
@@ -2342,7 +2342,7 @@ int process_block(encoder_info_t *encoder_info,int size,int ypos,int xpos,int qp
       copy_block_to_frame(encoder_info->rec, block_info.rec_block, &block_info.block_pos);
 
       /* Store deblock information for this block to frame array */
-      copy_deblock_data(encoder_info,&block_info);
+      encode_copy_deblock_data(encoder_info,&block_info);
     }
   }
 

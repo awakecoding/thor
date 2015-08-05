@@ -33,7 +33,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 extern int chroma_qp[52];
 
-void clpf_frame(decoder_info_t *decoder_info){
+void decode_clpf_frame(decoder_info_t *decoder_info){
 
   /* Constrained low-pass filter (CLPF) */
   stream_t *stream = decoder_info->stream;
@@ -126,7 +126,7 @@ void decode_frame(decoder_info_t *decoder_info)
 
   if (decoder_info->clpf){
     if ((decoder_info->frame_info.display_frame_num%CLPF_PERIOD)==0){
-      clpf_frame(decoder_info);
+      decode_clpf_frame(decoder_info);
     }
   }
 

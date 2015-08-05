@@ -4,42 +4,37 @@ project(Thor C)
 
 set(CMAKE_C_FLAGS "-std=c99 -g -O3 -pedantic -Wall -Wno-unused-result")
 
-set(THOR_COMMON_SOURCES
-	common/common_block.c
-	common/common_frame.c
-	common/transform.c
-	common/intra_prediction.c
-	common/inter_prediction.c
-	common/common_kernels.c
-	common/snr.c
-	common/simd.c)
+set(THOR_SOURCES
+	libthor/common_block.c
+	libthor/common_frame.c
+	libthor/transform.c
+	libthor/intra_prediction.c
+	libthor/inter_prediction.c
+	libthor/common_kernels.c
+	libthor/snr.c
+	libthor/simd.c
+	libthor/getbits.c
+	libthor/putbits.c
+	libthor/getvlc.c
+	libthor/putvlc.c
+	libthor/strings.c
+	libthor/read_bits.c
+	libthor/write_bits.c
+	libthor/encode_block.c
+	libthor/encode_frame.c
+	libthor/decode_block.c
+	libthor/decode_frame.c
+	libthor/enc_kernels.c)
 
-set(THOR_ENCODER_SOURCES
-	enc/encode_block.c
-	enc/encode_frame.c
-	enc/mainenc.c
-	enc/putbits.c
-	enc/putvlc.c
-	enc/strings.c
-	enc/write_bits.c
-	enc/enc_kernels.c)
-
-set(THOR_DECODER_SOURCES
-	dec/decode_block.c
-	dec/getbits.c
-	dec/getvlc.c
-	dec/maindec.c
-	dec/read_bits.c
-	dec/decode_frame.c)
-
-include_directories(common)
-
-add_executable(thorenc ${THOR_COMMON_SOURCES} ${THOR_ENCODER_SOURCES})
-add_executable(thordec ${THOR_COMMON_SOURCES} ${THOR_DECODER_SOURCES})
+add_library(thor STATIC ${THOR_SOURCES})
 
 if(UNIX)
-	target_link_libraries(thorenc m)
-	target_link_libraries(thordec m)
+	target_link_libraries(thor m)
 endif()
 
+add_executable(thorenc libthor/mainenc.c)
+target_link_libraries(thorenc thor)
+
+add_executable(thordec libthor/maindec.c)
+target_link_libraries(thordec thor)
 

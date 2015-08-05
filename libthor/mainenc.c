@@ -41,7 +41,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "putbits.h"
 #include "putvlc.h"
 #include "transform.h"
-#include "../common/simd.h"
+#include "simd.h"
 
 // Coding order to display order
 static const int cd1[1] = {0};

@@ -43,7 +43,7 @@ const double squared_lambda_QP [52] = {
     1717.4389, 2179.0763, 2764.7991, 3507.9607, 4450.8797, 5647.2498, 7165.1970
 };
 
-void clpf_frame(encoder_info_t *encoder_info){
+void encode_clpf_frame(encoder_info_t *encoder_info){
 
   /* Constrained low-pass filter (CLPF) */
   stream_t *stream = encoder_info->stream;
@@ -179,7 +179,7 @@ void encode_frame(encoder_info_t *encoder_info)
 
   if (encoder_info->params->clpf){
     if ((frame_info->frame_num%CLPF_PERIOD)==0){
-      clpf_frame(encoder_info);
+      encode_clpf_frame(encoder_info);
     }
   }
 

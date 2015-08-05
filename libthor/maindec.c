@@ -37,7 +37,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "decode_frame.h"
 #include "common_frame.h"
 #include "getbits.h"
-#include "../common/simd.h"
+#include "simd.h"
 
 void rferror(char error_text[])
 {
