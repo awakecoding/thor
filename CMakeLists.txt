@@ -10,13 +10,12 @@ set(THOR_SOURCES
 	libthor/transform.c
 	libthor/intra_prediction.c
 	libthor/inter_prediction.c
-	libthor/common_kernels.c
 	libthor/snr.c
 	libthor/simd.c
 	libthor/bits.c
 	libthor/vlc.c
 	libthor/strings.c
-	libthor/enc_kernels.c)
+	libthor/kernels.c)
 
 include_directories(libthor)
 

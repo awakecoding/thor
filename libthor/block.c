@@ -44,7 +44,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "intra_prediction.h"
 #include "simd.h"
 #include "strings.h"
-#include "enc_kernels.h"
+#include "kernels.h"
 
 int YPOS,XPOS;
 

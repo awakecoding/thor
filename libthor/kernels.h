@@ -34,4 +34,7 @@ void get_inter_prediction_chroma_simd(int width, int height, int xoff, int yoff,
 void transform_simd(const int16_t *block, int16_t *coeff, int size, int fast);
 void inverse_transform_simd(const int16_t *coeff, int16_t *block, int size);
 
+int sad_calc_simd(uint8_t *a, uint8_t *b, int astride, int bstride, int width, int height);
+int ssd_calc_simd(uint8_t *a, uint8_t *b, int astride, int bstride, int size);
+
 #endif

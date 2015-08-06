@@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "global.h"
 #include "transform.h"
 #include "block.h"
-#include "common_kernels.h"
+#include "kernels.h"
 #include "simd.h"
 #include <stdio.h>
 

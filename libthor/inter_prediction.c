@@ -37,7 +37,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "global.h"
 #include "block.h"
 #include "simd.h"
-#include "common_kernels.h"
+#include "kernels.h"
 
 #if HEVC_INTERPOLATION
 #define NTAPY 8
