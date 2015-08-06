@@ -24,18 +24,16 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef _TRANSFORM_H_
-#define _TRANSFORM_H_
+#ifndef THOR_TRANSFORM_H
+#define THOR_TRANSFORM_H
 
-#include "types.h"
+#include "thor.h"
 
-#define MAX_TR_DYNAMIC_RANGE  15
-#define QUANT_SHIFT  14
-#define QUANT_IQUANT_SHIFT 20
+#define MAX_TR_DYNAMIC_RANGE	15
+#define QUANT_SHIFT		14
+#define QUANT_IQUANT_SHIFT	20
 
-void transform (const int16_t *block, int16_t *coeff, int size, int fast);
+void transform(const int16_t *block, int16_t *coeff, int size, int fast);
 void inverse_transform(const int16_t * coeff, int16_t * block, int size);
 
-#endif
-
-
+#endif /* THOR_TRANSFORM_H */

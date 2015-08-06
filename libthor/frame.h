@@ -40,4 +40,4 @@ void create_reference_frame(yuv_frame_t  *ref,yuv_frame_t  *rec);
 void encode_frame(encoder_info_t *encoder_info);
 void decode_frame(decoder_info_t *encoder_info);
 
-#endif
+#endif /* THOR_FRAME_H */

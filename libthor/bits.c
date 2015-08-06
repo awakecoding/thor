@@ -34,13 +34,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "thor.h"
 #include "bits.h"
-#include "global.h"
 #include "strings.h"
 #include "snr.h"
 #include "vlc.h"
 #include "transform.h"
 #include "block.h"
-#include "inter_prediction.h"
+#include "inter.h"
 
 /* getbits */
 

@@ -32,9 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <memory.h>
 #include <assert.h>
 
-#include "global.h"
 #include "block.h"
-
 
 void get_dc_pred(uint8_t *rec,int ypos,int xpos,int stride,int size,uint8_t *pblock){
   int i,j,dc=128,sum;

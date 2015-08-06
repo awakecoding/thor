@@ -34,7 +34,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <time.h>
 #include <assert.h>
 
-#include "global.h"
 #include "frame.h"
 #include "bits.h"
 #include "simd.h"

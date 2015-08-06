@@ -24,11 +24,11 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef _SNR_H_
-#define _SNR_H_
+#ifndef THOR_SNR_H
+#define THOR_SNR_H
 
-#include "types.h"
+#include "thor.h"
 
 int snr_yuv(snrvals *psnr,yuv_frame_t *f1,yuv_frame_t *f2,int height,int width,int stride_y,int stride_c);
 
-#endif
+#endif /* THOR_SNR_H */

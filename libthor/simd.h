@@ -26,8 +26,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* -*- mode: c; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2; -*- */
 
-#ifndef _SIMD_H
-#define _SIMD_H
+#ifndef THOR_SIMD_H
+#define THOR_SIMD_H
 
 #include <stdlib.h>
 #include <assert.h>
@@ -142,4 +142,4 @@ SIMD_INLINE void init_use_simd()
   use_simd = simd_available && !*(const uint8_t *)&t;
 }
 
-#endif /* _SIMD_H */
+#endif /* THOR_SIMD_H */

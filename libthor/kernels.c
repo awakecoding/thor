@@ -27,7 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* -*- mode: c; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2; -*- */
 
 #include "simd.h"
-#include "global.h"
+#include "thor.h"
 
 static void get_inter_prediction_luma_edge(int width, int height, int xoff, int yoff,
                                              uint8_t *restrict qp, int qstride,

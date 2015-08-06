@@ -24,15 +24,13 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef _STRINGS_H_
-#define _STRINGS_H_
+#ifndef THOR_STRINGS_H
+#define THOR_STRINGS_H
 
 #include "thor.h"
 
 enc_params *parse_config_params(int argc, char **argv);
-
 void delete_config_params(enc_params *params);
-
 void check_parameters(enc_params *params);
 
-#endif /*_STRINGS_H_*/
+#endif /* THOR_STRINGS_H */

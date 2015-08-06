@@ -27,7 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 #include <assert.h>
 #include <memory.h>
-#include "global.h"
+
 #include "transform.h"
 #include "block.h"
 #include "kernels.h"

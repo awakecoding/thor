@@ -8,8 +8,8 @@ set(THOR_SOURCES
 	libthor/block.c
 	libthor/frame.c
 	libthor/transform.c
-	libthor/intra_prediction.c
-	libthor/inter_prediction.c
+	libthor/intra.c
+	libthor/inter.c
 	libthor/snr.c
 	libthor/simd.c
 	libthor/bits.c

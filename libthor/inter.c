@@ -34,7 +34,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <memory.h>
 #include <assert.h>
 
-#include "global.h"
 #include "block.h"
 #include "simd.h"
 #include "kernels.h"

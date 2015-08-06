@@ -24,14 +24,21 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#if !defined(_INTER_PREDICTION_H_)
-#define _INTER_PREDICTION_H_
-#include "types.h"
+#ifndef THOR_INTRA_H
+#define THOR_INTRA_H
 
-void get_inter_prediction_luma(uint8_t *pblock, uint8_t *ref, int width, int height, int stride, int pstride, mv_t *mv, int sign);
-void get_inter_prediction_chroma(uint8_t *pblock, uint8_t *ref, int width, int height, int stride, int pstride, mv_t *mv, int sign);
-mv_t get_mv_pred(int yposY,int xposY,int width,int height,int size,int ref_idx,deblock_data_t *deblock_data);
-int get_mv_skip(int yposY,int xposY,int width,int height,int size,deblock_data_t *deblock_data, mvb_t *mvb_skip);
-int get_mv_merge(int yposY,int xposY,int width,int height,int size,deblock_data_t *deblock_data, mvb_t *mvb_merge);
+#include "thor.h"
 
-#endif
+void get_dc_pred(uint8_t *rec,int yposY,int xposY,int stride,int size,uint8_t *pblock);
+void get_hor_pred(uint8_t *rec,int yposY,int xposY,int stride,int size,uint8_t *pblock);
+void get_ver_pred(uint8_t *rec,int yposY,int xposY,int stride,int size,uint8_t *pblock);
+void get_planar_pred(uint8_t *rec,int yposY,int xposY,int stride,int size,uint8_t *pblock);
+void get_upleft_pred(uint8_t *rec,int yposY,int xposY,int stride,int size,uint8_t *pblock);
+void get_upright_pred(uint8_t *rec,int yposY,int xposY,int stride,int size,int width,uint8_t *pblock,int upright_available);
+void get_upupright_pred(uint8_t *rec,int yposY,int xposY,int stride,int size,int width,uint8_t *pblock,int upright_available);
+void get_upupleft_pred(uint8_t *rec,int yposY,int xposY,int stride,int size,uint8_t *pblock);
+void get_upleftleft_pred(uint8_t *rec,int yposY,int xposY,int stride,int size,uint8_t *pblock);
+void get_downleftleft_pred(uint8_t *rec,int yposY,int xposY,int stride,int size,uint8_t *pblock);
+void get_intra_prediction(uint8_t *rec,int yposY,int xposY,int stride,int size,int width,uint8_t *pblock,intra_mode_t intra_mode,int upright_available);
+
+#endif /* THOR_INTRA_H */

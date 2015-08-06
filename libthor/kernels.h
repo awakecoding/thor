@@ -24,8 +24,8 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef COMMON_SIMDKERNELS_H
-#define COMMON_SIMDKERNELS_H
+#ifndef THOR_KERNELS_H
+#define THOR_KERNELS_H
 
 #include <stdint.h>
 
@@ -37,4 +37,4 @@ void inverse_transform_simd(const int16_t *coeff, int16_t *block, int size);
 int sad_calc_simd(uint8_t *a, uint8_t *b, int astride, int bstride, int width, int height);
 int ssd_calc_simd(uint8_t *a, uint8_t *b, int astride, int bstride, int size);
 
-#endif
+#endif /* THOR_KERNELS_H */

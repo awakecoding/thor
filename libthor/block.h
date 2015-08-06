@@ -28,7 +28,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define THOR_BLOCK_H
 
 #include "thor.h"
-#include "types.h"
 #include "simd.h"
 
 int get_left_available(int ypos, int xpos, int size, int width);

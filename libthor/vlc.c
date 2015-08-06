@@ -28,7 +28,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 
 #include "simd.h"
-#include "global.h"
 #include "bits.h"
 #include "vlc.h"
 

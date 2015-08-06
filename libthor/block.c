@@ -32,16 +32,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <memory.h>
 #include <assert.h>
 
-#include "global.h"
 #include "block.h"
-
-#include "global.h"
 #include "snr.h"
 #include "bits.h"
 #include "vlc.h"
 #include "transform.h"
-#include "inter_prediction.h"
-#include "intra_prediction.h"
+#include "inter.h"
+#include "intra.h"
 #include "simd.h"
 #include "strings.h"
 #include "kernels.h"
