@@ -1129,65 +1129,6 @@ int quantize (int16_t *coeff, int16_t *coeffq, int qp, int size, int frame_type,
       } //while (c==0 && pos < last_pos)
     } //while (pos <= last_pos){
 
-#if 0
-    /* Sanity check that bitcount() and write_coeff() are 100% in sync */
-    if (pos < N){
-      /* If terminated in level mode, code one extra zero before an EOB can be sent */
-      if (level_mode){
-        c = scoeffq[pos];
-        level = abs(c);
-        nbit += quote_vlc(vlc_adaptive,level);
-        if (level > 0){
-          nbit += 1;
-        }
-        pos++;
-      }
-    }
-
-    /* EOB */
-    if (pos < N){
-      cn = find_code(0, 0, 0, chroma_flag, 1);
-      if (chroma_flag && size <= 8){
-        vlc = 0;
-        nbit += quote_vlc(vlc,cn);
-      }
-      else{
-        vlc = 2;
-        if (cn == 0)
-          nbit += 2;
-        else
-          nbit += quote_vlc(vlc,cn+1);
-      }
-    }
-
-    if (chroma_flag){
-      if (last_pos==0 && abs(scoeffq[0])==1)
-        nbit = 2;
-      else
-        nbit += 1;
-    }
-
-    int start_bits,end_bits,write_bits;
-    stream_t tmp_stream;
-    tmp_stream.bitstream = (uint8_t *)malloc(2*MAX_QUANT_SIZE*MAX_QUANT_SIZE * sizeof(uint8_t));
-    tmp_stream.bitbuf = 0;
-    tmp_stream.bitrest = 32;
-    tmp_stream.bytepos = 0;
-    tmp_stream.bytesize = 2*MAX_QUANT_SIZE*MAX_QUANT_SIZE;
-    stream_t *stream = &tmp_stream;
-
-    start_bits = get_bit_pos(stream);
-    write_coeff(stream,coeffq,size,chroma_flag);
-    end_bits = get_bit_pos(stream);
-    write_bits = end_bits-start_bits;
-    if (write_bits != nbit){
-      printf("write_bits=%8d nbits=%8d\n",write_bits,nbit);
-    }
-
-    free (tmp_stream.bitstream);
-
-#endif
-
     /* Evaluate cbp = 0 */
     cost1 = 0;
     for (pos1=0;pos1<N;pos1++){
