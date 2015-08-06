@@ -14,8 +14,7 @@ set(THOR_SOURCES
 	libthor/snr.c
 	libthor/simd.c
 	libthor/bits.c
-	libthor/getvlc.c
-	libthor/putvlc.c
+	libthor/vlc.c
 	libthor/strings.c
 	libthor/encode_block.c
 	libthor/encode_frame.c

@@ -24,14 +24,15 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-
-#if !defined(_PUTVLC_H_)
-#define _PUTVLC_H_
+#ifndef THOR_VLC_H
+#define THOR_VLC_H
 
 #include "thor.h"
 #include "bits.h"
 
+int get_vlc(int n,stream_t *str);
+int get_vlc0_limit(int maxbit,stream_t *str);
 int put_vlc(unsigned int n,unsigned int cn,stream_t *str);
 int quote_vlc(unsigned int n,unsigned int cn);
 
-#endif
+#endif /* THOR_VLC_H */

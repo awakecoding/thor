@@ -42,7 +42,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "strings.h"
 #include "snr.h"
 #include "encode_frame.h"
-#include "putvlc.h"
+#include "vlc.h"
 #include "transform.h"
 
 void rferror(char error_text[])

@@ -40,7 +40,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "strings.h"
 #include "snr.h"
 #include "bits.h"
-#include "putvlc.h"
+#include "vlc.h"
 #include "transform.h"
 #include "common_block.h"
 #include "inter_prediction.h"

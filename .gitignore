@@ -8,6 +8,7 @@ cmake_install.cmake
 .cproject
 
 # Binaries
+thor
 thordec
 thorenc
 
