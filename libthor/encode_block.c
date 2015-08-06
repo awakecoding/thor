@@ -26,6 +26,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* -*- mode: c; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2; -*- */
 
+#include "thor.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -37,7 +39,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "global.h"
 #include "strings.h"
 #include "snr.h"
-#include "mainenc.h"
 #include "write_bits.h"
 #include "putbits.h"
 #include "putvlc.h"
@@ -2162,34 +2163,6 @@ int process_block(encoder_info_t *encoder_info,int size,int ypos,int xpos,int qp
   block_context_t block_context;
   find_block_contexts(ypos, xpos, height, width, size, encoder_info->deblock_data, &block_context,encoder_info->params->use_block_contexts);
 
-#if TEST_AVAILABILITY
-  frame_info_t *frame_info =  &encoder_info->frame_info;
-  int by = (ypos%64)/8;
-  int bx = (xpos%64)/8;
-  int bs = size/8;
-  int k,l;
-  if (size==64){
-    int k,l;
-    for (l=0;l<9;l++){
-      frame_info->ur[0][l] = (ypos > 0 && xpos + l*8 < width) ? 1 : 0;        
-    }  
-    for (k=1;k<9;k++){
-      for (l=0;l<9;l++){
-        frame_info->ur[k][l] = 0;      
-      }
-    }
-    for (k=0;k<8;k++){
-      frame_info->dl[k][0] = (xpos > 0 && ypos + k*8 < height) ? 1 : 0;
-    }
-    frame_info->dl[8][0] = 0;
-    for (k=0;k<9;k++){
-      for (l=1;l<9;l++){
-        frame_info->dl[k][l] = 0;      
-      }
-    }
-  }
-#endif
-
   if (ypos < height && xpos < width){
     block_info.org_block = org_block;
     block_info.rec_block = rec_block;
@@ -2242,14 +2215,6 @@ int process_block(encoder_info_t *encoder_info,int size,int ypos,int xpos,int qp
         /* Store deblock information for this block to frame array */
         encode_copy_deblock_data(encoder_info,&block_info);
 
-#if TEST_AVAILABILITY
-        for (k=by;k<by+bs;k++){
-          for (l=bx;l<bx+bs;l++){
-            frame_info->ur[k+1][l] = 1;
-            frame_info->dl[k][l+1] = 1;
-          }
-        }        
-#endif
         thor_free(org_block);
         thor_free(rec_block);
         return cost;
@@ -2290,17 +2255,6 @@ int process_block(encoder_info_t *encoder_info,int size,int ypos,int xpos,int qp
   if (encode_this_size){
     YPOS = ypos;
     XPOS = xpos;
-    
-#if TEST_AVAILABILITY
-    int ur = get_upright_available(ypos,xpos,size,width);
-    int dl = get_downleft_available(ypos,xpos,size,height);
-    if (ur != frame_info->ur[by][bx+bs])
-      printf("Error in upright availability: ypos=%4d xpos=%4d size=%4d bur=%4d ur=%4d\n",ypos,xpos,size,frame_info->ur[by][bx+bs],ur);
-    if (dl != frame_info->dl[by+bs][bx])
-      printf("Error in upright availability: ypos=%4d xpos=%4d size=%4d bur=%4d ur=%4d\n",ypos,xpos,size,frame_info->dl[by+bs][bx],dl);
-    frame_info->ur[by+1][bx] = 1;
-    frame_info->dl[by][bx+1] = 1; 
-#endif
 
     /* RDO-based mode decision */
     block_info.final_encode = 0;

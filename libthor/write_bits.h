@@ -24,6 +24,8 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include "thor.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -35,7 +37,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "global.h"
 #include "strings.h"
 #include "snr.h"
-#include "mainenc.h"
 #include "putbits.h"
 #include "putvlc.h"
 #include "transform.h"

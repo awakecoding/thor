@@ -27,7 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #if !defined(_DECODE_FRAME_H_)
 #define _DECODE_FRAME_H_
 
-#include "maindec.h"
+#include "thor.h"
 
 void decode_frame(decoder_info_t *encoder_info);
 

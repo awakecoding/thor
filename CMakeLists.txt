@@ -26,15 +26,16 @@ set(THOR_SOURCES
 	libthor/decode_frame.c
 	libthor/enc_kernels.c)
 
+include_directories(libthor)
+
 add_library(thor STATIC ${THOR_SOURCES})
 
 if(UNIX)
 	target_link_libraries(thor m)
 endif()
 
-add_executable(thorenc libthor/mainenc.c)
-target_link_libraries(thorenc thor)
+add_executable(thor-tool tool/thor.c)
+target_link_libraries(thor-tool thor)
 
-add_executable(thordec libthor/maindec.c)
-target_link_libraries(thordec thor)
+set_target_properties(thor-tool PROPERTIES OUTPUT_NAME "thor")
 

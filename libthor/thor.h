@@ -24,11 +24,12 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#if !defined(_MAINENC_H_)
-#define _MAINENC_H_
+#ifndef THOR_MAIN_H
+#define THOR_MAIN_H
 
 #include <stdio.h>
 #include "putbits.h"
+#include "getbits.h"
 #include "types.h"
 
 typedef struct
@@ -96,25 +97,24 @@ typedef struct
   int delta_qp;
   block_context_t *block_context;
   int final_encode;
-} block_info_t; //TODO: Consider merging with block_pos_t
+} block_info_t;
 
 
 typedef struct
 {
   frame_type_t frame_type;
   uint8_t qp;
+  uint8_t qpb;
   int num_ref;
   int ref_array[MAX_REF_FRAMES];
   double lambda;
   int num_intra_modes;
   int frame_num;
-#if TEST_AVAILABILITY
-  int ur[9][9];
-  int dl[9][9];
-#endif
+  int display_frame_num;
+  int decode_order_frame_num;
 } frame_info_t;
 
-typedef struct 
+typedef struct
 {
   block_info_t *block_info;
   frame_info_t frame_info;
@@ -128,5 +128,45 @@ typedef struct
   int height;
   int depth;
 } encoder_info_t;
+
+typedef struct
+{
+  block_pos_t block_pos;
+  pred_data_t pred_data;
+  int num_skip_vec;
+  mvr_t mvr_skip[MAX_NUM_SKIP];
+  int tb_split;
+  cbp_t cbp;
+  int16_t *coeffq_y;
+  int16_t *coeffq_u;
+  int16_t *coeffq_v;
+  int delta_qp;
+} block_info_dec_t;
+
+typedef struct
+{
+    frame_info_t frame_info;
+    yuv_frame_t *rec;
+    yuv_frame_t *ref[MAX_REF_FRAMES];
+    stream_t *stream;
+    deblock_data_t *deblock_data;
+    int width;
+    int height;
+    bit_count_t bit_count;
+    int pb_split;
+    int max_num_ref;
+    int num_reorder_pics;
+    int max_delta_qp;
+    int deblocking;
+    int clpf;
+    int tb_split_enable;
+    int mode;
+    int ref_idx;
+    int super_mode;
+    int use_block_contexts;
+    block_context_t *block_context;
+    int bipred;
+    int depth;
+} decoder_info_t;
 
 #endif

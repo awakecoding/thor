@@ -27,18 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #if !defined(_GETBITS_H_)
 #define _GETBITS_H_
 
-#include <stdio.h>
-
-typedef struct
-{
-  FILE *infile;
-  unsigned char rdbfr[2051];
-  unsigned char *rdptr;
-  unsigned int inbfr;
-  int incnt;
-  int bitcnt;
-  int length;
-} stream_t;
+#include "putbits.h"
 
 int initbits_dec(FILE *infile, stream_t *str);
 int fillbfr(stream_t *str);

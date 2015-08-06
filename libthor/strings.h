@@ -27,8 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef _STRINGS_H_
 #define _STRINGS_H_
 
-#include <stdio.h>
-#include "mainenc.h"
+#include "thor.h"
 
 enc_params *parse_config_params(int argc, char **argv);
 

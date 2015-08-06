@@ -27,7 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #if !defined(_ENCODE_FRAME_H_)
 #define _ENCODE_FRAME_H_
 
-#include "mainenc.h"
+#include "thor.h"
 
 void encode_frame(encoder_info_t *encoder_info);
 

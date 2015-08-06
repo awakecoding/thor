@@ -27,7 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #if !defined(_DECODE_BLOCK_H_)
 #define _DECODE_BLOCK_H_
 
-#include "maindec.h"
+#include "thor.h"
 
 void process_block_dec(decoder_info_t *encoder_info,int size,int yposY,int xposY);
 

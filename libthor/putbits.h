@@ -34,11 +34,20 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 typedef struct
 {
+  /* putbits */
   uint32_t bytesize;     //Buffer size - typically maximum compressed frame size
   uint32_t bytepos;      //Byte position in bitstream
   uint8_t *bitstream;   //Compressed bit stream
   uint32_t bitbuf;       //Recent bits not written the bitstream yet
   uint32_t bitrest;      //Empty bits in bitbuf
+  /* getbits */
+  FILE *infile;
+  unsigned char rdbfr[2051];
+  unsigned char *rdptr;
+  unsigned int inbfr;
+  int incnt;
+  int bitcnt;
+  int length;
 } stream_t;
 
 typedef struct

@@ -27,8 +27,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #if !defined(_GETVLC_H_)
 #define _GETVLC_H_
 
+#include "thor.h"
 #include "getbits.h"
-#include "maindec.h"
 
 int get_vlc(int n,stream_t *str);
 int get_vlc0_limit(int maxbit,stream_t *str);
