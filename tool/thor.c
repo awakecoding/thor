@@ -35,13 +35,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <assert.h>
 
 #include "global.h"
-#include "decode_frame.h"
-#include "common_frame.h"
+#include "frame.h"
 #include "bits.h"
 #include "simd.h"
 #include "strings.h"
 #include "snr.h"
-#include "encode_frame.h"
 #include "vlc.h"
 #include "transform.h"
 

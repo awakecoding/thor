@@ -6,7 +6,7 @@ set(CMAKE_C_FLAGS "-std=c99 -g -O3 -pedantic -Wall -Wno-unused-result")
 
 set(THOR_SOURCES
 	libthor/block.c
-	libthor/common_frame.c
+	libthor/frame.c
 	libthor/transform.c
 	libthor/intra_prediction.c
 	libthor/inter_prediction.c
@@ -16,8 +16,6 @@ set(THOR_SOURCES
 	libthor/bits.c
 	libthor/vlc.c
 	libthor/strings.c
-	libthor/encode_frame.c
-	libthor/decode_frame.c
 	libthor/enc_kernels.c)
 
 include_directories(libthor)
