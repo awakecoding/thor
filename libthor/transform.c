@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <memory.h>
 #include "global.h"
 #include "transform.h"
-#include "common_block.h"
+#include "block.h"
 #include "common_kernels.h"
 #include "simd.h"
 #include <stdio.h>

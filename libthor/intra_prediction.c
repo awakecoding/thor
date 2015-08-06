@@ -33,7 +33,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <assert.h>
 
 #include "global.h"
-#include "common_block.h"
+#include "block.h"
 
 
 void get_dc_pred(uint8_t *rec,int ypos,int xpos,int stride,int size,uint8_t *pblock){

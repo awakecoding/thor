@@ -92,4 +92,5 @@ static inline void fatalerror(char error_text[])
 #endif
 /* Testing and analysis*/
 #define STAT 0                   //Extended statistics printout in decoder
+
 #endif

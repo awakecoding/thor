@@ -39,7 +39,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "snr.h"
 #include "vlc.h"
 #include "transform.h"
-#include "common_block.h"
+#include "block.h"
 #include "inter_prediction.h"
 
 /* getbits */

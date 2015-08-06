@@ -5,7 +5,7 @@ project(Thor C)
 set(CMAKE_C_FLAGS "-std=c99 -g -O3 -pedantic -Wall -Wno-unused-result")
 
 set(THOR_SOURCES
-	libthor/common_block.c
+	libthor/block.c
 	libthor/common_frame.c
 	libthor/transform.c
 	libthor/intra_prediction.c
@@ -16,9 +16,7 @@ set(THOR_SOURCES
 	libthor/bits.c
 	libthor/vlc.c
 	libthor/strings.c
-	libthor/encode_block.c
 	libthor/encode_frame.c
-	libthor/decode_block.c
 	libthor/decode_frame.c
 	libthor/enc_kernels.c)
 

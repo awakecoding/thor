@@ -24,10 +24,28 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#if !defined(_ENCODE_BLOCK_H_)
-#define _ENCODE_BLOCK_H_
+#ifndef THOR_BLOCK_H
+#define THOR_BLOCK_H
+
+#include "thor.h"
+#include "types.h"
+#include "simd.h"
+
+int get_left_available(int ypos, int xpos, int size, int width);
+int get_up_available(int ypos, int xpos, int size, int width);
+int get_upright_available(int ypos, int xpos, int size, int width);
+int get_downleft_available(int ypos, int xpos, int size, int height);
+
+void dequantize (int16_t *coeff,int16_t *rcoeff,int quant,int size);
+void reconstruct_block(int16_t *block, uint8_t *pblock, uint8_t *rec, int size, int stride);
+
+void find_block_contexts(int ypos, int xpos, int height, int width, int size, deblock_data_t *deblock_data, block_context_t *block_context, int enable);
+
+void clpf_block(uint8_t *rec,int x0, int x1, int y0, int y1,int stride);
+
+void process_block_dec(decoder_info_t *encoder_info,int size,int yposY,int xposY);
 
 int process_block(encoder_info_t *encoder_info,int size,int yposY,int xposY, int qp);
 int detect_clpf(uint8_t *org, uint8_t *rec,int x0, int x1, int y0, int y1,int stride);
 
-#endif
+#endif /* THOR_BLOCK_H */

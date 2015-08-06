@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <assert.h>
 
 #include "global.h"
-#include "common_block.h"
+#include "block.h"
 #include "simd.h"
 #include "common_kernels.h"
 
