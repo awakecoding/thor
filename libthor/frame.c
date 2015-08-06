@@ -339,9 +339,9 @@ void create_yuv_frame(yuv_frame_t  *frame, int width, int height, int pad_ver_y,
   frame->stride_c = width/2 + 2*pad_hor_uv;
   frame->offset_y = pad_ver_y * frame->stride_y + pad_hor_y;
   frame->offset_c = pad_ver_uv * frame->stride_c + pad_hor_uv;  
-  frame->y = (uint8_t *)malloc((height + 2*pad_ver_y) * frame->stride_y * sizeof(uint8_t));
-  frame->u = (uint8_t *)malloc((height/2 + 2*pad_ver_uv) * frame->stride_c * sizeof(uint8_t));
-  frame->v = (uint8_t *)malloc((height/2 + 2*pad_ver_uv) * frame->stride_c * sizeof(uint8_t)); 
+  frame->y = (uint8_t*) malloc((height + 2*pad_ver_y) * frame->stride_y * sizeof(uint8_t));
+  frame->u = (uint8_t*) malloc((height/2 + 2*pad_ver_uv) * frame->stride_c * sizeof(uint8_t));
+  frame->v = (uint8_t*) malloc((height/2 + 2*pad_ver_uv) * frame->stride_c * sizeof(uint8_t));
 }
 
 void close_yuv_frame(yuv_frame_t  *frame)
@@ -353,21 +353,20 @@ void close_yuv_frame(yuv_frame_t  *frame)
 
 void read_yuv_frame(yuv_frame_t  *frame, int width, int height, FILE *infile)
 {
+	unsigned int ysize = width*height;
+	unsigned int csize = ysize/4;
+
+	if (fread(frame->y, sizeof(unsigned char), ysize, infile) != ysize)
 	{
-		unsigned int ysize = width*height;
-		unsigned int csize = ysize/4;
-		if (fread(frame->y, sizeof(unsigned char), ysize, infile) != ysize)
-		{
-     fatalerror("Error reading Y from file");
-		}
-		if (fread(frame->u, sizeof(unsigned char), csize, infile) != csize)
-		{
-			fatalerror("Error reading U from file");
-		}
-		if (fread(frame->v, sizeof(unsigned char), csize, infile) != csize)
-		{
-			fatalerror("Error reading V from file");
-		}
+		fatalerror("Error reading Y from file");
+	}
+	if (fread(frame->u, sizeof(unsigned char), csize, infile) != csize)
+	{
+		fatalerror("Error reading U from file");
+	}
+	if (fread(frame->v, sizeof(unsigned char), csize, infile) != csize)
+	{
+		fatalerror("Error reading V from file");
 	}
 }
 
@@ -375,18 +374,19 @@ void write_yuv_frame(yuv_frame_t  *frame, int width, int height, FILE *outfile)
 {
 	unsigned int ysize = width*height;
 	unsigned int csize = ysize/4;
+
 	if (fwrite(frame->y, sizeof(unsigned char), ysize, outfile) != ysize)
-  {
+	{
 		fatalerror("Error writing Y to file");
-  }
-  if (fwrite(frame->u, sizeof(unsigned char), csize, outfile)	!= csize)
-  {
+	}
+	if (fwrite(frame->u, sizeof(unsigned char), csize, outfile) != csize)
+	{
 		fatalerror("Error writing U to file");    
-  }
-	if (fwrite(frame->v, sizeof(unsigned char), csize, outfile)	!= csize)
-  {
+	}
+	if (fwrite(frame->v, sizeof(unsigned char), csize, outfile) != csize)
+	{
 		fatalerror("Error writing V to file");    
-  }
+	}
 }
 
 void create_reference_frame(yuv_frame_t  *ref,yuv_frame_t  *rec)

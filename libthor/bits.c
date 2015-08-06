@@ -601,10 +601,11 @@ int read_block(decoder_info_t *decoder_info,stream_t *stream,block_info_dec_t *b
     mv_arr1[2] = mv_arr1[0];
     mv_arr1[3] = mv_arr1[0];
   }
-  else if (mode==MODE_INTER){
+  else if (mode==MODE_INTER)
+  {
     int ref_idx;
 
-    if (decoder_info->pb_split){
+    if (decoder_info->pb_split_enable){
       /* Decode PU partition */
       tmp = getbits(stream,1);
       if (tmp==1){

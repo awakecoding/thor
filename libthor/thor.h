@@ -334,8 +334,6 @@ typedef struct
     unsigned int qp;
     char *infilestr;
     char *outfilestr;
-    char *reconfilestr;
-    char *statfilestr;
     unsigned int file_headerlen;
     unsigned int frame_headerlen;
     unsigned int num_frames;
@@ -447,7 +445,7 @@ typedef struct
     int width;
     int height;
     bit_count_t bit_count;
-    int pb_split;
+    int pb_split_enable;
     int max_num_ref;
     int num_reorder_pics;
     int max_delta_qp;

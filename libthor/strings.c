@@ -286,8 +286,6 @@ enc_params *parse_config_params(int argc, char **argv)
   add_param_to_list(&list, "-ph",                    "0", ARG_INTEGER,  &params->file_headerlen);
   add_param_to_list(&list, "-fh",                    "0", ARG_INTEGER,  &params->frame_headerlen);
   add_param_to_list(&list, "-of",                   NULL, ARG_FILENAME, &params->outfilestr);
-  add_param_to_list(&list, "-rf",                   NULL, ARG_FILENAME, &params->reconfilestr);
-  add_param_to_list(&list, "-stat",                 NULL, ARG_FILENAME, &params->statfilestr);
   add_param_to_list(&list, "-n",                   "600", ARG_INTEGER,  &params->num_frames);
   add_param_to_list(&list, "-skip",                  "0", ARG_INTEGER,  &params->skip);
   add_param_to_list(&list, "-width",              "1920", ARG_INTEGER,  &params->width);
@@ -415,12 +413,6 @@ void delete_config_params(enc_params *params)
 
   if (params->outfilestr != NULL)
     free(params->outfilestr);
-
-  if (params->reconfilestr != NULL)
-    free(params->reconfilestr);
-
-  if (params->statfilestr != NULL)
-    free(params->statfilestr);
 
   free(params);
 }
