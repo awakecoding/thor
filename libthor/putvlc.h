@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define _PUTVLC_H_
 
 #include "thor.h"
-#include "putbits.h"
+#include "bits.h"
 
 int put_vlc(unsigned int n,unsigned int cn,stream_t *str);
 int quote_vlc(unsigned int n,unsigned int cn);

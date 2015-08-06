@@ -37,12 +37,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "global.h"
 #include "decode_frame.h"
 #include "common_frame.h"
-#include "getbits.h"
+#include "bits.h"
 #include "simd.h"
 #include "strings.h"
 #include "snr.h"
 #include "encode_frame.h"
-#include "putbits.h"
 #include "putvlc.h"
 #include "transform.h"
 

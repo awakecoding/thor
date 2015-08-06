@@ -29,10 +29,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "thor.h"
 
+#include "bits.h"
 #include "encode_block.h"
 #include "common_block.h"
 #include "common_frame.h"
-
 
 extern int chroma_qp[52];
 const double squared_lambda_QP [52] = {

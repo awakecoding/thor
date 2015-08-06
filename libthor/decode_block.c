@@ -34,9 +34,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "global.h"
 #include "snr.h"
-#include "getbits.h"
+#include "bits.h"
 #include "getvlc.h"
-#include "read_bits.h"
 #include "transform.h"
 #include "common_block.h"
 #include "inter_prediction.h"

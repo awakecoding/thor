@@ -26,6 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <string.h>
 
+#include "bits.h"
 #include "global.h"
 #include "decode_block.h"
 #include "common_block.h"

@@ -27,7 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <assert.h>
 #include <stdlib.h>
 #include "global.h"
-#include "getbits.h"
+#include "bits.h"
 #include "getvlc.h"
 
 int get_vlc0_limit(int maxbit,stream_t *str){

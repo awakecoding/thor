@@ -28,9 +28,32 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define THOR_MAIN_H
 
 #include <stdio.h>
-#include "putbits.h"
-#include "getbits.h"
 #include "types.h"
+
+typedef struct
+{
+  /* putbits */
+  uint32_t bytesize;     //Buffer size - typically maximum compressed frame size
+  uint32_t bytepos;      //Byte position in bitstream
+  uint8_t *bitstream;   //Compressed bit stream
+  uint32_t bitbuf;       //Recent bits not written the bitstream yet
+  uint32_t bitrest;      //Empty bits in bitbuf
+  /* getbits */
+  FILE *infile;
+  unsigned char rdbfr[2051];
+  unsigned char *rdptr;
+  unsigned int inbfr;
+  int incnt;
+  int bitcnt;
+  int length;
+} stream_t;
+
+typedef struct
+{
+  uint32_t bytepos;      //Byte position in bitstream
+  uint32_t bitbuf;       //Recent bits not written the bitstream yet
+  uint32_t bitrest;      //Empty bits in bitbuf
+} stream_pos_t;
 
 typedef struct
 {
@@ -98,7 +121,6 @@ typedef struct
   block_context_t *block_context;
   int final_encode;
 } block_info_t;
-
 
 typedef struct
 {

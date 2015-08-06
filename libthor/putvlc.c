@@ -27,7 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <assert.h>
 #include <stdlib.h>
 #include "global.h"
-#include "putbits.h"
+#include "bits.h"
 #include "putvlc.h"
 #include "simd.h"
 

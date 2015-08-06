@@ -24,10 +24,24 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#if !defined(_GETBITS_H_)
-#define _GETBITS_H_
+#ifndef THOR_BITS_H
+#define THOR_BITS_H
 
-#include "putbits.h"
+#include <stdio.h>
+#include <stdint.h>
+
+#include "thor.h"
+
+void flush_all_bits(stream_t *str, FILE *outfile);
+void putbits(unsigned int n,unsigned int val,stream_t *str);
+void flush_bytebuf(stream_t *str, FILE *outfile);
+void flush_bitbuf(stream_t *str);
+int get_bit_pos(stream_t *str);
+unsigned int leading_zeros(unsigned int code);
+
+void write_stream_pos(stream_t *stream, stream_pos_t *stream_pos);
+void read_stream_pos(stream_pos_t *stream_pos, stream_t *stream);
+void copy_stream(stream_t *str1, stream_t *str2);
 
 int initbits_dec(FILE *infile, stream_t *str);
 int fillbfr(stream_t *str);
@@ -35,5 +49,16 @@ unsigned int showbits(stream_t *str, int n);
 unsigned int getbits1(stream_t *str);
 int flushbits(stream_t *str, int n);
 unsigned int getbits(stream_t *str, int n);
+
+int read_delta_qp(stream_t *stream);
+void read_mv(stream_t *stream,mv_t *mv,mv_t *mvp);
+void read_coeff(stream_t *stream,int16_t *coeff,int size,int type);
+int read_block(decoder_info_t *decoder_info,stream_t *stream,block_info_dec_t *block_info,frame_type_t frame_type);
+
+int write_delta_qp(stream_t *stream, int delta_qp);
+void write_mv(stream_t *stream,mv_t *mv,mv_t *mvp);
+void write_coeff(stream_t *stream,int16_t *coeff,int size,int type);
+int write_block(stream_t *stream,write_data_t *write_data);
+int find_code(int run, int level, int maxrun, int type,int eob);
 
 #endif

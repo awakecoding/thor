@@ -13,13 +13,10 @@ set(THOR_SOURCES
 	libthor/common_kernels.c
 	libthor/snr.c
 	libthor/simd.c
-	libthor/getbits.c
-	libthor/putbits.c
+	libthor/bits.c
 	libthor/getvlc.c
 	libthor/putvlc.c
 	libthor/strings.c
-	libthor/read_bits.c
-	libthor/write_bits.c
 	libthor/encode_block.c
 	libthor/encode_frame.c
 	libthor/decode_block.c
