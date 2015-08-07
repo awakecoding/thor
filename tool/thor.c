@@ -209,123 +209,71 @@ int print_dec_stats(decoder_info_t* decoder_info)
 
 int main_dec(int argc, char** argv)
 {
-	FILE* infile;
-	FILE *outfile;
-	decoder_info_t decoder_info;
-	stream_t stream;
-	yuv_frame_t rec[MAX_REORDER_BUFFER];
-	yuv_frame_t ref[MAX_REF_FRAMES];
-	int rec_available[MAX_REORDER_BUFFER]={0};
-	int rec_buffer_idx;
-	int decode_frame_num = 0;
-	int frame_count = 0;
-	int last_frame_output = -1;
+	int r;
 	int width;
 	int height;
-	int r;
-	int sub_gop=1;
+	int bit_start;
+	FILE* infile;
+	FILE* outfile;
+	stream_t stream;
+	int decode_frame_num = 0;
+	decoder_info_t decoder_info;
+	yuv_frame_t rec;
+	yuv_frame_t ref[MAX_REF_FRAMES];
 
 	init_use_simd();
 
 	parse_arg(argc, argv, &infile, &outfile);
 
-	fseek(infile, 0, SEEK_END);
-	int input_file_size = ftell(infile);
-	fseek(infile, 0, SEEK_SET);
-
 	initbits_dec(infile, &stream);
 
 	decoder_info.stream = &stream;
+	memset(&decoder_info.bit_count, 0, sizeof(bit_count_t));
+	bit_start = stream.bitcnt;
 
-	memset(&decoder_info.bit_count,0,sizeof(bit_count_t));
-
-	int bit_start = stream.bitcnt;
 	/* Read sequence header */
-	width = getbits(&stream,16);
-	height = getbits(&stream,16);
+	width = getbits(&stream, 16);
+	height = getbits(&stream, 16);
 
 	decoder_info.width = width;
 	decoder_info.height = height;
-	printf("width=%4d height=%4d\n",width,height);
-
-	decoder_info.pb_split_enable = getbits(&stream,1);
-	printf("pb_split_enable=%1d\n",decoder_info.pb_split_enable);
-
-	decoder_info.tb_split_enable = getbits(&stream,1);
-	printf("tb_split_enable=%1d\n",decoder_info.tb_split_enable);
-
+	decoder_info.pb_split_enable = getbits(&stream, 1);
+	decoder_info.tb_split_enable = getbits(&stream, 1);
 	decoder_info.max_num_ref = getbits(&stream,2) + 1;
-
-	decoder_info.num_reorder_pics = getbits(&stream,4);
-	sub_gop = 1+decoder_info.num_reorder_pics;
-
-	decoder_info.max_delta_qp = getbits(&stream,2);
-
-	decoder_info.deblocking = getbits(&stream,1);
-	decoder_info.clpf = getbits(&stream,1);
-	decoder_info.use_block_contexts = getbits(&stream,1);
-	decoder_info.bipred = getbits(&stream,1);
-
+	decoder_info.num_reorder_pics = getbits(&stream, 4);
+	decoder_info.max_delta_qp = getbits(&stream, 2);
+	decoder_info.deblocking = getbits(&stream, 1);
+	decoder_info.clpf = getbits(&stream, 1);
+	decoder_info.use_block_contexts = getbits(&stream, 1);
+	decoder_info.bipred = getbits(&stream, 1);
 	decoder_info.bit_count.sequence_header += (stream.bitcnt - bit_start);
 
-	for (r = 0; r < MAX_REORDER_BUFFER;r++)
-	{
-		create_yuv_frame(&rec[r],width,height,0,0,0,0);
-	}
+	fprintf(stderr, "width: %d height: %d pb_split: %d tb_split: %d max_num_ref: %d max_reorder_pics: %d max_delta_qp: %d deblocking: %d clpf: %d block_contexts: %d bipred: %d\n",
+			decoder_info.width, decoder_info.height, decoder_info.pb_split_enable, decoder_info.tb_split_enable,
+			decoder_info.max_num_ref, decoder_info.num_reorder_pics, decoder_info.max_delta_qp, decoder_info.deblocking,
+			decoder_info.clpf, decoder_info.use_block_contexts, decoder_info.bipred);
+
+	create_yuv_frame(&rec, width, height, 0, 0, 0, 0);
 
 	for (r = 0; r < MAX_REF_FRAMES; r++)
 	{
-		create_yuv_frame(&ref[r],width,height,PADDING_Y,PADDING_Y,PADDING_Y/2,PADDING_Y/2);
+		create_yuv_frame(&ref[r], width, height, PADDING_Y, PADDING_Y, PADDING_Y/2, PADDING_Y/2);
 		decoder_info.ref[r] = &ref[r];
 	}
 
-	decoder_info.deblock_data = (deblock_data_t*) malloc((height/MIN_PB_SIZE) * (width/MIN_PB_SIZE) * sizeof(deblock_data_t));
+	decoder_info.deblock_data = (deblock_data_t*) malloc((height / MIN_PB_SIZE) * (width / MIN_PB_SIZE) * sizeof(deblock_data_t));
 
-	while (stream.bitcnt < 8*input_file_size - 8)
-	{
-		decoder_info.frame_info.decode_order_frame_num = decode_frame_num;
-		decoder_info.frame_info.display_frame_num = (frame_count/sub_gop)*sub_gop+reorder_frame_offset(frame_count % sub_gop, sub_gop);
+	decoder_info.frame_info.decode_order_frame_num = 0;
+	decoder_info.frame_info.display_frame_num = 0;
 
-		if (decoder_info.frame_info.display_frame_num >= 0)
-		{
-			rec_buffer_idx = decoder_info.frame_info.display_frame_num%MAX_REORDER_BUFFER;
-			decoder_info.rec = &rec[rec_buffer_idx];
-			decoder_info.frame_info.num_ref = min(decode_frame_num,decoder_info.max_num_ref);
-			decoder_info.rec->frame_num = decoder_info.frame_info.display_frame_num;
-			decode_frame(&decoder_info);
-			rec_available[rec_buffer_idx]=1;
+	decoder_info.rec = &rec;
+	decoder_info.frame_info.num_ref = min(decode_frame_num, decoder_info.max_num_ref);
+	decoder_info.rec->frame_num = decoder_info.frame_info.display_frame_num;
 
-			rec_buffer_idx = (last_frame_output+1)%MAX_REORDER_BUFFER;
-			if (rec_available[rec_buffer_idx])
-			{
-				last_frame_output++;
-				write_yuv_frame(&rec[rec_buffer_idx],width,height,outfile);
-				rec_available[rec_buffer_idx] = 0;
-			}
-			printf("decode_frame_num=%4d display_frame_num=%4d input_file_size=%12d bitcnt=%12d\n",
-					decode_frame_num,decoder_info.frame_info.display_frame_num,input_file_size,stream.bitcnt);
-			decode_frame_num++;
-		}
-		frame_count++;
-	}
-	// Output the tail
-	int i;
+	decode_frame(&decoder_info);
 
-	for (i = 1; i <= MAX_REORDER_BUFFER; ++i)
-	{
-		rec_buffer_idx=(last_frame_output+i) % MAX_REORDER_BUFFER;
-		if (rec_available[rec_buffer_idx])
-			write_yuv_frame(&rec[rec_buffer_idx],width,height,outfile);
-		else
-			break;
-	}
-
-	print_dec_stats(&decoder_info);
-
-	for (r = 0; r < MAX_REORDER_BUFFER; r++)
-	{
-		close_yuv_frame(&rec[r]);
-	}
+	write_yuv_frame(&rec, width, height, outfile);
+	close_yuv_frame(&rec);
 
 	for (r = 0; r < MAX_REF_FRAMES; r++)
 	{
@@ -666,7 +614,7 @@ int main_enc(int argc, char **argv)
 
 			/* Read input frame */
 			fseek(infile, frame_num*(frame_size+params->frame_headerlen)+params->file_headerlen+params->frame_headerlen, SEEK_SET);
-			read_yuv_frame(&orig,width,height,infile);
+			read_yuv_frame(&orig, width, height, infile);
 			orig.frame_num = encoder_info.frame_info.frame_num;
 
 			/* Encode frame */

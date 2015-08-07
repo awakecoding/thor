@@ -1,6 +1,6 @@
 -n                  1                                             ; Number of frames to encode
 -f                  60                                            ; Frame rate in Hz
--qp                 30                                            ; Quantization parameter
+-qp                 32                                            ; Quantization parameter
 -HQperiod           12                                            ; Period of high quality frames
 -mqpP               1.2                                           ; QP multiplier for low quality frames
 -dqpI              -2                                             ; QP offset for intra frames
