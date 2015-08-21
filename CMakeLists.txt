@@ -14,7 +14,7 @@ set(THOR_SOURCES
 	libthor/simd.c
 	libthor/bits.c
 	libthor/vlc.c
-	libthor/strings.c
+	libthor/params.c
 	libthor/kernels.c)
 
 include_directories(libthor)

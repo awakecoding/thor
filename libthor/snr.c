@@ -31,55 +31,55 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 int snr_yuv(snrvals *psnr,yuv_frame_t *f1,yuv_frame_t *f2,int height,int width,int stride_y,int stride_c)
 {
-    unsigned int ydim,ydim_chr;
-    unsigned int i,j,xdim,xdim_chr;
-    double sumsqr=0;
-    int ival;
-    double plse;
+        unsigned int ydim,ydim_chr;
+        unsigned int i,j,xdim,xdim_chr;
+        double sumsqr=0;
+        int ival;
+        double plse;
 
-    xdim = width;
-    xdim_chr = xdim >> 1;
-    ydim = height;
-    ydim_chr = ydim >> 1;
+        xdim = width;
+        xdim_chr = xdim >> 1;
+        ydim = height;
+        ydim_chr = ydim >> 1;
 
-    /* Calculate psnr for Y */
-    sumsqr = 0;
-    for (i = 0; i < ydim; i++)
-    {
-      for (j = 0; j < xdim; j++)
-      {
-        ival = abs(f1->y[i*stride_y+j] - f2->y[i*stride_y+j]);
-        sumsqr += (float)(ival * ival);
-      }
-    }
-    plse = sumsqr / (65025.0 * ydim * xdim);
-    psnr->y = -10 * log10(plse);
-    
-    /* Calculate psnr for U */
-    sumsqr = 0;
-    for (i = 0; i < ydim_chr; i++)
-    {
-      for (j = 0; j < xdim_chr; j++)
-      {
-        ival = abs(f1->u[i*stride_c+j] - f2->u[i*stride_c+j]);
-        sumsqr += (ival * ival);
-      }
-    }
-    plse = sumsqr / (65025.0 * ydim_chr * xdim_chr);
-    psnr->u = -10 * log10(plse);
-    
-    /* Calculate psnr for V */
-    sumsqr = 0;
-    for (i = 0; i < ydim_chr; i++)
-    {
-      for (j = 0; j < xdim_chr; j++)
-      {
-        ival = abs(f1->v[i*stride_c+j] - f2->v[i*stride_c+j]);
-        sumsqr += (ival * ival);
-      }
-    }
-    plse = sumsqr / (65025.0 * ydim_chr * xdim_chr);
-    psnr->v = -10 * log10(plse);
-    return 0;
+        /* Calculate psnr for Y */
+        sumsqr = 0;
+        for (i = 0; i < ydim; i++)
+        {
+                for (j = 0; j < xdim; j++)
+                {
+                        ival = abs(f1->y[i*stride_y+j] - f2->y[i*stride_y+j]);
+                        sumsqr += (float)(ival * ival);
+                }
+        }
+        plse = sumsqr / (65025.0 * ydim * xdim);
+        psnr->y = -10 * log10(plse);
+
+        /* Calculate psnr for U */
+        sumsqr = 0;
+        for (i = 0; i < ydim_chr; i++)
+        {
+                for (j = 0; j < xdim_chr; j++)
+                {
+                        ival = abs(f1->u[i*stride_c+j] - f2->u[i*stride_c+j]);
+                        sumsqr += (ival * ival);
+                }
+        }
+        plse = sumsqr / (65025.0 * ydim_chr * xdim_chr);
+        psnr->u = -10 * log10(plse);
+
+        /* Calculate psnr for V */
+        sumsqr = 0;
+        for (i = 0; i < ydim_chr; i++)
+        {
+                for (j = 0; j < xdim_chr; j++)
+                {
+                        ival = abs(f1->v[i*stride_c+j] - f2->v[i*stride_c+j]);
+                        sumsqr += (ival * ival);
+                }
+        }
+        plse = sumsqr / (65025.0 * ydim_chr * xdim_chr);
+        psnr->v = -10 * log10(plse);
+        return 0;
 }
 

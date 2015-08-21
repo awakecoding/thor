@@ -27,7 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "strings.h"
+#include "params.h"
 
 #define MAX_PARAMS 200
 
@@ -141,7 +141,7 @@ static int parse_params(int argc, char **argv, enc_params *params, param_list *l
 
     char *tmp;
     int cnt;
-    
+
     for (i = 1; i < argc; i++)
     {
       /* Check if parameter is in the list of known parameters */
@@ -290,7 +290,7 @@ enc_params *parse_config_params(int argc, char **argv)
   add_param_to_list(&list, "-skip",                  "0", ARG_INTEGER,  &params->skip);
   add_param_to_list(&list, "-width",              "1920", ARG_INTEGER,  &params->width);
   add_param_to_list(&list, "-height",             "1080", ARG_INTEGER,  &params->height);
-  add_param_to_list(&list, "-qp",                   "32", ARG_INTEGER,  &params->qp);  
+  add_param_to_list(&list, "-qp",                   "32", ARG_INTEGER,  &params->qp);
   add_param_to_list(&list, "-f",                    "60", ARG_FLOAT,    &params->frame_rate);
   add_param_to_list(&list, "-lambda_coeffI",       "1.0", ARG_FLOAT,    &params->lambda_coeffI);
   add_param_to_list(&list, "-lambda_coeffP",       "1.0", ARG_FLOAT,    &params->lambda_coeffP);

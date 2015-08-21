@@ -37,7 +37,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "frame.h"
 #include "bits.h"
 #include "simd.h"
-#include "strings.h"
+#include "params.h"
 #include "snr.h"
 #include "vlc.h"
 #include "transform.h"
@@ -301,6 +301,7 @@ int main_enc(int argc, char **argv)
 	uint32_t acc_num_bits;
 	snrvals psnr;
 	snrvals accsnr;
+	stream_t stream;
 	double bit_rate_in_kbps;
 	enc_params *params;
 	encoder_info_t encoder_info;
@@ -362,7 +363,6 @@ int main_enc(int argc, char **argv)
 	}
 
 	/* Initialize main bit stream */
-	stream_t stream;
 	stream.bitstream = (uint8_t*) malloc(MAX_BUFFER_SIZE * sizeof(uint8_t));
 	stream.bitbuf = 0;
 	stream.bitrest = 32;
