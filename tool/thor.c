@@ -252,6 +252,7 @@ int main_dec(int argc, char** argv)
 	hdr.clpf = getbits(&stream, 1);
 	hdr.use_block_contexts = getbits(&stream, 1);
 	hdr.enable_bipred = getbits(&stream, 1);
+	getbits(&stream, 18); /* pad */
 
 	fprintf(stderr, "width: %d height: %d pb_split: %d tb_split: %d max_num_ref: %d max_reorder_pics: %d max_delta_qp: %d deblocking: %d clpf: %d block_contexts: %d bipred: %d\n",
 		hdr.width, hdr.height, hdr.pb_split_enable, hdr.tb_split_enable,
@@ -311,6 +312,9 @@ int main_dec(int argc, char** argv)
 	ysize = width * height;
 	csize = ysize / 4;
 
+	fprintf(outfile, "YUV4MPEG2 W%d H%d F30:1 Ip A1:1\n", width, height);
+	fprintf(outfile, "FRAME\n");
+
 	if (fwrite(frame.y, 1, ysize, outfile) != ysize)
 	{
 		fatalerror("Error writing Y to file");
@@ -335,18 +339,24 @@ int main_dec(int argc, char** argv)
 
 int main_enc(int argc, char **argv)
 {
-	FILE *infile, *strfile;
+	FILE* infile;
+	FILE* strfile;
 	uint32_t input_file_size;
 	thor_sequence_header_t hdr;
 	yuv_frame_t orig,ref[MAX_REF_FRAMES];
 	yuv_frame_t rec[MAX_REORDER_BUFFER];
-	int num_encoded_frames,num_bits,start_bits,end_bits;
+	int num_encoded_frames;
+	int num_bits;
+	int start_bits;
+	int end_bits;
 	int sub_gop=1;
 	int rec_buffer_idx;
 	int frame_num,frame_num0,k,r;
 	int frame_offset;
 	int ysize,csize,frame_size;
-	int width,height,input_stride_y,input_stride_c;
+	int width,height;
+	int input_stride_y;
+	int input_stride_c;
 	uint32_t acc_num_bits;
 	snrvals psnr;
 	snrvals accsnr;
@@ -446,21 +456,20 @@ int main_enc(int argc, char **argv)
 	hdr.enable_bipred = params->enable_bipred;
 
 	/* Write sequence header */
-	start_bits = get_bit_pos(&stream);
-	putbits(16,width,&stream);
-	putbits(16,height,&stream);
-	putbits(1,params->enable_pb_split,&stream);
-	putbits(1,params->enable_tb_split,&stream);
-	putbits(2,params->max_num_ref-1,&stream);
-	putbits(4,params->num_reorder_pics,&stream);
-	putbits(2,params->max_delta_qp,&stream);
-	putbits(1,params->deblocking,&stream);
-	putbits(1,params->clpf,&stream);
-	putbits(1,params->use_block_contexts,&stream);
-	putbits(1,params->enable_bipred,&stream);
+	putbits(16, hdr.width, &stream);
+	putbits(16, hdr.height, &stream);
+	putbits(1, hdr.pb_split_enable, &stream);
+	putbits(1, hdr.tb_split_enable, &stream);
+	putbits(2, hdr.max_num_ref-1, &stream);
+	putbits(4, hdr.num_reorder_pics, &stream);
+	putbits(2, hdr.max_delta_qp, &stream);
+	putbits(1, hdr.deblocking, &stream);
+	putbits(1, hdr.clpf, &stream);
+	putbits(1, hdr.use_block_contexts, &stream);
+	putbits(1, hdr.enable_bipred, &stream);
+	putbits(18, 0, &stream); /* pad to 8 bytes (64 bits) */
 
-	end_bits = get_bit_pos(&stream);
-	num_bits = end_bits-start_bits;
+	num_bits = get_bit_pos(&stream);
 	acc_num_bits += num_bits;
 	printf("SH:  %4d bits\n",num_bits);
 
