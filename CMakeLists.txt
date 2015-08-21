@@ -14,6 +14,7 @@ set(THOR_SOURCES
 	libthor/simd.c
 	libthor/bits.c
 	libthor/vlc.c
+	libthor/image.c
 	libthor/params.c
 	libthor/kernels.c)
 
