@@ -379,25 +379,6 @@ void read_yuv_frame(yuv_frame_t* frame, int width, int height, FILE* infile)
 	}
 }
 
-void write_yuv_frame(yuv_frame_t* frame, int width, int height, FILE *outfile)
-{
-	unsigned int ysize = width*height;
-	unsigned int csize = ysize/4;
-
-	if (fwrite(frame->y, sizeof(unsigned char), ysize, outfile) != ysize)
-	{
-		fatalerror("Error writing Y to file");
-	}
-	if (fwrite(frame->u, sizeof(unsigned char), csize, outfile) != csize)
-	{
-		fatalerror("Error writing U to file");    
-	}
-	if (fwrite(frame->v, sizeof(unsigned char), csize, outfile) != csize)
-	{
-		fatalerror("Error writing V to file");    
-	}
-}
-
 void create_reference_frame(yuv_frame_t* ref,yuv_frame_t  *rec)
 {
 	ref->frame_num = rec->frame_num;

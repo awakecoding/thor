@@ -43,54 +43,23 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* to mask the n least significant bits of an integer */
 static const unsigned int msk[33] =
 {
-  0x00000000,0x00000001,0x00000003,0x00000007,
-  0x0000000f,0x0000001f,0x0000003f,0x0000007f,
-  0x000000ff,0x000001ff,0x000003ff,0x000007ff,
-  0x00000fff,0x00001fff,0x00003fff,0x00007fff,
-  0x0000ffff,0x0001ffff,0x0003ffff,0x0007ffff,
-  0x000fffff,0x001fffff,0x003fffff,0x007fffff,
-  0x00ffffff,0x01ffffff,0x03ffffff,0x07ffffff,
-  0x0fffffff,0x1fffffff,0x3fffffff,0x7fffffff,
-  0xffffffff
+	0x00000000,0x00000001,0x00000003,0x00000007,
+	0x0000000f,0x0000001f,0x0000003f,0x0000007f,
+	0x000000ff,0x000001ff,0x000003ff,0x000007ff,
+	0x00000fff,0x00001fff,0x00003fff,0x00007fff,
+	0x0000ffff,0x0001ffff,0x0003ffff,0x0007ffff,
+	0x000fffff,0x001fffff,0x003fffff,0x007fffff,
+	0x00ffffff,0x01ffffff,0x03ffffff,0x07ffffff,
+	0x0fffffff,0x1fffffff,0x3fffffff,0x7fffffff,
+	0xffffffff
 };
-
-int initbits_dec(FILE *infile, stream_t *str)
-{
-	fpos_t fpos[1];
-	long pos1, pos2;
-
-	str->incnt = 0;
-	str->rdptr = str->rdbfr + 2048;
-	str->bitcnt = 0;
-	str->infile = infile;
-
-	fgetpos(str->infile, fpos);
-	pos1 = ftell(str->infile);
-	fseek(str->infile, 0, SEEK_END);
-	pos2 = ftell(str->infile);
-	fsetpos(str->infile, fpos);
-	str->length = pos2 - pos1;
-	return 0;
-}
 
 int fillbfr(stream_t *str)
 {
-	while (str->incnt <= 24 && (str->rdptr < str->rdbfr + 2048))
+	while (str->incnt <= 24 && (str->rdptr < str->rdbfr + str->capacity))
 	{
 		str->inbfr = (str->inbfr << 8) | *str->rdptr++;
 		str->incnt += 8;
-	}
-
-	if (str->rdptr >= str->rdbfr + 2048)
-	{
-		fread(str->rdbfr,sizeof(unsigned char),2048,str->infile);
-		str->rdptr = str->rdbfr;
-
-		while (str->incnt <= 24 && (str->rdptr < str->rdbfr + 2048))
-		{
-			str->inbfr = (str->inbfr << 8) | *str->rdptr++;
-			str->incnt += 8;
-		}
 	}
 
 	return 0;
@@ -135,6 +104,7 @@ unsigned int showbits(stream_t *str, int n)
 	if (str->incnt < n)
 	{
 		fillbfr(str);
+
 		if (str->incnt < n)
 		{
 			int shift = n-str->incnt;
@@ -153,17 +123,6 @@ int flushbits(stream_t *str, int n)
 }
 
 /* putbits */
-
-static unsigned int mask[33] = {
-    0x00000000,0x00000001,0x00000003,0x00000007,
-    0x0000000f,0x0000001f,0x0000003f,0x0000007f,
-    0x000000ff,0x000001ff,0x000003ff,0x000007ff,
-    0x00000fff,0x00001fff,0x00003fff,0x00007fff,
-    0x0000ffff,0x0001ffff,0x0003ffff,0x0007ffff,
-    0x000fffff,0x001fffff,0x003fffff,0x007fffff,
-    0x00ffffff,0x01ffffff,0x03ffffff,0x07ffffff,
-    0x0fffffff,0x1fffffff,0x3fffffff,0x7fffffff,
-    0xffffffff};
 
 void flush_bytebuf(stream_t *str, FILE *outfile)
 {
@@ -224,15 +183,15 @@ void putbits(unsigned int n, unsigned int val, stream_t *str)
 
 	if (n <= str->bitrest)
 	{
-		str->bitbuf |= ((val & mask[n]) << (str->bitrest-n));
+		str->bitbuf |= ((val & msk[n]) << (str->bitrest-n));
 		str->bitrest -= n;
 	}
 	else
 	{
 		rest = n-str->bitrest;
-		str->bitbuf |= (val >> rest) & mask[n-rest];
+		str->bitbuf |= (val >> rest) & msk[n-rest];
 		flush_bitbuf(str);
-		str->bitbuf |= (val & mask[rest]) << (32-rest);
+		str->bitbuf |= (val & msk[rest]) << (32-rest);
 		str->bitrest -= rest;
 	}
 }
@@ -255,14 +214,6 @@ void read_stream_pos(stream_pos_t *stream_pos, stream_t *stream)
 	stream_pos->bitrest = stream->bitrest;
 	stream_pos->bytepos = stream->bytepos;
 	stream_pos->bitbuf = stream->bitbuf;
-}
-
-void copy_stream(stream_t *str1, stream_t *str2)
-{
-	str1->bitrest = str2->bitrest;
-	str1->bytepos = str2->bytepos;
-	str1->bitbuf = str2->bitbuf;
-	memcpy(&(str1->bitstream[0]),&(str2->bitstream[0]),str2->bytepos*sizeof(uint8_t));
 }
 
 /* read_bits */

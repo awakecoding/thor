@@ -37,13 +37,10 @@ void putbits(unsigned int n,unsigned int val,stream_t *str);
 void flush_bytebuf(stream_t *str, FILE *outfile);
 void flush_bitbuf(stream_t *str);
 int get_bit_pos(stream_t *str);
-unsigned int leading_zeros(unsigned int code);
 
 void write_stream_pos(stream_t *stream, stream_pos_t *stream_pos);
 void read_stream_pos(stream_pos_t *stream_pos, stream_t *stream);
-void copy_stream(stream_t *str1, stream_t *str2);
 
-int initbits_dec(FILE *infile, stream_t *str);
 int fillbfr(stream_t *str);
 unsigned int showbits(stream_t *str, int n);
 unsigned int getbits1(stream_t *str);

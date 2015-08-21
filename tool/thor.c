@@ -33,14 +33,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>
 #include <time.h>
 #include <assert.h>
+#include <thor.h>
 
 #include "frame.h"
 #include "bits.h"
 #include "simd.h"
 #include "params.h"
 #include "snr.h"
-#include "vlc.h"
-#include "transform.h"
 
 void rferror(char error_text[])
 {
@@ -48,34 +47,6 @@ void rferror(char error_text[])
 	fprintf(stderr,"%s\n",error_text);
 	fprintf(stderr,"...now exiting to system...\n");
 	exit(1);
-}
-
-void parse_arg(int argc, char** argv, FILE **infile, FILE **outfile)
-{
-	if (argc < 2)
-	{
-		fprintf(stdout, "usage: %s infile [outfile]\n", argv[0]);
-		rferror("Wrong number of arguments.");
-	}
-
-	if (!(*infile = fopen(argv[1], "rb")))
-	{
-		fprintf(stderr, "Could not open in-file for reading: %s\n", argv[1]);
-		rferror("");
-	}
-
-	if (argc > 2)
-	{
-		if (!(*outfile = fopen(argv[2], "wb")))
-		{
-			fprintf(stderr, "Could not open out-file for writing.");
-			rferror("");
-		}
-	}
-	else
-	{
-		*outfile = NULL;
-	}
 }
 
 // Coding order to display order
@@ -166,11 +137,14 @@ int print_dec_stats(decoder_info_t* decoder_info)
 	int num=9;
 	printf("\nSuper-mode distribution for P pictures:\n");
 	int index;
-	for (index=0;index<1;index++){
-		for (idx=0;idx<4;idx++){
+	for (index=0;index<1;index++)
+	{
+		for (idx=0;idx<4;idx++)
+		{
 			int size = 8<<idx;
 			printf("%2d x %2d-blocks (8x8): ",size,size);
-			for (i=0;i<num;i++){
+			for (i=0;i<num;i++)
+			{
 				printf("%8d",bit_count.super_mode_stat[index][idx][i]/1);
 			}
 			printf("\n");
@@ -186,7 +160,8 @@ int print_dec_stats(decoder_info_t* decoder_info)
 	{
 		size = 1<<(i+3);
 		printf("%2d x %2d-blocks: ",size,size);
-		for (j=0;j<max_num_ref;j++){
+		for (j=0;j<max_num_ref;j++)
+		{
 			printf("%6d",bit_count.size_and_ref_idx[i][j]);
 		}
 		printf("\n");
@@ -195,7 +170,8 @@ int print_dec_stats(decoder_info_t* decoder_info)
 	{
 		int sum = 0;
 		printf("\nbi-ref:  ");
-		for (j=0;j<max_num_ref*max_num_ref;j++){
+		for (j=0;j<max_num_ref*max_num_ref;j++)
+		{
 			sum += bit_count.bi_ref[j];
 			printf("%7d",bit_count.bi_ref[j]);
 		}
@@ -212,48 +188,101 @@ int main_dec(int argc, char** argv)
 	int r;
 	int width;
 	int height;
-	int bit_start;
-	FILE* infile;
-	FILE* outfile;
+	uint8_t* buffer;
+	uint32_t size;
 	stream_t stream;
+	uint32_t ysize;
+	uint32_t csize;
+	FILE* infile = NULL;
+	FILE* outfile = NULL;
 	int decode_frame_num = 0;
 	decoder_info_t decoder_info;
-	yuv_frame_t rec;
+	thor_sequence_header_t hdr;
+	yuv_frame_t frame;
 	yuv_frame_t ref[MAX_REF_FRAMES];
 
 	init_use_simd();
 
-	parse_arg(argc, argv, &infile, &outfile);
+	if (argc < 2)
+	{
+		fprintf(stdout, "usage: %s infile [outfile]\n", argv[0]);
+		rferror("Wrong number of arguments.");
+	}
 
-	initbits_dec(infile, &stream);
+	if (!(infile = fopen(argv[1], "rb")))
+	{
+		fprintf(stderr, "Could not open in-file for reading: %s\n", argv[1]);
+		rferror("");
+	}
+
+	if (argc > 2)
+	{
+		if (!(outfile = fopen(argv[2], "wb")))
+		{
+			fprintf(stderr, "Could not open out-file for writing.");
+			rferror("");
+		}
+	}
+
+	fseek(infile, 0, SEEK_END);
+	size = ftell(infile);
+	fseek(infile, 0, SEEK_SET);
+	buffer = (uint8_t*) malloc(size);
+	fread(buffer, 1, size, infile);
+	fclose(infile);
+
+	stream.incnt = 0;
+	stream.bitcnt = 0;
+	stream.capacity = size;
+	stream.rdbfr = buffer;
+	stream.rdptr = stream.rdbfr;
 
 	decoder_info.stream = &stream;
 	memset(&decoder_info.bit_count, 0, sizeof(bit_count_t));
-	bit_start = stream.bitcnt;
 
-	/* Read sequence header */
-	width = getbits(&stream, 16);
-	height = getbits(&stream, 16);
+	/* read sequence header */
+	hdr.width = getbits(&stream, 16);
+	hdr.height = getbits(&stream, 16);
+	hdr.pb_split_enable = getbits(&stream, 1);
+	hdr.tb_split_enable = getbits(&stream, 1);
+	hdr.max_num_ref = getbits(&stream,2) + 1;
+	hdr.num_reorder_pics = getbits(&stream, 4);
+	hdr.max_delta_qp = getbits(&stream, 2);
+	hdr.deblocking = getbits(&stream, 1);
+	hdr.clpf = getbits(&stream, 1);
+	hdr.use_block_contexts = getbits(&stream, 1);
+	hdr.enable_bipred = getbits(&stream, 1);
+
+	fprintf(stderr, "width: %d height: %d pb_split: %d tb_split: %d max_num_ref: %d max_reorder_pics: %d max_delta_qp: %d deblocking: %d clpf: %d block_contexts: %d bipred: %d\n",
+		hdr.width, hdr.height, hdr.pb_split_enable, hdr.tb_split_enable,
+		hdr.max_num_ref, hdr.num_reorder_pics, hdr.max_delta_qp, hdr.deblocking,
+		hdr.clpf, hdr.use_block_contexts, hdr.enable_bipred);
+
+	width = hdr.width;
+	height = hdr.height;
 
 	decoder_info.width = width;
 	decoder_info.height = height;
-	decoder_info.pb_split_enable = getbits(&stream, 1);
-	decoder_info.tb_split_enable = getbits(&stream, 1);
-	decoder_info.max_num_ref = getbits(&stream,2) + 1;
-	decoder_info.num_reorder_pics = getbits(&stream, 4);
-	decoder_info.max_delta_qp = getbits(&stream, 2);
-	decoder_info.deblocking = getbits(&stream, 1);
-	decoder_info.clpf = getbits(&stream, 1);
-	decoder_info.use_block_contexts = getbits(&stream, 1);
-	decoder_info.bipred = getbits(&stream, 1);
-	decoder_info.bit_count.sequence_header += (stream.bitcnt - bit_start);
+	decoder_info.pb_split_enable = hdr.pb_split_enable;
+	decoder_info.tb_split_enable = hdr.tb_split_enable;
+	decoder_info.max_num_ref = hdr.max_num_ref;
+	decoder_info.num_reorder_pics = hdr.num_reorder_pics;
+	decoder_info.max_delta_qp = hdr.max_delta_qp;
+	decoder_info.deblocking = hdr.deblocking;
+	decoder_info.clpf = hdr.clpf;
+	decoder_info.use_block_contexts = hdr.use_block_contexts;
+	decoder_info.bipred = hdr.enable_bipred;
+	decoder_info.bit_count.sequence_header = stream.bitcnt;
 
-	fprintf(stderr, "width: %d height: %d pb_split: %d tb_split: %d max_num_ref: %d max_reorder_pics: %d max_delta_qp: %d deblocking: %d clpf: %d block_contexts: %d bipred: %d\n",
-			decoder_info.width, decoder_info.height, decoder_info.pb_split_enable, decoder_info.tb_split_enable,
-			decoder_info.max_num_ref, decoder_info.num_reorder_pics, decoder_info.max_delta_qp, decoder_info.deblocking,
-			decoder_info.clpf, decoder_info.use_block_contexts, decoder_info.bipred);
-
-	create_yuv_frame(&rec, width, height, 0, 0, 0, 0);
+	frame.width = width;
+	frame.height = height;
+	frame.stride_y = width;
+	frame.stride_c = width/2;
+	frame.offset_y = 0;
+	frame.offset_c = 0;
+	frame.y = (uint8_t*) malloc(height * frame.stride_y * sizeof(uint8_t));
+	frame.u = (uint8_t*) malloc(height/2 * frame.stride_c * sizeof(uint8_t));
+	frame.v = (uint8_t*) malloc(height/2 * frame.stride_c * sizeof(uint8_t));
 
 	for (r = 0; r < MAX_REF_FRAMES; r++)
 	{
@@ -266,14 +295,11 @@ int main_dec(int argc, char** argv)
 	decoder_info.frame_info.decode_order_frame_num = 0;
 	decoder_info.frame_info.display_frame_num = 0;
 
-	decoder_info.rec = &rec;
+	decoder_info.rec = &frame;
 	decoder_info.frame_info.num_ref = min(decode_frame_num, decoder_info.max_num_ref);
 	decoder_info.rec->frame_num = decoder_info.frame_info.display_frame_num;
 
 	decode_frame(&decoder_info);
-
-	write_yuv_frame(&rec, width, height, outfile);
-	close_yuv_frame(&rec);
 
 	for (r = 0; r < MAX_REF_FRAMES; r++)
 	{
@@ -282,6 +308,28 @@ int main_dec(int argc, char** argv)
 
 	free(decoder_info.deblock_data);
 
+	ysize = width * height;
+	csize = ysize / 4;
+
+	if (fwrite(frame.y, 1, ysize, outfile) != ysize)
+	{
+		fatalerror("Error writing Y to file");
+	}
+	if (fwrite(frame.u, 1, csize, outfile) != csize)
+	{
+		fatalerror("Error writing U to file");
+	}
+	if (fwrite(frame.v, 1, csize, outfile) != csize)
+	{
+		fatalerror("Error writing V to file");
+	}
+
+	free(frame.y);
+	free(frame.u);
+	free(frame.v);
+
+	free(buffer);
+
 	return 0;
 }
 
@@ -289,6 +337,7 @@ int main_enc(int argc, char **argv)
 {
 	FILE *infile, *strfile;
 	uint32_t input_file_size;
+	thor_sequence_header_t hdr;
 	yuv_frame_t orig,ref[MAX_REF_FRAMES];
 	yuv_frame_t rec[MAX_REORDER_BUFFER];
 	int num_encoded_frames,num_bits,start_bits,end_bits;
@@ -384,14 +433,26 @@ int main_enc(int argc, char **argv)
 
 	encoder_info.deblock_data = (deblock_data_t*) malloc((height/MIN_PB_SIZE) * (width/MIN_PB_SIZE) * sizeof(deblock_data_t));
 
+	hdr.width = width;
+	hdr.height = height;
+	hdr.pb_split_enable = params->enable_pb_split;
+	hdr.tb_split_enable = params->enable_tb_split;
+	hdr.max_num_ref = params->max_num_ref;
+	hdr.num_reorder_pics = params->num_reorder_pics;
+	hdr.max_delta_qp = params->max_delta_qp;
+	hdr.deblocking = params->deblocking;
+	hdr.clpf = params->clpf;
+	hdr.use_block_contexts = params->use_block_contexts;
+	hdr.enable_bipred = params->enable_bipred;
+
 	/* Write sequence header */
 	start_bits = get_bit_pos(&stream);
 	putbits(16,width,&stream);
 	putbits(16,height,&stream);
 	putbits(1,params->enable_pb_split,&stream);
 	putbits(1,params->enable_tb_split,&stream);
-	putbits(2,params->max_num_ref-1,&stream); //TODO: Support more than 4 reference frames
-	putbits(4,params->num_reorder_pics,&stream);// Max 15 reordered pictures
+	putbits(2,params->max_num_ref-1,&stream);
+	putbits(4,params->num_reorder_pics,&stream);
 	putbits(2,params->max_delta_qp,&stream);
 	putbits(1,params->deblocking,&stream);
 	putbits(1,params->clpf,&stream);
