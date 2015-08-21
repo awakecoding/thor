@@ -262,8 +262,8 @@ void thor_YUV420ToRGB_8u_P3AC4R(const uint8_t* pSrc[3], int srcStep[3],
 	}
 }
 
-void thor_RGBToYUV420_8u_P3AC4R(const uint8_t* pSrc, INT32 srcStep,
-				uint8_t* pDst[3], INT32 dstStep[3], int width, int height)
+void thor_RGBToYUV420_8u_P3AC4R(const uint8_t* pSrc, int32_t srcStep,
+				uint8_t* pDst[3], int32_t dstStep[3], int width, int height)
 {
 	int x, y;
 	int dstPad[3];

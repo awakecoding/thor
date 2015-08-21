@@ -35,6 +35,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <assert.h>
 #include <thor.h>
 
+#include "image.h"
+#include "color.h"
 #include "frame.h"
 #include "bits.h"
 #include "simd.h"
@@ -311,6 +313,31 @@ int main_dec(int argc, char** argv)
 
 	ysize = width * height;
 	csize = ysize / 4;
+
+	if (1)
+	{
+		int dstStep;
+		uint8_t* pDst;
+		int srcStep[3];
+		const uint8_t* pSrc[3];
+
+		pSrc[0] = frame.y;
+		pSrc[1] = frame.u;
+		pSrc[2] = frame.v;
+
+		srcStep[0] = frame.stride_y;
+		srcStep[1] = frame.stride_c;
+		srcStep[2] = frame.stride_c;
+
+		dstStep = width * 4;
+		pDst = (uint8_t*) malloc(dstStep * height);
+
+		thor_YUV420ToRGB_8u_P3AC4R(pSrc, srcStep, pDst, dstStep, width, height);
+
+		thor_bitmap_write("test.bmp", pDst, width, height, 32);
+
+		free(pDst);
+	}
 
 	fprintf(outfile, "YUV4MPEG2 W%d H%d F30:1 Ip A1:1\n", width, height);
 	fprintf(outfile, "FRAME\n");

@@ -31,7 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 void thor_YUV420ToRGB_8u_P3AC4R(const uint8_t* pSrc[3], int srcStep[3],
 				uint8_t* pDst, int dstStep, int width, int height);
-void thor_RGBToYUV420_8u_P3AC4R(const uint8_t* pSrc, INT32 srcStep,
-				uint8_t* pDst[3], INT32 dstStep[3], int width, int height);
+void thor_RGBToYUV420_8u_P3AC4R(const uint8_t* pSrc, int srcStep,
+				uint8_t* pDst[3], int dstStep[3], int width, int height);
 
 #endif /* THOR_COLOR_H */
