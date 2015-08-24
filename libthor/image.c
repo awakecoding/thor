@@ -111,6 +111,15 @@ int thor_bitmap_write(const char* filename, uint8_t* data, int width, int height
 	return status;
 }
 
+int thor_png_write(const char* filename, uint8_t* data, int width, int height, int bpp)
+{
+	int status;
+
+	status = lodepng_encode32_file(filename, data, width, height) ? -1 : 1;
+
+	return status;
+}
+
 int thor_image_write(thor_image_t* image, const char* filename)
 {
 	int status = -1;

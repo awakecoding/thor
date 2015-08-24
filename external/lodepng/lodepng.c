@@ -3050,15 +3050,15 @@ static unsigned rgba8ToPixel(unsigned char* out, size_t i,
   {
     if(mode->bitdepth == 8)
     {
-      out[i * 3 + 0] = r;
+      out[i * 3 + 0] = b;
       out[i * 3 + 1] = g;
-      out[i * 3 + 2] = b;
+      out[i * 3 + 2] = r;
     }
     else
     {
-      out[i * 6 + 0] = out[i * 6 + 1] = r;
+      out[i * 6 + 0] = out[i * 6 + 1] = b;
       out[i * 6 + 2] = out[i * 6 + 3] = g;
-      out[i * 6 + 4] = out[i * 6 + 5] = b;
+      out[i * 6 + 4] = out[i * 6 + 5] = r;
     }
   }
   else if(mode->colortype == LCT_PALETTE)
@@ -3086,16 +3086,16 @@ static unsigned rgba8ToPixel(unsigned char* out, size_t i,
   {
     if(mode->bitdepth == 8)
     {
-      out[i * 4 + 0] = r;
+      out[i * 4 + 0] = b;
       out[i * 4 + 1] = g;
-      out[i * 4 + 2] = b;
+      out[i * 4 + 2] = r;
       out[i * 4 + 3] = a;
     }
     else
     {
-      out[i * 8 + 0] = out[i * 8 + 1] = r;
+      out[i * 8 + 0] = out[i * 8 + 1] = b;
       out[i * 8 + 2] = out[i * 8 + 3] = g;
-      out[i * 8 + 4] = out[i * 8 + 5] = b;
+      out[i * 8 + 4] = out[i * 8 + 5] = r;
       out[i * 8 + 6] = out[i * 8 + 7] = a;
     }
   }
@@ -3116,12 +3116,12 @@ static void rgba16ToPixel(unsigned char* out, size_t i,
   }
   else if(mode->colortype == LCT_RGB)
   {
-    out[i * 6 + 0] = (r >> 8) & 255;
-    out[i * 6 + 1] = r & 255;
+    out[i * 6 + 0] = (b >> 8) & 255;
+    out[i * 6 + 1] = b & 255;
     out[i * 6 + 2] = (g >> 8) & 255;
     out[i * 6 + 3] = g & 255;
-    out[i * 6 + 4] = (b >> 8) & 255;
-    out[i * 6 + 5] = b & 255;
+    out[i * 6 + 4] = (r >> 8) & 255;
+    out[i * 6 + 5] = r & 255;
   }
   else if(mode->colortype == LCT_GREY_ALPHA)
   {
@@ -3133,12 +3133,12 @@ static void rgba16ToPixel(unsigned char* out, size_t i,
   }
   else if(mode->colortype == LCT_RGBA)
   {
-    out[i * 8 + 0] = (r >> 8) & 255;
-    out[i * 8 + 1] = r & 255;
+    out[i * 8 + 0] = (b >> 8) & 255;
+    out[i * 8 + 1] = b & 255;
     out[i * 8 + 2] = (g >> 8) & 255;
     out[i * 8 + 3] = g & 255;
-    out[i * 8 + 4] = (b >> 8) & 255;
-    out[i * 8 + 5] = b & 255;
+    out[i * 8 + 4] = (r >> 8) & 255;
+    out[i * 8 + 5] = r & 255;
     out[i * 8 + 6] = (a >> 8) & 255;
     out[i * 8 + 7] = a & 255;
   }
@@ -3178,18 +3178,18 @@ static void getPixelColorRGBA8(unsigned char* r, unsigned char* g,
   {
     if(mode->bitdepth == 8)
     {
-      *r = in[i * 3 + 0]; *g = in[i * 3 + 1]; *b = in[i * 3 + 2];
-      if(mode->key_defined && *r == mode->key_r && *g == mode->key_g && *b == mode->key_b) *a = 0;
+      *b = in[i * 3 + 0]; *g = in[i * 3 + 1]; *r = in[i * 3 + 2];
+      if(mode->key_defined && *b == mode->key_b && *g == mode->key_g && *r == mode->key_r) *a = 0;
       else *a = 255;
     }
     else
     {
-      *r = in[i * 6 + 0];
+      *b = in[i * 6 + 0];
       *g = in[i * 6 + 2];
-      *b = in[i * 6 + 4];
-      if(mode->key_defined && 256U * in[i * 6 + 0] + in[i * 6 + 1] == mode->key_r
+      *r = in[i * 6 + 4];
+      if(mode->key_defined && 256U * in[i * 6 + 0] + in[i * 6 + 1] == mode->key_b
          && 256U * in[i * 6 + 2] + in[i * 6 + 3] == mode->key_g
-         && 256U * in[i * 6 + 4] + in[i * 6 + 5] == mode->key_b) *a = 0;
+         && 256U * in[i * 6 + 4] + in[i * 6 + 5] == mode->key_r) *a = 0;
       else *a = 255;
     }
   }
@@ -3212,9 +3212,9 @@ static void getPixelColorRGBA8(unsigned char* r, unsigned char* g,
     }
     else
     {
-      *r = mode->palette[index * 4 + 0];
+      *b = mode->palette[index * 4 + 0];
       *g = mode->palette[index * 4 + 1];
-      *b = mode->palette[index * 4 + 2];
+      *r = mode->palette[index * 4 + 2];
       *a = mode->palette[index * 4 + 3];
     }
   }
@@ -3235,16 +3235,16 @@ static void getPixelColorRGBA8(unsigned char* r, unsigned char* g,
   {
     if(mode->bitdepth == 8)
     {
-      *r = in[i * 4 + 0];
+      *b = in[i * 4 + 0];
       *g = in[i * 4 + 1];
-      *b = in[i * 4 + 2];
+      *r = in[i * 4 + 2];
       *a = in[i * 4 + 3];
     }
     else
     {
-      *r = in[i * 8 + 0];
+      *b = in[i * 8 + 0];
       *g = in[i * 8 + 2];
-      *b = in[i * 8 + 4];
+      *r = in[i * 8 + 4];
       *a = in[i * 8 + 6];
     }
   }
@@ -3297,24 +3297,24 @@ static void getPixelColorsRGBA8(unsigned char* buffer, size_t numpixels,
     {
       for(i = 0; i < numpixels; i++, buffer += num_channels)
       {
-        buffer[0] = in[i * 3 + 0];
+        buffer[2] = in[i * 3 + 0];
         buffer[1] = in[i * 3 + 1];
-        buffer[2] = in[i * 3 + 2];
-        if(has_alpha) buffer[3] = mode->key_defined && buffer[0] == mode->key_r
-           && buffer[1]== mode->key_g && buffer[2] == mode->key_b ? 0 : 255;
+        buffer[0] = in[i * 3 + 2];
+        if(has_alpha) buffer[3] = mode->key_defined && buffer[0] == mode->key_b
+           && buffer[1]== mode->key_g && buffer[2] == mode->key_r ? 0 : 255;
       }
     }
     else
     {
       for(i = 0; i < numpixels; i++, buffer += num_channels)
       {
-        buffer[0] = in[i * 6 + 0];
+        buffer[2] = in[i * 6 + 0];
         buffer[1] = in[i * 6 + 2];
-        buffer[2] = in[i * 6 + 4];
+        buffer[0] = in[i * 6 + 4];
         if(has_alpha) buffer[3] = mode->key_defined
-           && 256U * in[i * 6 + 0] + in[i * 6 + 1] == mode->key_r
+           && 256U * in[i * 6 + 0] + in[i * 6 + 1] == mode->key_b
            && 256U * in[i * 6 + 2] + in[i * 6 + 3] == mode->key_g
-           && 256U * in[i * 6 + 4] + in[i * 6 + 5] == mode->key_b ? 0 : 255;
+           && 256U * in[i * 6 + 4] + in[i * 6 + 5] == mode->key_r ? 0 : 255;
       }
     }
   }
@@ -3336,9 +3336,9 @@ static void getPixelColorsRGBA8(unsigned char* buffer, size_t numpixels,
       }
       else
       {
-        buffer[0] = mode->palette[index * 4 + 0];
+        buffer[2] = mode->palette[index * 4 + 0];
         buffer[1] = mode->palette[index * 4 + 1];
-        buffer[2] = mode->palette[index * 4 + 2];
+        buffer[0] = mode->palette[index * 4 + 2];
         if(has_alpha) buffer[3] = mode->palette[index * 4 + 3];
       }
     }
@@ -3368,9 +3368,9 @@ static void getPixelColorsRGBA8(unsigned char* buffer, size_t numpixels,
     {
       for(i = 0; i < numpixels; i++, buffer += num_channels)
       {
-        buffer[0] = in[i * 4 + 0];
+        buffer[2] = in[i * 4 + 0];
         buffer[1] = in[i * 4 + 1];
-        buffer[2] = in[i * 4 + 2];
+        buffer[0] = in[i * 4 + 2];
         if(has_alpha) buffer[3] = in[i * 4 + 3];
       }
     }
@@ -3378,9 +3378,9 @@ static void getPixelColorsRGBA8(unsigned char* buffer, size_t numpixels,
     {
       for(i = 0; i < numpixels; i++, buffer += num_channels)
       {
-        buffer[0] = in[i * 8 + 0];
+        buffer[2] = in[i * 8 + 0];
         buffer[1] = in[i * 8 + 2];
-        buffer[2] = in[i * 8 + 4];
+        buffer[0] = in[i * 8 + 4];
         if(has_alpha) buffer[3] = in[i * 8 + 6];
       }
     }
@@ -3400,12 +3400,12 @@ static void getPixelColorRGBA16(unsigned short* r, unsigned short* g, unsigned s
   }
   else if(mode->colortype == LCT_RGB)
   {
-    *r = 256 * in[i * 6 + 0] + in[i * 6 + 1];
+    *b = 256 * in[i * 6 + 0] + in[i * 6 + 1];
     *g = 256 * in[i * 6 + 2] + in[i * 6 + 3];
-    *b = 256 * in[i * 6 + 4] + in[i * 6 + 5];
-    if(mode->key_defined && 256U * in[i * 6 + 0] + in[i * 6 + 1] == mode->key_r
+    *r = 256 * in[i * 6 + 4] + in[i * 6 + 5];
+    if(mode->key_defined && 256U * in[i * 6 + 0] + in[i * 6 + 1] == mode->key_b
        && 256U * in[i * 6 + 2] + in[i * 6 + 3] == mode->key_g
-       && 256U * in[i * 6 + 4] + in[i * 6 + 5] == mode->key_b) *a = 0;
+       && 256U * in[i * 6 + 4] + in[i * 6 + 5] == mode->key_r) *a = 0;
     else *a = 65535;
   }
   else if(mode->colortype == LCT_GREY_ALPHA)
@@ -3415,9 +3415,9 @@ static void getPixelColorRGBA16(unsigned short* r, unsigned short* g, unsigned s
   }
   else if(mode->colortype == LCT_RGBA)
   {
-    *r = 256 * in[i * 8 + 0] + in[i * 8 + 1];
+    *b = 256 * in[i * 8 + 0] + in[i * 8 + 1];
     *g = 256 * in[i * 8 + 2] + in[i * 8 + 3];
-    *b = 256 * in[i * 8 + 4] + in[i * 8 + 5];
+    *r = 256 * in[i * 8 + 4] + in[i * 8 + 5];
     *a = 256 * in[i * 8 + 6] + in[i * 8 + 7];
   }
 }
@@ -3654,9 +3654,9 @@ unsigned get_color_profile(LodePNGColorProfile* profile,
           {
             unsigned char* p = profile->palette;
             unsigned n = profile->numcolors;
-            p[n * 4 + 0] = r;
+            p[n * 4 + 0] = b;
             p[n * 4 + 1] = g;
-            p[n * 4 + 2] = b;
+            p[n * 4 + 2] = r;
             p[n * 4 + 3] = a;
           }
           profile->numcolors++;

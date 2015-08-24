@@ -334,7 +334,7 @@ int main_dec(int argc, char** argv)
 
 		thor_YUV420ToRGB_8u_P3AC4R(pSrc, srcStep, pDst, dstStep, width, height);
 
-		thor_bitmap_write("test.bmp", pDst, width, height, 32);
+		thor_png_write("test.png", pDst, width, height, 32);
 
 		free(pDst);
 	}

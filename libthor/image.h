@@ -45,6 +45,7 @@ struct thor_image_s
 typedef struct thor_image_s thor_image_t;
 
 int thor_bitmap_write(const char* filename, uint8_t* data, int width, int height, int bpp);
+int thor_png_write(const char* filename, uint8_t* data, int width, int height, int bpp);
 
 int thor_image_write(thor_image_t* image, const char* filename);
 int thor_image_read(thor_image_t* image, const char* filename);
