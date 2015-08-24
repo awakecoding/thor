@@ -209,6 +209,31 @@ void thor_read_sequence_header(uint8_t* buffer, thor_sequence_header_t* hdr)
 	getbits(&stream, 18); /* pad */
 }
 
+void thor_write_sequence_header(uint8_t* buffer, thor_sequence_header_t* hdr)
+{
+	stream_t stream;
+
+	stream.bitstream = buffer;
+	stream.bytepos = 0;
+	stream.bitrest = 32;
+	stream.bitbuf = 0;
+
+	putbits(16, hdr->width, &stream);
+	putbits(16, hdr->height, &stream);
+	putbits(1, hdr->pb_split_enable, &stream);
+	putbits(1, hdr->tb_split_enable, &stream);
+	putbits(2, hdr->max_num_ref-1, &stream);
+	putbits(4, hdr->num_reorder_pics, &stream);
+	putbits(2, hdr->max_delta_qp, &stream);
+	putbits(1, hdr->deblocking, &stream);
+	putbits(1, hdr->clpf, &stream);
+	putbits(1, hdr->use_block_contexts, &stream);
+	putbits(1, hdr->enable_bipred, &stream);
+	putbits(18, 0, &stream); /* pad */
+
+	flush_bitbuf(&stream);
+}
+
 int thor_decode(thor_sequence_header_t* hdr, uint8_t* pSrc, uint32_t srcSize, uint8_t* pDst[3], int dstStep[3])
 {
 	int r;
@@ -404,7 +429,8 @@ int main_enc(int argc, char **argv)
 	int rec_buffer_idx;
 	int frame_num,frame_num0,k,r;
 	int frame_offset;
-	int ysize,csize,frame_size;
+	int ysize,csize;
+	int frame_size;
 	int width,height;
 	int input_stride_y;
 	int input_stride_c;
@@ -468,8 +494,7 @@ int main_enc(int argc, char **argv)
 
 	for (r = 0; r < MAX_REF_FRAMES; r++)
 	{
-		//TODO: Use Long-term frame instead of a large sliding window
-		create_yuv_frame(&ref[r],width,height,PADDING_Y,PADDING_Y,PADDING_Y/2,PADDING_Y/2);
+		create_yuv_frame(&ref[r], width, height, PADDING_Y, PADDING_Y, PADDING_Y / 2, PADDING_Y / 2);
 	}
 
 	/* Initialize main bit stream */
@@ -506,19 +531,9 @@ int main_enc(int argc, char **argv)
 	hdr.use_block_contexts = params->use_block_contexts;
 	hdr.enable_bipred = params->enable_bipred;
 
-	/* Write sequence header */
-	putbits(16, hdr.width, &stream);
-	putbits(16, hdr.height, &stream);
-	putbits(1, hdr.pb_split_enable, &stream);
-	putbits(1, hdr.tb_split_enable, &stream);
-	putbits(2, hdr.max_num_ref-1, &stream);
-	putbits(4, hdr.num_reorder_pics, &stream);
-	putbits(2, hdr.max_delta_qp, &stream);
-	putbits(1, hdr.deblocking, &stream);
-	putbits(1, hdr.clpf, &stream);
-	putbits(1, hdr.use_block_contexts, &stream);
-	putbits(1, hdr.enable_bipred, &stream);
-	putbits(18, 0, &stream); /* pad to 8 bytes (64 bits) */
+	thor_write_sequence_header(stream.bitstream, &hdr);
+
+	stream.bytepos += 8;
 
 	num_bits = get_bit_pos(&stream);
 	acc_num_bits += num_bits;
