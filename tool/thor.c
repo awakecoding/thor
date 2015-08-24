@@ -185,25 +185,118 @@ int print_dec_stats(decoder_info_t* decoder_info)
 	return 1;
 }
 
-int main_dec(int argc, char** argv)
+void thor_read_sequence_header(uint8_t* buffer, thor_sequence_header_t* hdr)
+{
+	stream_t stream;
+
+	stream.incnt = 0;
+	stream.bitcnt = 0;
+	stream.capacity = 8;
+	stream.rdbfr = buffer;
+	stream.rdptr = stream.rdbfr;
+
+	hdr->width = getbits(&stream, 16);
+	hdr->height = getbits(&stream, 16);
+	hdr->pb_split_enable = getbits(&stream, 1);
+	hdr->tb_split_enable = getbits(&stream, 1);
+	hdr->max_num_ref = getbits(&stream, 2) + 1;
+	hdr->num_reorder_pics = getbits(&stream, 4);
+	hdr->max_delta_qp = getbits(&stream, 2);
+	hdr->deblocking = getbits(&stream, 1);
+	hdr->clpf = getbits(&stream, 1);
+	hdr->use_block_contexts = getbits(&stream, 1);
+	hdr->enable_bipred = getbits(&stream, 1);
+	getbits(&stream, 18); /* pad */
+}
+
+int thor_decode(thor_sequence_header_t* hdr, uint8_t* pSrc, uint32_t srcSize, uint8_t* pDst[3], int dstStep[3])
 {
 	int r;
 	int width;
 	int height;
+	stream_t stream;
+	yuv_frame_t frame;
+	int decode_frame_num = 0;
+	decoder_info_t dec_info;
+	yuv_frame_t ref[MAX_REF_FRAMES];
+
+	init_use_simd();
+
+	memset(&dec_info, 0, sizeof(dec_info));
+
+	width = hdr->width;
+	height = hdr->height;
+
+	stream.incnt = 0;
+	stream.bitcnt = 0;
+	stream.capacity = srcSize;
+	stream.rdbfr = pSrc;
+	stream.rdptr = stream.rdbfr;
+	dec_info.stream = &stream;
+
+	frame.width = width;
+	frame.height = height;
+	frame.stride_y = dstStep[0];
+	frame.stride_c = dstStep[1];
+	frame.offset_y = 0;
+	frame.offset_c = 0;
+	frame.y = pDst[0];
+	frame.u = pDst[1];
+	frame.v = pDst[2];
+
+	dec_info.width = width;
+	dec_info.height = height;
+	dec_info.pb_split_enable = hdr->pb_split_enable;
+	dec_info.tb_split_enable = hdr->tb_split_enable;
+	dec_info.max_num_ref = hdr->max_num_ref;
+	dec_info.num_reorder_pics = hdr->num_reorder_pics;
+	dec_info.max_delta_qp = hdr->max_delta_qp;
+	dec_info.deblocking = hdr->deblocking;
+	dec_info.clpf = hdr->clpf;
+	dec_info.use_block_contexts = hdr->use_block_contexts;
+	dec_info.bipred = hdr->enable_bipred;
+	dec_info.bit_count.sequence_header = 64;
+
+	for (r = 0; r < MAX_REF_FRAMES; r++)
+	{
+		create_yuv_frame(&ref[r], width, height, PADDING_Y, PADDING_Y, PADDING_Y / 2, PADDING_Y / 2);
+		dec_info.ref[r] = &ref[r];
+	}
+
+	dec_info.deblock_data = (deblock_data_t *) malloc((height / MIN_PB_SIZE) * (width / MIN_PB_SIZE) * sizeof(deblock_data_t));
+
+	dec_info.frame_info.decode_order_frame_num = 0;
+	dec_info.frame_info.display_frame_num = 0;
+
+	dec_info.rec = &frame;
+	dec_info.frame_info.num_ref = min(decode_frame_num, dec_info.max_num_ref);
+	dec_info.rec->frame_num = dec_info.frame_info.display_frame_num;
+
+	decode_frame(&dec_info);
+
+	for (r = 0; r < MAX_REF_FRAMES; r++)
+	{
+		close_yuv_frame(&ref[r]);
+	}
+
+	free(dec_info.deblock_data);
+
+	return 1;
+}
+
+int main_dec(int argc, char** argv)
+{
+	int width;
+	int height;
+	int dstStep[3];
+	uint8_t* pDst[3];
 	uint8_t* buffer;
 	uint32_t size;
-	stream_t stream;
 	uint32_t ysize;
 	uint32_t csize;
 	FILE* infile = NULL;
 	FILE* outfile = NULL;
-	int decode_frame_num = 0;
-	decoder_info_t decoder_info;
 	thor_sequence_header_t hdr;
-	yuv_frame_t frame;
-	yuv_frame_t ref[MAX_REF_FRAMES];
-
-	init_use_simd();
 
 	if (argc < 2)
 	{
@@ -217,15 +310,6 @@ int main_dec(int argc, char** argv)
 		rferror("");
 	}
 
-	if (argc > 2)
-	{
-		if (!(outfile = fopen(argv[2], "wb")))
-		{
-			fprintf(stderr, "Could not open out-file for writing.");
-			rferror("");
-		}
-	}
-
 	fseek(infile, 0, SEEK_END);
 	size = ftell(infile);
 	fseek(infile, 0, SEEK_SET);
@@ -233,28 +317,7 @@ int main_dec(int argc, char** argv)
 	fread(buffer, 1, size, infile);
 	fclose(infile);
 
-	stream.incnt = 0;
-	stream.bitcnt = 0;
-	stream.capacity = size;
-	stream.rdbfr = buffer;
-	stream.rdptr = stream.rdbfr;
-
-	decoder_info.stream = &stream;
-	memset(&decoder_info.bit_count, 0, sizeof(bit_count_t));
-
-	/* read sequence header */
-	hdr.width = getbits(&stream, 16);
-	hdr.height = getbits(&stream, 16);
-	hdr.pb_split_enable = getbits(&stream, 1);
-	hdr.tb_split_enable = getbits(&stream, 1);
-	hdr.max_num_ref = getbits(&stream,2) + 1;
-	hdr.num_reorder_pics = getbits(&stream, 4);
-	hdr.max_delta_qp = getbits(&stream, 2);
-	hdr.deblocking = getbits(&stream, 1);
-	hdr.clpf = getbits(&stream, 1);
-	hdr.use_block_contexts = getbits(&stream, 1);
-	hdr.enable_bipred = getbits(&stream, 1);
-	getbits(&stream, 18); /* pad */
+	thor_read_sequence_header(buffer, &hdr);
 
 	fprintf(stderr, "width: %d height: %d pb_split: %d tb_split: %d max_num_ref: %d max_reorder_pics: %d max_delta_qp: %d deblocking: %d clpf: %d block_contexts: %d bipred: %d\n",
 		hdr.width, hdr.height, hdr.pb_split_enable, hdr.tb_split_enable,
@@ -264,100 +327,61 @@ int main_dec(int argc, char** argv)
 	width = hdr.width;
 	height = hdr.height;
 
-	decoder_info.width = width;
-	decoder_info.height = height;
-	decoder_info.pb_split_enable = hdr.pb_split_enable;
-	decoder_info.tb_split_enable = hdr.tb_split_enable;
-	decoder_info.max_num_ref = hdr.max_num_ref;
-	decoder_info.num_reorder_pics = hdr.num_reorder_pics;
-	decoder_info.max_delta_qp = hdr.max_delta_qp;
-	decoder_info.deblocking = hdr.deblocking;
-	decoder_info.clpf = hdr.clpf;
-	decoder_info.use_block_contexts = hdr.use_block_contexts;
-	decoder_info.bipred = hdr.enable_bipred;
-	decoder_info.bit_count.sequence_header = stream.bitcnt;
+	dstStep[0] = width;
+	dstStep[1] = width / 2;
+	dstStep[2] = width / 2;
+	pDst[0] = (uint8_t*) malloc(height * dstStep[0] * sizeof(uint8_t));
+	pDst[1] = (uint8_t*) malloc(height / 2 * dstStep[1] * sizeof(uint8_t));
+	pDst[2] = (uint8_t*) malloc(height / 2 * dstStep[2] * sizeof(uint8_t));
 
-	frame.width = width;
-	frame.height = height;
-	frame.stride_y = width;
-	frame.stride_c = width/2;
-	frame.offset_y = 0;
-	frame.offset_c = 0;
-	frame.y = (uint8_t*) malloc(height * frame.stride_y * sizeof(uint8_t));
-	frame.u = (uint8_t*) malloc(height/2 * frame.stride_c * sizeof(uint8_t));
-	frame.v = (uint8_t*) malloc(height/2 * frame.stride_c * sizeof(uint8_t));
+	thor_decode(&hdr, &buffer[8], size - 8, pDst, dstStep);
 
-	for (r = 0; r < MAX_REF_FRAMES; r++)
+	if (argc > 2)
 	{
-		create_yuv_frame(&ref[r], width, height, PADDING_Y, PADDING_Y, PADDING_Y/2, PADDING_Y/2);
-		decoder_info.ref[r] = &ref[r];
+		if (!(outfile = fopen(argv[2], "wb")))
+		{
+			fprintf(stderr, "Could not open out-file for writing.");
+			rferror("");
+		}
 	}
-
-	decoder_info.deblock_data = (deblock_data_t*) malloc((height / MIN_PB_SIZE) * (width / MIN_PB_SIZE) * sizeof(deblock_data_t));
-
-	decoder_info.frame_info.decode_order_frame_num = 0;
-	decoder_info.frame_info.display_frame_num = 0;
-
-	decoder_info.rec = &frame;
-	decoder_info.frame_info.num_ref = min(decode_frame_num, decoder_info.max_num_ref);
-	decoder_info.rec->frame_num = decoder_info.frame_info.display_frame_num;
-
-	decode_frame(&decoder_info);
-
-	for (r = 0; r < MAX_REF_FRAMES; r++)
-	{
-		close_yuv_frame(&ref[r]);
-	}
-
-	free(decoder_info.deblock_data);
 
 	ysize = width * height;
 	csize = ysize / 4;
 
 	if (1)
 	{
-		int dstStep;
-		uint8_t* pDst;
-		int srcStep[3];
-		const uint8_t* pSrc[3];
+		int rgbStep;
+		uint8_t* pRgb;
 
-		pSrc[0] = frame.y;
-		pSrc[1] = frame.u;
-		pSrc[2] = frame.v;
+		rgbStep = width * 4;
+		pRgb = (uint8_t*) malloc(rgbStep * height);
 
-		srcStep[0] = frame.stride_y;
-		srcStep[1] = frame.stride_c;
-		srcStep[2] = frame.stride_c;
+		thor_YUV420ToRGB_8u_P3AC4R((const uint8_t**) pDst, dstStep, pRgb, rgbStep, width, height);
 
-		dstStep = width * 4;
-		pDst = (uint8_t*) malloc(dstStep * height);
+		thor_png_write("test.png", pRgb, width, height, 32);
 
-		thor_YUV420ToRGB_8u_P3AC4R(pSrc, srcStep, pDst, dstStep, width, height);
-
-		thor_png_write("test.png", pDst, width, height, 32);
-
-		free(pDst);
+		free(pRgb);
 	}
 
 	fprintf(outfile, "YUV4MPEG2 W%d H%d F30:1 Ip A1:1\n", width, height);
 	fprintf(outfile, "FRAME\n");
 
-	if (fwrite(frame.y, 1, ysize, outfile) != ysize)
+	if (fwrite(pDst[0], 1, ysize, outfile) != ysize)
 	{
 		fatalerror("Error writing Y to file");
 	}
-	if (fwrite(frame.u, 1, csize, outfile) != csize)
+	if (fwrite(pDst[1], 1, csize, outfile) != csize)
 	{
 		fatalerror("Error writing U to file");
 	}
-	if (fwrite(frame.v, 1, csize, outfile) != csize)
+	if (fwrite(pDst[2], 1, csize, outfile) != csize)
 	{
 		fatalerror("Error writing V to file");
 	}
 
-	free(frame.y);
-	free(frame.u);
-	free(frame.v);
+	free(pDst[0]);
+	free(pDst[1]);
+	free(pDst[2]);
 
 	free(buffer);
 
