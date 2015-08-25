@@ -402,27 +402,115 @@ int main_dec(int argc, char** argv)
 	return 0;
 }
 
-int main_enc(int argc, char **argv)
+int thor_encode(thor_sequence_header_t* hdr, enc_params* params, uint8_t* pSrc[3], int srcStep[3], uint8_t* pDst, uint32_t dstSize)
 {
 	int r;
+	int status = 0;
+	int width;
+	int height;
+	uint8_t* pRec[3];
+	yuv_frame_t rec;
+	yuv_frame_t frame;
+	stream_t stream;
+	encoder_info_t enc_info;
+	yuv_frame_t ref[MAX_REF_FRAMES];
+
+	width = hdr->width;
+	height = hdr->height;
+
+	frame.width = width;
+	frame.height = height;
+	frame.stride_y = srcStep[0];
+	frame.stride_c = srcStep[1];
+	frame.offset_y = 0;
+	frame.offset_c = 0;
+	frame.y = pSrc[0];
+	frame.u = pSrc[1];
+	frame.v = pSrc[2];
+
+	pRec[0] = (uint8_t*) malloc(height * srcStep[0] * sizeof(uint8_t));
+	pRec[1] = (uint8_t*) malloc(height / 2 * srcStep[1] * sizeof(uint8_t));
+	pRec[2] = (uint8_t*) malloc(height / 2 * srcStep[2] * sizeof(uint8_t));
+
+	rec.width = width;
+	rec.height = height;
+	rec.stride_y = srcStep[0];
+	rec.stride_c = srcStep[1];
+	rec.offset_y = 0;
+	rec.offset_c = 0;
+	rec.y = pRec[0];
+	rec.u = pRec[1];
+	rec.v = pRec[2];
+
+	frame.frame_num = enc_info.frame_info.frame_num;
+
+	for (r = 0; r < MAX_REF_FRAMES; r++)
+	{
+		create_yuv_frame(&ref[r], width, height, PADDING_Y, PADDING_Y, PADDING_Y / 2, PADDING_Y / 2);
+		enc_info.ref[r] = &ref[r];
+	}
+
+	stream.bitstream = pDst;
+	stream.bitbuf = 0;
+	stream.bitrest = 32;
+	stream.bytepos = 0;
+	stream.bytesize = dstSize;
+
+	enc_info.params = params;
+	enc_info.orig = &frame;
+
+	enc_info.stream = &stream;
+	enc_info.width = width;
+	enc_info.height = height;
+
+	enc_info.deblock_data = (deblock_data_t*) malloc((height / MIN_PB_SIZE) * (width / MIN_PB_SIZE) * sizeof(deblock_data_t));
+
+	thor_write_sequence_header(stream.bitstream, hdr);
+	stream.bytepos += 8;
+
+	enc_info.frame_info.frame_num = 0;
+	enc_info.rec = &rec;
+	enc_info.rec->frame_num = enc_info.frame_info.frame_num;
+	enc_info.frame_info.frame_type = I_FRAME;
+	enc_info.frame_info.qp = params->qp + params->dqpI;
+	enc_info.frame_info.num_ref = min(0, params->max_num_ref);
+	enc_info.frame_info.num_intra_modes = 4;
+
+	/* Encode frame */
+	encode_frame(&enc_info);
+
+	flush_all_bits(&stream);
+	status = stream.bytepos;
+
+	for (r = 0; r < MAX_REF_FRAMES; r++)
+	{
+		close_yuv_frame(&ref[r]);
+	}
+
+	free(enc_info.deblock_data);
+
+	free(pRec[0]);
+	free(pRec[1]);
+	free(pRec[2]);
+
+	return status;
+}
+
+int main_enc(int argc, char **argv)
+{
 	int width;
 	int height;
 	FILE* infile;
 	FILE* strfile;
 	int srcStep[3];
-	uint8_t* pSrc[3];
-	uint8_t* pRec[3];
+	uint8_t* buffer;
 	uint32_t size;
+	uint8_t* pSrc[3];
 	uint32_t lumaSize;
 	uint32_t chromaSize;
-	yuv_frame_t rec;
-	yuv_frame_t frame;
-	stream_t stream;
 	thor_image_t img;
 	enc_params* params;
-	encoder_info_t enc_info;
 	thor_sequence_header_t hdr;
-	yuv_frame_t ref[MAX_REF_FRAMES];
 
 	init_use_simd();
 
@@ -449,36 +537,15 @@ int main_enc(int argc, char **argv)
 	width = params->width;
 	height = params->height;
 
+	size = MAX_BUFFER_SIZE;
+	buffer = (uint8_t*) malloc(size);
+
 	srcStep[0] = width;
 	srcStep[1] = width / 2;
 	srcStep[2] = width / 2;
 	pSrc[0] = (uint8_t*) malloc(height * srcStep[0] * sizeof(uint8_t));
 	pSrc[1] = (uint8_t*) malloc(height / 2 * srcStep[1] * sizeof(uint8_t));
 	pSrc[2] = (uint8_t*) malloc(height / 2 * srcStep[2] * sizeof(uint8_t));
-
-	frame.width = width;
-	frame.height = height;
-	frame.stride_y = srcStep[0];
-	frame.stride_c = srcStep[1];
-	frame.offset_y = 0;
-	frame.offset_c = 0;
-	frame.y = pSrc[0];
-	frame.u = pSrc[1];
-	frame.v = pSrc[2];
-
-	pRec[0] = (uint8_t*) malloc(height * srcStep[0] * sizeof(uint8_t));
-	pRec[1] = (uint8_t*) malloc(height / 2 * srcStep[1] * sizeof(uint8_t));
-	pRec[2] = (uint8_t*) malloc(height / 2 * srcStep[2] * sizeof(uint8_t));
-
-	rec.width = width;
-	rec.height = height;
-	rec.stride_y = srcStep[0];
-	rec.stride_c = srcStep[1];
-	rec.offset_y = 0;
-	rec.offset_c = 0;
-	rec.y = pRec[0];
-	rec.u = pRec[1];
-	rec.v = pRec[2];
 
 	/* Read input frame */
 
@@ -494,60 +561,26 @@ int main_enc(int argc, char **argv)
 			fatalerror("Could not open in-file for reading.");
 		}
 
-		fseek(infile, 0, SEEK_END);
-		size = ftell(infile);
-		fseek(infile, 0, SEEK_SET);
-
-		if (size < 8)
-		{
-			fatalerror("input file is too small");
-		}
-
 		fseek(infile, params->file_headerlen + params->frame_headerlen, SEEK_SET);
 
 		lumaSize = width * height;
 		chromaSize = lumaSize / 4;
 
-		if (fread(frame.y, sizeof(unsigned char), lumaSize, infile) != lumaSize)
+		if (fread(pSrc[0], 1, lumaSize, infile) != lumaSize)
 		{
 			fatalerror("Error reading Y from file");
 		}
-		if (fread(frame.u, sizeof(unsigned char), chromaSize, infile) != chromaSize)
+		if (fread(pSrc[1], 1, chromaSize, infile) != chromaSize)
 		{
 			fatalerror("Error reading U from file");
 		}
-		if (fread(frame.v, sizeof(unsigned char), chromaSize, infile) != chromaSize)
+		if (fread(pSrc[2], 1, chromaSize, infile) != chromaSize)
 		{
 			fatalerror("Error reading V from file");
 		}
 
 		fclose(infile);
 	}
-
-	frame.frame_num = enc_info.frame_info.frame_num;
-
-	for (r = 0; r < MAX_REF_FRAMES; r++)
-	{
-		create_yuv_frame(&ref[r], width, height, PADDING_Y, PADDING_Y, PADDING_Y / 2, PADDING_Y / 2);
-		enc_info.ref[r] = &ref[r];
-	}
-
-	/* Initialize main bit stream */
-	stream.bitstream = (uint8_t*) malloc(MAX_BUFFER_SIZE * sizeof(uint8_t));
-	stream.bitbuf = 0;
-	stream.bitrest = 32;
-	stream.bytepos = 0;
-	stream.bytesize = MAX_BUFFER_SIZE;
-
-	/* Configure encoder */
-	enc_info.params = params;
-	enc_info.orig = &frame;
-
-	enc_info.stream = &stream;
-	enc_info.width = width;
-	enc_info.height = height;
-
-	enc_info.deblock_data = (deblock_data_t*) malloc((height/MIN_PB_SIZE) * (width/MIN_PB_SIZE) * sizeof(deblock_data_t));
 
 	hdr.width = width;
 	hdr.height = height;
@@ -561,49 +594,30 @@ int main_enc(int argc, char **argv)
 	hdr.use_block_contexts = params->use_block_contexts;
 	hdr.enable_bipred = params->enable_bipred;
 
-	thor_write_sequence_header(stream.bitstream, &hdr);
+	size = thor_encode(&hdr, params, pSrc, srcStep, buffer, size);
 
-	stream.bytepos += 8;
-
-	/* Initialize frame info */
-	enc_info.frame_info.frame_num = 0;
-	enc_info.rec = &rec;
-	enc_info.rec->frame_num = enc_info.frame_info.frame_num;
-	enc_info.frame_info.frame_type = I_FRAME;
-	enc_info.frame_info.qp = params->qp + params->dqpI;
-	enc_info.frame_info.num_ref = min(0, params->max_num_ref);
-	enc_info.frame_info.num_intra_modes = 4;
-
-	/* Encode frame */
-	encode_frame(&enc_info);
-
-	for (r = 0; r < MAX_REF_FRAMES; r++)
-	{
-		close_yuv_frame(&ref[r]);
-	}
-
-	free(enc_info.deblock_data);
-
-	if (!(strfile = fopen(params->outfilestr,"wb")))
+	if (!(strfile = fopen(params->outfilestr, "wb")))
 	{
 		fatalerror("Could not open out-file for writing.");
 	}
 
-	flush_bytebuf(&stream, strfile);
-	flush_all_bits(&stream, strfile);
+	if (strfile)
+	{
+		if (fwrite(buffer, 1, size, strfile) != size)
+		{
+			fatalerror("Problem writing bitstream to file.");
+		}
+	}
+
 	fclose(strfile);
 
-	free(stream.bitstream);
+	free(buffer);
 
 	delete_config_params(params);
 
 	free(pSrc[0]);
 	free(pSrc[1]);
 	free(pSrc[2]);
-
-	free(pRec[0]);
-	free(pRec[1]);
-	free(pRec[2]);
 
 	return 0;
 }

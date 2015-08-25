@@ -124,44 +124,16 @@ int flushbits(stream_t *str, int n)
 
 /* putbits */
 
-void flush_bytebuf(stream_t *str, FILE *outfile)
-{
-	if (outfile)
-	{
-		if (fwrite(str->bitstream,sizeof(unsigned char),str->bytepos,outfile) != str->bytepos)
-		{
-			fatalerror("Problem writing bitstream to file.");
-		}
-	}
-	str->bytepos = 0;
-}
-
-
-void flush_all_bits(stream_t *str, FILE *outfile)
+void flush_all_bits(stream_t *str)
 {
 	int i;
 	int bytes = 4 - str->bitrest/8;
 
-	printf("final flush: bytes=%4d\n",bytes);
-	if ((str->bytepos+bytes) > str->bytesize)
-	{
-		flush_bytebuf(str,outfile);
-	}
 	for (i = 0; i < bytes; i++)
 	{
 		str->bitstream[str->bytepos++] = (str->bitbuf >> (24-i*8)) & 0xff;
 	}
-
-	if (outfile)
-	{
-		if (fwrite(str->bitstream,sizeof(unsigned char),str->bytepos,outfile) != str->bytepos)
-		{
-			fatalerror("Problem writing bitstream to file.");
-		}
-	}
-	str->bytepos = 0;
 }
-
 
 void flush_bitbuf(stream_t *str)
 {
