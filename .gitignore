@@ -8,11 +8,6 @@ cmake_install.cmake
 .project
 .cproject
 
-# Binaries
-thor
-thordec
-thorenc
-
 # Object files
 *.o
 *.ko
