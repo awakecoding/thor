@@ -3432,8 +3432,22 @@ unsigned lodepng_convert(unsigned char* out, const unsigned char* in,
 
   if(lodepng_color_mode_equal(mode_out, mode_in))
   {
-    size_t numbytes = lodepng_get_raw_size(w, h, mode_in);
-    for(i = 0; i < numbytes; i++) out[i] = in[i];
+    if ((mode_in->colortype == LCT_RGBA) && (mode_out->colortype == LCT_RGBA))
+    {
+      size_t numbytes = lodepng_get_raw_size(w, h, mode_in);
+      for (i = 0; i < numbytes; i += 4)
+      {
+        out[i + 0] = in[i + 2];
+        out[i + 1] = in[i + 1];
+        out[i + 2] = in[i + 0];
+        out[i + 3] = in[i + 3];
+      }
+    }
+    else
+    {
+      size_t numbytes = lodepng_get_raw_size(w, h, mode_in);
+      for (i = 0; i < numbytes; i++) out[i] = in[i];
+    }
     return 0;
   }
 
@@ -4091,6 +4105,7 @@ static unsigned postProcessScanlines(unsigned char* out, unsigned char* in,
       CERROR_TRY_RETURN(unfilter(in, in, w, h, bpp));
       removePaddingBits(out, in, w * bpp, ((w * bpp + 7) / 8) * 8, h);
     }
+
     /*we can immediatly filter into the out buffer, no other steps needed*/
     else CERROR_TRY_RETURN(unfilter(out, in, w, h, bpp));
   }
@@ -4603,14 +4618,21 @@ unsigned lodepng_decode(unsigned char** out, unsigned* w, unsigned* h,
                         LodePNGState* state,
                         const unsigned char* in, size_t insize)
 {
+  int rgba_invert = 0;
+
   *out = 0;
   decodeGeneric(out, w, h, state, in, insize);
   if(state->error) return state->error;
-  if(!state->decoder.color_convert || lodepng_color_mode_equal(&state->info_raw, &state->info_png.color))
+
+  if ((state->info_raw.colortype == LCT_RGBA) && (state->info_png.color.colortype == LCT_RGBA))
+    rgba_invert = 1;
+
+  if ((!state->decoder.color_convert || lodepng_color_mode_equal(&state->info_raw, &state->info_png.color)) && !rgba_invert)
   {
     /*same color type, no copying or converting of data needed*/
     /*store the info_png color settings on the info_raw so that the info_raw still reflects what colortype
     the raw image has to the end user*/
+
     if(!state->decoder.color_convert)
     {
       state->error = lodepng_color_mode_copy(&state->info_raw, &state->info_png.color);
