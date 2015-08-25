@@ -17,8 +17,11 @@ set(THOR_SOURCES
 	libthor/color.c
 	libthor/image.c
 	libthor/params.c
-	libthor/kernels.c)
+	libthor/kernels.c
+	libthor/encode.c
+	libthor/decode.c)
 
+include_directories(include)
 include_directories(libthor)
 
 add_library(thor STATIC ${THOR_SOURCES})

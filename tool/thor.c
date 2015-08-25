@@ -41,7 +41,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "bits.h"
 #include "simd.h"
 #include "params.h"
-#include "snr.h"
 
 void rferror(char error_text[])
 {
@@ -224,81 +223,6 @@ void thor_write_sequence_header(uint8_t* buffer, thor_sequence_header_t* hdr)
 	flush_bitbuf(&stream);
 }
 
-int thor_decode(thor_sequence_header_t* hdr, uint8_t* pSrc, uint32_t srcSize, uint8_t* pDst[3], int dstStep[3])
-{
-	int r;
-	int width;
-	int height;
-	stream_t stream;
-	yuv_frame_t frame;
-	int decode_frame_num = 0;
-	decoder_info_t dec_info;
-	yuv_frame_t ref[MAX_REF_FRAMES];
-
-	init_use_simd();
-
-	memset(&dec_info, 0, sizeof(dec_info));
-
-	width = hdr->width;
-	height = hdr->height;
-
-	stream.incnt = 0;
-	stream.bitcnt = 0;
-	stream.capacity = srcSize;
-	stream.rdbfr = pSrc;
-	stream.rdptr = stream.rdbfr;
-	dec_info.stream = &stream;
-
-	frame.width = width;
-	frame.height = height;
-	frame.stride_y = dstStep[0];
-	frame.stride_c = dstStep[1];
-	frame.offset_y = 0;
-	frame.offset_c = 0;
-	frame.y = pDst[0];
-	frame.u = pDst[1];
-	frame.v = pDst[2];
-
-	dec_info.width = width;
-	dec_info.height = height;
-	dec_info.pb_split_enable = hdr->pb_split_enable;
-	dec_info.tb_split_enable = hdr->tb_split_enable;
-	dec_info.max_num_ref = hdr->max_num_ref;
-	dec_info.num_reorder_pics = hdr->num_reorder_pics;
-	dec_info.max_delta_qp = hdr->max_delta_qp;
-	dec_info.deblocking = hdr->deblocking;
-	dec_info.clpf = hdr->clpf;
-	dec_info.use_block_contexts = hdr->use_block_contexts;
-	dec_info.bipred = hdr->enable_bipred;
-	dec_info.bit_count.sequence_header = 64;
-
-	for (r = 0; r < MAX_REF_FRAMES; r++)
-	{
-		create_yuv_frame(&ref[r], width, height, PADDING_Y, PADDING_Y, PADDING_Y / 2, PADDING_Y / 2);
-		dec_info.ref[r] = &ref[r];
-	}
-
-	dec_info.deblock_data = (deblock_data_t *) malloc((height / MIN_PB_SIZE) * (width / MIN_PB_SIZE) * sizeof(deblock_data_t));
-
-	dec_info.frame_info.decode_order_frame_num = 0;
-	dec_info.frame_info.display_frame_num = 0;
-
-	dec_info.rec = &frame;
-	dec_info.frame_info.num_ref = min(decode_frame_num, dec_info.max_num_ref);
-	dec_info.rec->frame_num = dec_info.frame_info.display_frame_num;
-
-	decode_frame(&dec_info);
-
-	for (r = 0; r < MAX_REF_FRAMES; r++)
-	{
-		close_yuv_frame(&ref[r]);
-	}
-
-	free(dec_info.deblock_data);
-
-	return 1;
-}
-
 int main_dec(int argc, char** argv)
 {
 	int width;
@@ -402,100 +326,6 @@ int main_dec(int argc, char** argv)
 	return 0;
 }
 
-int thor_encode(thor_sequence_header_t* hdr, enc_params* params, uint8_t* pSrc[3], int srcStep[3], uint8_t* pDst, uint32_t dstSize)
-{
-	int r;
-	int status = 0;
-	int width;
-	int height;
-	uint8_t* pRec[3];
-	yuv_frame_t rec;
-	yuv_frame_t frame;
-	stream_t stream;
-	encoder_info_t enc_info;
-	yuv_frame_t ref[MAX_REF_FRAMES];
-
-	width = hdr->width;
-	height = hdr->height;
-
-	frame.width = width;
-	frame.height = height;
-	frame.stride_y = srcStep[0];
-	frame.stride_c = srcStep[1];
-	frame.offset_y = 0;
-	frame.offset_c = 0;
-	frame.y = pSrc[0];
-	frame.u = pSrc[1];
-	frame.v = pSrc[2];
-
-	pRec[0] = (uint8_t*) malloc(height * srcStep[0] * sizeof(uint8_t));
-	pRec[1] = (uint8_t*) malloc(height / 2 * srcStep[1] * sizeof(uint8_t));
-	pRec[2] = (uint8_t*) malloc(height / 2 * srcStep[2] * sizeof(uint8_t));
-
-	rec.width = width;
-	rec.height = height;
-	rec.stride_y = srcStep[0];
-	rec.stride_c = srcStep[1];
-	rec.offset_y = 0;
-	rec.offset_c = 0;
-	rec.y = pRec[0];
-	rec.u = pRec[1];
-	rec.v = pRec[2];
-
-	frame.frame_num = enc_info.frame_info.frame_num;
-
-	for (r = 0; r < MAX_REF_FRAMES; r++)
-	{
-		create_yuv_frame(&ref[r], width, height, PADDING_Y, PADDING_Y, PADDING_Y / 2, PADDING_Y / 2);
-		enc_info.ref[r] = &ref[r];
-	}
-
-	stream.bitstream = pDst;
-	stream.bitbuf = 0;
-	stream.bitrest = 32;
-	stream.bytepos = 0;
-	stream.bytesize = dstSize;
-
-	enc_info.params = params;
-	enc_info.orig = &frame;
-
-	enc_info.stream = &stream;
-	enc_info.width = width;
-	enc_info.height = height;
-
-	enc_info.deblock_data = (deblock_data_t*) malloc((height / MIN_PB_SIZE) * (width / MIN_PB_SIZE) * sizeof(deblock_data_t));
-
-	thor_write_sequence_header(stream.bitstream, hdr);
-	stream.bytepos += 8;
-
-	enc_info.frame_info.frame_num = 0;
-	enc_info.rec = &rec;
-	enc_info.rec->frame_num = enc_info.frame_info.frame_num;
-	enc_info.frame_info.frame_type = I_FRAME;
-	enc_info.frame_info.qp = params->qp + params->dqpI;
-	enc_info.frame_info.num_ref = min(0, params->max_num_ref);
-	enc_info.frame_info.num_intra_modes = 4;
-
-	/* Encode frame */
-	encode_frame(&enc_info);
-
-	flush_all_bits(&stream);
-	status = stream.bytepos;
-
-	for (r = 0; r < MAX_REF_FRAMES; r++)
-	{
-		close_yuv_frame(&ref[r]);
-	}
-
-	free(enc_info.deblock_data);
-
-	free(pRec[0]);
-	free(pRec[1]);
-	free(pRec[2]);
-
-	return status;
-}
-
 int main_enc(int argc, char **argv)
 {
 	int width;
@@ -511,8 +341,6 @@ int main_enc(int argc, char **argv)
 	thor_image_t img;
 	enc_params* params;
 	thor_sequence_header_t hdr;
-
-	init_use_simd();
 
 	/* Read commands from command line and from configuration file(s) */
 	if (argc < 3)
@@ -594,7 +422,7 @@ int main_enc(int argc, char **argv)
 	hdr.use_block_contexts = params->use_block_contexts;
 	hdr.enable_bipred = params->enable_bipred;
 
-	size = thor_encode(&hdr, params, pSrc, srcStep, buffer, size);
+	size = thor_encode(&hdr, pSrc, srcStep, buffer, size);
 
 	if (!(strfile = fopen(params->outfilestr, "wb")))
 	{

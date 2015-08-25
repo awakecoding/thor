@@ -459,35 +459,6 @@ typedef struct
 	int depth;
 } decoder_info_t;
 
-/**
- * thor sequence header:
- *
- * width			16 bits		0-15
- * height			16 bits		16-31
- * pb_split_enable		1 bit		32
- * tb_split_enable		1 bit		33
- * max_num_ref			2 bits		34-35
- * num_reorder_pics		4 bits		36-39
- * max_delta_qp			2 bits		40-41
- * deblocking			1 bit		42
- * clpf				1 bit		43
- * use_block_contexts		1 bit		44
- * enable_bipred		1 bit		45
-*/
-
-typedef struct
-{
-	uint16_t width;
-	uint16_t height;
-	uint8_t pb_split_enable;
-	uint8_t tb_split_enable;
-	uint8_t max_num_ref;
-	uint8_t num_reorder_pics;
-	uint8_t max_delta_qp;
-	uint8_t deblocking;
-	uint8_t clpf;
-	uint8_t use_block_contexts;
-	uint8_t enable_bipred;
-} thor_sequence_header_t;
+#include <thor/thor.h>
 
 #endif
