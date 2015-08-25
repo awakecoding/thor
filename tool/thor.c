@@ -307,15 +307,15 @@ int main_dec(int argc, char** argv)
 	uint8_t* pDst[3];
 	uint8_t* buffer;
 	uint32_t size;
-	uint32_t ysize;
-	uint32_t csize;
+	uint32_t lumaSize;
+	uint32_t chromaSize;
 	FILE* infile = NULL;
 	FILE* outfile = NULL;
 	thor_sequence_header_t hdr;
 
-	if (argc < 2)
+	if (argc < 3)
 	{
-		fprintf(stdout, "usage: %s infile [outfile]\n", argv[0]);
+		fprintf(stdout, "usage: %s infile outfile\n", argv[0]);
 		rferror("Wrong number of arguments.");
 	}
 
@@ -351,19 +351,7 @@ int main_dec(int argc, char** argv)
 
 	thor_decode(&hdr, &buffer[8], size - 8, pDst, dstStep);
 
-	if (argc > 2)
-	{
-		if (!(outfile = fopen(argv[2], "wb")))
-		{
-			fprintf(stderr, "Could not open out-file for writing.");
-			rferror("");
-		}
-	}
-
-	ysize = width * height;
-	csize = ysize / 4;
-
-	if (1)
+	if (strstr(argv[2], ".png"))
 	{
 		int rgbStep;
 		uint8_t* pRgb;
@@ -373,25 +361,36 @@ int main_dec(int argc, char** argv)
 
 		thor_YUV420ToRGB_8u_P3AC4R((const uint8_t**) pDst, dstStep, pRgb, rgbStep, width, height);
 
-		thor_png_write("test.png", pRgb, width, height, 32);
+		thor_png_write(argv[2], pRgb, width, height, 32);
 
 		free(pRgb);
 	}
+	else
+	{
+		lumaSize = width * height;
+		chromaSize = lumaSize / 4;
 
-	fprintf(outfile, "YUV4MPEG2 W%d H%d F30:1 Ip A1:1\n", width, height);
-	fprintf(outfile, "FRAME\n");
+		if (!(outfile = fopen(argv[2], "wb")))
+		{
+			fprintf(stderr, "Could not open out-file for writing.");
+			rferror("");
+		}
 
-	if (fwrite(pDst[0], 1, ysize, outfile) != ysize)
-	{
-		fatalerror("Error writing Y to file");
-	}
-	if (fwrite(pDst[1], 1, csize, outfile) != csize)
-	{
-		fatalerror("Error writing U to file");
-	}
-	if (fwrite(pDst[2], 1, csize, outfile) != csize)
-	{
-		fatalerror("Error writing V to file");
+		fprintf(outfile, "YUV4MPEG2 W%d H%d F30:1 Ip A1:1\n", width, height);
+		fprintf(outfile, "FRAME\n");
+
+		if (fwrite(pDst[0], 1, lumaSize, outfile) != lumaSize)
+		{
+			fatalerror("Error writing Y to file");
+		}
+		if (fwrite(pDst[1], 1, chromaSize, outfile) != chromaSize)
+		{
+			fatalerror("Error writing U to file");
+		}
+		if (fwrite(pDst[2], 1, chromaSize, outfile) != chromaSize)
+		{
+			fatalerror("Error writing V to file");
+		}
 	}
 
 	free(pDst[0]);
@@ -406,13 +405,20 @@ int main_dec(int argc, char** argv)
 int main_enc(int argc, char **argv)
 {
 	int r;
+	int width;
+	int height;
 	FILE* infile;
 	FILE* strfile;
+	int srcStep[3];
+	uint8_t* pSrc[3];
+	uint8_t* pRec[3];
 	uint32_t size;
+	uint32_t lumaSize;
+	uint32_t chromaSize;
 	yuv_frame_t rec;
-	yuv_frame_t orig;
-	int width, height;
+	yuv_frame_t frame;
 	stream_t stream;
+	thor_image_t img;
 	enc_params* params;
 	encoder_info_t enc_info;
 	thor_sequence_header_t hdr;
@@ -433,35 +439,97 @@ int main_enc(int argc, char **argv)
 	}
 	check_parameters(params);
 
-	/* Open files */
-	if (!(infile = fopen(params->infilestr,"rb")))
+	if (strstr(params->infilestr, ".png"))
 	{
-		fatalerror("Could not open in-file for reading.");
-	}
-	if (!(strfile = fopen(params->outfilestr,"wb")))
-	{
-		fatalerror("Could not open out-file for writing.");
+		thor_image_read(&img, params->infilestr);
+		params->width = img.width;
+		params->height = img.height;
 	}
 
-	fseek(infile, 0, SEEK_END);
-	size = ftell(infile);
-	fseek(infile, 0, SEEK_SET);
-
-	if (size < 8)
-	{
-		fatalerror("input file is too small");
-	}
-
-	height = params->height;
 	width = params->width;
+	height = params->height;
 
-	/* Create frames*/
-	create_yuv_frame(&orig, width, height, 0, 0, 0, 0);
-	create_yuv_frame(&rec, width, height, 0, 0, 0, 0);
+	srcStep[0] = width;
+	srcStep[1] = width / 2;
+	srcStep[2] = width / 2;
+	pSrc[0] = (uint8_t*) malloc(height * srcStep[0] * sizeof(uint8_t));
+	pSrc[1] = (uint8_t*) malloc(height / 2 * srcStep[1] * sizeof(uint8_t));
+	pSrc[2] = (uint8_t*) malloc(height / 2 * srcStep[2] * sizeof(uint8_t));
+
+	frame.width = width;
+	frame.height = height;
+	frame.stride_y = srcStep[0];
+	frame.stride_c = srcStep[1];
+	frame.offset_y = 0;
+	frame.offset_c = 0;
+	frame.y = pSrc[0];
+	frame.u = pSrc[1];
+	frame.v = pSrc[2];
+
+	pRec[0] = (uint8_t*) malloc(height * srcStep[0] * sizeof(uint8_t));
+	pRec[1] = (uint8_t*) malloc(height / 2 * srcStep[1] * sizeof(uint8_t));
+	pRec[2] = (uint8_t*) malloc(height / 2 * srcStep[2] * sizeof(uint8_t));
+
+	rec.width = width;
+	rec.height = height;
+	rec.stride_y = srcStep[0];
+	rec.stride_c = srcStep[1];
+	rec.offset_y = 0;
+	rec.offset_c = 0;
+	rec.y = pRec[0];
+	rec.u = pRec[1];
+	rec.v = pRec[2];
+
+	/* Read input frame */
+
+	if (strstr(params->infilestr, ".png"))
+	{
+		thor_RGBToYUV420_8u_P3AC4R(img.data, img.scanline, pSrc, srcStep, width, height);
+		free(img.data);
+	}
+	else
+	{
+		if (!(infile = fopen(params->infilestr, "rb")))
+		{
+			fatalerror("Could not open in-file for reading.");
+		}
+
+		fseek(infile, 0, SEEK_END);
+		size = ftell(infile);
+		fseek(infile, 0, SEEK_SET);
+
+		if (size < 8)
+		{
+			fatalerror("input file is too small");
+		}
+
+		fseek(infile, params->file_headerlen + params->frame_headerlen, SEEK_SET);
+
+		lumaSize = width * height;
+		chromaSize = lumaSize / 4;
+
+		if (fread(frame.y, sizeof(unsigned char), lumaSize, infile) != lumaSize)
+		{
+			fatalerror("Error reading Y from file");
+		}
+		if (fread(frame.u, sizeof(unsigned char), chromaSize, infile) != chromaSize)
+		{
+			fatalerror("Error reading U from file");
+		}
+		if (fread(frame.v, sizeof(unsigned char), chromaSize, infile) != chromaSize)
+		{
+			fatalerror("Error reading V from file");
+		}
+
+		fclose(infile);
+	}
+
+	frame.frame_num = enc_info.frame_info.frame_num;
 
 	for (r = 0; r < MAX_REF_FRAMES; r++)
 	{
 		create_yuv_frame(&ref[r], width, height, PADDING_Y, PADDING_Y, PADDING_Y / 2, PADDING_Y / 2);
+		enc_info.ref[r] = &ref[r];
 	}
 
 	/* Initialize main bit stream */
@@ -473,12 +541,7 @@ int main_enc(int argc, char **argv)
 
 	/* Configure encoder */
 	enc_info.params = params;
-	enc_info.orig = &orig;
-
-	for (r = 0;r < MAX_REF_FRAMES; r++)
-	{
-		enc_info.ref[r] = &ref[r];
-	}
+	enc_info.orig = &frame;
 
 	enc_info.stream = &stream;
 	enc_info.width = width;
@@ -511,31 +574,36 @@ int main_enc(int argc, char **argv)
 	enc_info.frame_info.num_ref = min(0, params->max_num_ref);
 	enc_info.frame_info.num_intra_modes = 4;
 
-	/* Read input frame */
-	fseek(infile, params->file_headerlen+params->frame_headerlen, SEEK_SET);
-	read_yuv_frame(&orig, width, height, infile);
-	orig.frame_num = enc_info.frame_info.frame_num;
-
 	/* Encode frame */
 	encode_frame(&enc_info);
-
-	/* Write compressed bits for this frame to file */
-	flush_bytebuf(&stream, strfile);
-	flush_all_bits(&stream, strfile);
-
-	close_yuv_frame(&orig);
-	close_yuv_frame(&rec);
 
 	for (r = 0; r < MAX_REF_FRAMES; r++)
 	{
 		close_yuv_frame(&ref[r]);
 	}
 
-	fclose(infile);
-	fclose(strfile);
-	free(stream.bitstream);
 	free(enc_info.deblock_data);
+
+	if (!(strfile = fopen(params->outfilestr,"wb")))
+	{
+		fatalerror("Could not open out-file for writing.");
+	}
+
+	flush_bytebuf(&stream, strfile);
+	flush_all_bits(&stream, strfile);
+	fclose(strfile);
+
+	free(stream.bitstream);
+
 	delete_config_params(params);
+
+	free(pSrc[0]);
+	free(pSrc[1]);
+	free(pSrc[2]);
+
+	free(pRec[0]);
+	free(pRec[1]);
+	free(pRec[2]);
 
 	return 0;
 }
