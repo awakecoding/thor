@@ -32,6 +32,21 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 #include <string.h>
 
+
+#if defined _WIN32 || defined __CYGWIN__
+#ifdef __GNUC__
+#define THOR_EXPORT __attribute__((dllexport))
+#else
+#define THOR_EXPORT __declspec(dllexport)
+#endif
+#else
+#if __GNUC__ >= 4
+#define THOR_EXPORT   __attribute__ ((visibility("default")))
+#else
+#define THOR_EXPORT
+#endif
+#endif
+
 /**
  * thor sequence header:
  *
@@ -63,7 +78,15 @@ typedef struct
         uint8_t enable_bipred;
 } thor_sequence_header_t;
 
-int thor_encode(thor_sequence_header_t* hdr, uint8_t* pSrc[3], int srcStep[3], uint8_t* pDst, uint32_t dstSize);
-int thor_decode(thor_sequence_header_t* hdr, uint8_t* pSrc, uint32_t srcSize, uint8_t* pDst[3], int dstStep[3]);
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+THOR_EXPORT int thor_encode(thor_sequence_header_t* hdr, uint8_t* pSrc[3], int srcStep[3], uint8_t* pDst, uint32_t dstSize);
+THOR_EXPORT int thor_decode(thor_sequence_header_t* hdr, uint8_t* pSrc, uint32_t srcSize, uint8_t* pDst[3], int dstStep[3]);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* THOR_API_H */

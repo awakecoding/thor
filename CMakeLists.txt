@@ -18,8 +18,7 @@ set(THOR_SOURCES
 	libthor/image.c
 	libthor/params.c
 	libthor/kernels.c
-	libthor/encode.c
-	libthor/decode.c)
+	libthor/thor.c)
 
 include_directories(include)
 include_directories(libthor)

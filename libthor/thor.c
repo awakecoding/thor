@@ -182,3 +182,78 @@ int thor_encode(thor_sequence_header_t* hdr, uint8_t* pSrc[3], int srcStep[3], u
 
 	return status;
 }
+
+int thor_decode(thor_sequence_header_t* hdr, uint8_t* pSrc, uint32_t srcSize, uint8_t* pDst[3], int dstStep[3])
+{
+	int r;
+	int width;
+	int height;
+	stream_t stream;
+	yuv_frame_t frame;
+	int decode_frame_num = 0;
+	decoder_info_t dec_info;
+	yuv_frame_t ref[MAX_REF_FRAMES];
+
+	init_use_simd();
+
+	memset(&dec_info, 0, sizeof(dec_info));
+
+	width = hdr->width;
+	height = hdr->height;
+
+	stream.incnt = 0;
+	stream.bitcnt = 0;
+	stream.capacity = srcSize;
+	stream.rdbfr = pSrc;
+	stream.rdptr = stream.rdbfr;
+	dec_info.stream = &stream;
+
+	frame.width = width;
+	frame.height = height;
+	frame.stride_y = dstStep[0];
+	frame.stride_c = dstStep[1];
+	frame.offset_y = 0;
+	frame.offset_c = 0;
+	frame.y = pDst[0];
+	frame.u = pDst[1];
+	frame.v = pDst[2];
+
+	dec_info.width = width;
+	dec_info.height = height;
+	dec_info.pb_split_enable = hdr->pb_split_enable;
+	dec_info.tb_split_enable = hdr->tb_split_enable;
+	dec_info.max_num_ref = hdr->max_num_ref;
+	dec_info.num_reorder_pics = hdr->num_reorder_pics;
+	dec_info.max_delta_qp = hdr->max_delta_qp;
+	dec_info.deblocking = hdr->deblocking;
+	dec_info.clpf = hdr->clpf;
+	dec_info.use_block_contexts = hdr->use_block_contexts;
+	dec_info.bipred = hdr->enable_bipred;
+	dec_info.bit_count.sequence_header = 64;
+
+	for (r = 0; r < MAX_REF_FRAMES; r++)
+	{
+		create_yuv_frame(&ref[r], width, height, PADDING_Y, PADDING_Y, PADDING_Y / 2, PADDING_Y / 2);
+		dec_info.ref[r] = &ref[r];
+	}
+
+	dec_info.deblock_data = (deblock_data_t *) malloc((height / MIN_PB_SIZE) * (width / MIN_PB_SIZE) * sizeof(deblock_data_t));
+
+	dec_info.frame_info.decode_order_frame_num = 0;
+	dec_info.frame_info.display_frame_num = 0;
+
+	dec_info.rec = &frame;
+	dec_info.frame_info.num_ref = min(decode_frame_num, dec_info.max_num_ref);
+	dec_info.rec->frame_num = dec_info.frame_info.display_frame_num;
+
+	decode_frame(&dec_info);
+
+	for (r = 0; r < MAX_REF_FRAMES; r++)
+	{
+		close_yuv_frame(&ref[r]);
+	}
+
+	free(dec_info.deblock_data);
+
+	return 1;
+}
