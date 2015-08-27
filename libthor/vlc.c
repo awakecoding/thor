@@ -207,8 +207,9 @@ int get_vlc(int n,stream_t *str)
 
 int put_vlc(unsigned int n,unsigned int cn,stream_t *str)
 {
-  unsigned int len,tmp;
-  unsigned int code;
+	unsigned int tmp;
+	unsigned int len = 0;
+	unsigned int code = 0;
 
   switch (n) {
     case 0:
@@ -306,8 +307,9 @@ int put_vlc(unsigned int n,unsigned int cn,stream_t *str)
 
 int quote_vlc(unsigned int n,unsigned int cn)
 {
-  unsigned int len,tmp;
-  unsigned int code;
+	unsigned int tmp;
+	unsigned int len = 0;
+	unsigned int code = 0;
 
   switch (n) {
     case 0:
