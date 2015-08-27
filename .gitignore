@@ -2,8 +2,13 @@
 Makefile
 CMakeCache.txt
 CMakeFiles/
+CMakeScripts/
 cmake_install.cmake
 install_manifest.txt
+
+*.build/
+DerivedData/
+*.xcodeproj/
 
 ThorConfig.cmake
 ThorConfigVersion.cmake
