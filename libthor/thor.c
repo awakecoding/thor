@@ -88,6 +88,7 @@ void thor_write_sequence_header(uint8_t* buffer, thor_sequence_header_t* hdr)
 	stream.bytepos = 0;
 	stream.bitrest = 32;
 	stream.bitbuf = 0;
+	stream.bytesize = 8;
 
 	putbits(16, hdr->width, &stream);
 	putbits(16, hdr->height, &stream);
