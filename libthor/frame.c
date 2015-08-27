@@ -360,25 +360,6 @@ void close_yuv_frame(yuv_frame_t* frame)
 	free(frame->v);
 }
 
-void read_yuv_frame(yuv_frame_t* frame, int width, int height, FILE* infile)
-{
-	unsigned int ysize = width*height;
-	unsigned int csize = ysize/4;
-
-	if (fread(frame->y, sizeof(unsigned char), ysize, infile) != ysize)
-	{
-		fatalerror("Error reading Y from file");
-	}
-	if (fread(frame->u, sizeof(unsigned char), csize, infile) != csize)
-	{
-		fatalerror("Error reading U from file");
-	}
-	if (fread(frame->v, sizeof(unsigned char), csize, infile) != csize)
-	{
-		fatalerror("Error reading V from file");
-	}
-}
-
 void create_reference_frame(yuv_frame_t* ref,yuv_frame_t  *rec)
 {
 	ref->frame_num = rec->frame_num;
