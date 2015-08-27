@@ -32,7 +32,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdlib.h>
 #include <string.h>
 
-
 #if defined _WIN32 || defined __CYGWIN__
 #ifdef __GNUC__
 #define THOR_EXPORT __attribute__((dllexport))

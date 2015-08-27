@@ -26,20 +26,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "thor.h"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <ctype.h>
-#include <string.h>
-#include <time.h>
-#include <assert.h>
-#include <thor.h>
+#include <thor/thor.h>
+#include <thor/color.h>
 
 #include "image.h"
-#include "color.h"
-#include "frame.h"
-#include "bits.h"
-#include "simd.h"
 #include "params.h"
 
 void rferror(char error_text[])

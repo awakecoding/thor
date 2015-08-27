@@ -24,7 +24,7 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "color.h"
+#include <thor/color.h>
 
 /**
  * | R |    ( | 256     0    403 | |    Y    | )
