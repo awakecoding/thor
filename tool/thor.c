@@ -174,55 +174,6 @@ int print_dec_stats(decoder_info_t* decoder_info)
 	return 1;
 }
 
-void thor_read_sequence_header(uint8_t* buffer, thor_sequence_header_t* hdr)
-{
-	stream_t stream;
-
-	stream.incnt = 0;
-	stream.bitcnt = 0;
-	stream.capacity = 8;
-	stream.rdbfr = buffer;
-	stream.rdptr = stream.rdbfr;
-
-	hdr->width = getbits(&stream, 16);
-	hdr->height = getbits(&stream, 16);
-	hdr->pb_split_enable = getbits(&stream, 1);
-	hdr->tb_split_enable = getbits(&stream, 1);
-	hdr->max_num_ref = getbits(&stream, 2) + 1;
-	hdr->num_reorder_pics = getbits(&stream, 4);
-	hdr->max_delta_qp = getbits(&stream, 2);
-	hdr->deblocking = getbits(&stream, 1);
-	hdr->clpf = getbits(&stream, 1);
-	hdr->use_block_contexts = getbits(&stream, 1);
-	hdr->enable_bipred = getbits(&stream, 1);
-	getbits(&stream, 18); /* pad */
-}
-
-void thor_write_sequence_header(uint8_t* buffer, thor_sequence_header_t* hdr)
-{
-	stream_t stream;
-
-	stream.bitstream = buffer;
-	stream.bytepos = 0;
-	stream.bitrest = 32;
-	stream.bitbuf = 0;
-
-	putbits(16, hdr->width, &stream);
-	putbits(16, hdr->height, &stream);
-	putbits(1, hdr->pb_split_enable, &stream);
-	putbits(1, hdr->tb_split_enable, &stream);
-	putbits(2, hdr->max_num_ref-1, &stream);
-	putbits(4, hdr->num_reorder_pics, &stream);
-	putbits(2, hdr->max_delta_qp, &stream);
-	putbits(1, hdr->deblocking, &stream);
-	putbits(1, hdr->clpf, &stream);
-	putbits(1, hdr->use_block_contexts, &stream);
-	putbits(1, hdr->enable_bipred, &stream);
-	putbits(18, 0, &stream); /* pad */
-
-	flush_bitbuf(&stream);
-}
-
 int main_dec(int argc, char** argv)
 {
 	int width;
@@ -235,7 +186,10 @@ int main_dec(int argc, char** argv)
 	uint32_t chromaSize;
 	FILE* infile = NULL;
 	FILE* outfile = NULL;
+	thor_decoder_t* dec;
 	thor_sequence_header_t hdr;
+
+	dec = thor_decoder_new();
 
 	if (argc < 3)
 	{
@@ -273,7 +227,9 @@ int main_dec(int argc, char** argv)
 	pDst[1] = (uint8_t*) malloc(height / 2 * dstStep[1] * sizeof(uint8_t));
 	pDst[2] = (uint8_t*) malloc(height / 2 * dstStep[2] * sizeof(uint8_t));
 
-	thor_decode(&hdr, &buffer[8], size - 8, pDst, dstStep);
+	thor_decoder_set_sequence_header(dec, &hdr);
+
+	thor_decode(dec, &buffer[8], size - 8, pDst, dstStep);
 
 	if (strstr(argv[2], ".png"))
 	{
@@ -323,6 +279,8 @@ int main_dec(int argc, char** argv)
 
 	free(buffer);
 
+	thor_decoder_free(dec);
+
 	return 0;
 }
 
@@ -340,7 +298,10 @@ int main_enc(int argc, char **argv)
 	uint32_t chromaSize;
 	thor_image_t img;
 	enc_params* params;
+	thor_encoder_t* enc;
 	thor_sequence_header_t hdr;
+
+	enc = thor_encoder_new();
 
 	/* Read commands from command line and from configuration file(s) */
 	if (argc < 3)
@@ -422,7 +383,11 @@ int main_enc(int argc, char **argv)
 	hdr.use_block_contexts = params->use_block_contexts;
 	hdr.enable_bipred = params->enable_bipred;
 
-	size = thor_encode(&hdr, pSrc, srcStep, buffer, size);
+	thor_encoder_set_sequence_header(enc, &hdr);
+
+	thor_write_sequence_header(buffer, &hdr);
+
+	size = thor_encode(enc, pSrc, srcStep, &buffer[8], size - 8) + 8;
 
 	if (!(strfile = fopen(params->outfilestr, "wb")))
 	{
@@ -446,6 +411,8 @@ int main_enc(int argc, char **argv)
 	free(pSrc[0]);
 	free(pSrc[1]);
 	free(pSrc[2]);
+
+	thor_encoder_free(enc);
 
 	return 0;
 }

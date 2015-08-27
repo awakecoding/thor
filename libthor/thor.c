@@ -56,7 +56,31 @@ const char* thor_default_params[] =
 
 int thor_default_param_count = sizeof(thor_default_params) / sizeof(const char*);
 
-static void thor_write_sequence_header(uint8_t* buffer, thor_sequence_header_t* hdr)
+void thor_read_sequence_header(uint8_t* buffer, thor_sequence_header_t* hdr)
+{
+	stream_t stream;
+
+	stream.incnt = 0;
+	stream.bitcnt = 0;
+	stream.capacity = 8;
+	stream.rdbfr = buffer;
+	stream.rdptr = stream.rdbfr;
+
+	hdr->width = getbits(&stream, 16);
+	hdr->height = getbits(&stream, 16);
+	hdr->pb_split_enable = getbits(&stream, 1);
+	hdr->tb_split_enable = getbits(&stream, 1);
+	hdr->max_num_ref = getbits(&stream, 2) + 1;
+	hdr->num_reorder_pics = getbits(&stream, 4);
+	hdr->max_delta_qp = getbits(&stream, 2);
+	hdr->deblocking = getbits(&stream, 1);
+	hdr->clpf = getbits(&stream, 1);
+	hdr->use_block_contexts = getbits(&stream, 1);
+	hdr->enable_bipred = getbits(&stream, 1);
+	getbits(&stream, 18); /* pad */
+}
+
+void thor_write_sequence_header(uint8_t* buffer, thor_sequence_header_t* hdr)
 {
 	stream_t stream;
 
@@ -81,32 +105,17 @@ static void thor_write_sequence_header(uint8_t* buffer, thor_sequence_header_t* 
 	flush_bitbuf(&stream);
 }
 
-int thor_encode(thor_sequence_header_t* hdr, uint8_t* pSrc[3], int srcStep[3], uint8_t* pDst, uint32_t dstSize)
+int thor_encode(thor_encoder_t* ctx, uint8_t* pSrc[3], int srcStep[3], uint8_t* pDst, uint32_t dstSize)
 {
-	int r;
 	int status = 0;
-	int width;
-	int height;
 	uint8_t* pRec[3];
 	yuv_frame_t rec;
 	yuv_frame_t frame;
-	stream_t stream;
-	enc_params* params;
-	encoder_info_t enc_info;
-	yuv_frame_t ref[MAX_REF_FRAMES];
+	stream_t* stream = &ctx->stream;
+	encoder_info_t* info = &ctx->info;
 
-	init_use_simd();
-
-	params = parse_config_params(thor_default_param_count, (char**) thor_default_params);
-
-	if (!params)
-		return -1;
-
-	width = hdr->width;
-	height = hdr->height;
-
-	frame.width = width;
-	frame.height = height;
+	frame.width = ctx->width;
+	frame.height = ctx->height;
 	frame.stride_y = srcStep[0];
 	frame.stride_c = srcStep[1];
 	frame.offset_y = 0;
@@ -115,12 +124,12 @@ int thor_encode(thor_sequence_header_t* hdr, uint8_t* pSrc[3], int srcStep[3], u
 	frame.u = pSrc[1];
 	frame.v = pSrc[2];
 
-	pRec[0] = (uint8_t*) malloc(height * srcStep[0] * sizeof(uint8_t));
-	pRec[1] = (uint8_t*) malloc(height / 2 * srcStep[1] * sizeof(uint8_t));
-	pRec[2] = (uint8_t*) malloc(height / 2 * srcStep[2] * sizeof(uint8_t));
+	pRec[0] = (uint8_t*) malloc((ctx->height * srcStep[0]) + (ctx->height * srcStep[1]));
+	pRec[1] = pRec[0] + (ctx->height * srcStep[0]);
+	pRec[2] = pRec[1] + ((ctx->height / 2) * srcStep[2]);
 
-	rec.width = width;
-	rec.height = height;
+	rec.width = ctx->width;
+	rec.height = ctx->height;
 	rec.stride_y = srcStep[0];
 	rec.stride_c = srcStep[1];
 	rec.offset_y = 0;
@@ -129,87 +138,111 @@ int thor_encode(thor_sequence_header_t* hdr, uint8_t* pSrc[3], int srcStep[3], u
 	rec.u = pRec[1];
 	rec.v = pRec[2];
 
-	frame.frame_num = enc_info.frame_info.frame_num;
+	frame.frame_num = info->frame_info.frame_num;
 
-	for (r = 0; r < MAX_REF_FRAMES; r++)
-	{
-		create_yuv_frame(&ref[r], width, height, PADDING_Y, PADDING_Y, PADDING_Y / 2, PADDING_Y / 2);
-		enc_info.ref[r] = &ref[r];
-	}
+	stream->bitstream = pDst;
+	stream->bitbuf = 0;
+	stream->bitrest = 32;
+	stream->bytepos = 0;
+	stream->bytesize = dstSize;
 
-	stream.bitstream = pDst;
-	stream.bitbuf = 0;
-	stream.bitrest = 32;
-	stream.bytepos = 0;
-	stream.bytesize = dstSize;
+	info->frame_info.frame_num = 0;
+	info->rec = &rec;
+	info->orig = &frame;
+	info->rec->frame_num = info->frame_info.frame_num;
+	info->frame_info.frame_type = I_FRAME;
+	info->frame_info.qp = ctx->params->qp + ctx->params->dqpI;
+	info->frame_info.num_ref = min(0, ctx->params->max_num_ref);
+	info->frame_info.num_intra_modes = 4;
 
-	enc_info.params = params;
-	enc_info.orig = &frame;
+	encode_frame(info);
 
-	enc_info.stream = &stream;
-	enc_info.width = width;
-	enc_info.height = height;
-
-	enc_info.deblock_data = (deblock_data_t*) malloc((height / MIN_PB_SIZE) * (width / MIN_PB_SIZE) * sizeof(deblock_data_t));
-
-	thor_write_sequence_header(stream.bitstream, hdr);
-	stream.bytepos += 8;
-
-	enc_info.frame_info.frame_num = 0;
-	enc_info.rec = &rec;
-	enc_info.rec->frame_num = enc_info.frame_info.frame_num;
-	enc_info.frame_info.frame_type = I_FRAME;
-	enc_info.frame_info.qp = params->qp + params->dqpI;
-	enc_info.frame_info.num_ref = min(0, params->max_num_ref);
-	enc_info.frame_info.num_intra_modes = 4;
-
-	/* Encode frame */
-	encode_frame(&enc_info);
-
-	flush_all_bits(&stream);
-	status = stream.bytepos;
-
-	for (r = 0; r < MAX_REF_FRAMES; r++)
-	{
-		close_yuv_frame(&ref[r]);
-	}
-
-	free(enc_info.deblock_data);
+	flush_all_bits(stream);
+	status = stream->bytepos;
 
 	free(pRec[0]);
-	free(pRec[1]);
-	free(pRec[2]);
 
 	return status;
 }
 
-int thor_decode(thor_sequence_header_t* hdr, uint8_t* pSrc, uint32_t srcSize, uint8_t* pDst[3], int dstStep[3])
+void thor_encoder_set_sequence_header(thor_encoder_t* ctx, thor_sequence_header_t* hdr)
 {
-	int r;
-	int width;
-	int height;
-	stream_t stream;
-	yuv_frame_t frame;
-	int decode_frame_num = 0;
-	decoder_info_t dec_info;
-	yuv_frame_t ref[MAX_REF_FRAMES];
+	int i;
+	yuv_frame_t* ref = ctx->ref;
+	encoder_info_t* info = &ctx->info;
+
+	memcpy(&ctx->hdr, hdr, sizeof(thor_sequence_header_t));
+
+	info->width = ctx->width = hdr->width;
+	info->height = ctx->height = hdr->height;
+
+	for (i = 0; i < MAX_REF_FRAMES; i++)
+	{
+		create_yuv_frame(&ref[i], ctx->width, ctx->height, PADDING_Y, PADDING_Y, PADDING_Y / 2, PADDING_Y / 2);
+		info->ref[i] = &ref[i];
+	}
+
+	info->deblock_data = (deblock_data_t*) malloc((ctx->height / MIN_PB_SIZE) * (ctx->width / MIN_PB_SIZE) * sizeof(deblock_data_t));
+}
+
+thor_encoder_t* thor_encoder_new()
+{
+	thor_encoder_t* ctx;
 
 	init_use_simd();
 
-	memset(&dec_info, 0, sizeof(dec_info));
+	ctx = (thor_encoder_t*) calloc(1, sizeof(thor_encoder_t));
 
-	width = hdr->width;
-	height = hdr->height;
+	if (!ctx)
+		return NULL;
 
-	stream.incnt = 0;
-	stream.bitcnt = 0;
-	stream.capacity = srcSize;
-	stream.rdbfr = pSrc;
-	stream.rdptr = stream.rdbfr;
-	dec_info.stream = &stream;
+	ctx->info.stream = &ctx->stream;
 
-	frame.width = width;
-	frame.height = height;
+	ctx->params = parse_config_params(thor_default_param_count, (char**) thor_default_params);
+
+	if (!ctx->params)
+		return NULL;
+
+	ctx->info.params = ctx->params;
+
+	return ctx;
+}
+
+void thor_encoder_free(thor_encoder_t* ctx)
+{
+	int i;
+	yuv_frame_t* ref = ctx->ref;
+	encoder_info_t* info = &ctx->info;
+
+	if (!ctx)
+		return;
+
+	for (i = 0; i < MAX_REF_FRAMES; i++)
+	{
+		close_yuv_frame(&ref[i]);
+	}
+
+	free(info->deblock_data);
+
+	delete_config_params(ctx->params);
+
+	free(ctx);
+}
+
+int thor_decode(thor_decoder_t* ctx, uint8_t* pSrc, uint32_t srcSize, uint8_t* pDst[3], int dstStep[3])
+{
+	yuv_frame_t frame;
+	stream_t* stream = &ctx->stream;
+	decoder_info_t* info = &ctx->info;
+
+	stream->incnt = 0;
+	stream->bitcnt = 0;
+	stream->capacity = srcSize;
+	stream->rdbfr = pSrc;
+	stream->rdptr = stream->rdbfr;
+
+	frame.width = ctx->width;
+	frame.height = ctx->height;
 	frame.stride_y = dstStep[0];
 	frame.stride_c = dstStep[1];
 	frame.offset_y = 0;
@@ -218,42 +251,79 @@ int thor_decode(thor_sequence_header_t* hdr, uint8_t* pSrc, uint32_t srcSize, ui
 	frame.u = pDst[1];
 	frame.v = pDst[2];
 
-	dec_info.width = width;
-	dec_info.height = height;
-	dec_info.pb_split_enable = hdr->pb_split_enable;
-	dec_info.tb_split_enable = hdr->tb_split_enable;
-	dec_info.max_num_ref = hdr->max_num_ref;
-	dec_info.num_reorder_pics = hdr->num_reorder_pics;
-	dec_info.max_delta_qp = hdr->max_delta_qp;
-	dec_info.deblocking = hdr->deblocking;
-	dec_info.clpf = hdr->clpf;
-	dec_info.use_block_contexts = hdr->use_block_contexts;
-	dec_info.bipred = hdr->enable_bipred;
-	dec_info.bit_count.sequence_header = 64;
+	info->frame_info.decode_order_frame_num = 0;
+	info->frame_info.display_frame_num = 0;
+	info->rec = &frame;
+	info->frame_info.num_ref = min(ctx->frame_num, info->max_num_ref);
+	info->rec->frame_num = info->frame_info.display_frame_num;
 
-	for (r = 0; r < MAX_REF_FRAMES; r++)
-	{
-		create_yuv_frame(&ref[r], width, height, PADDING_Y, PADDING_Y, PADDING_Y / 2, PADDING_Y / 2);
-		dec_info.ref[r] = &ref[r];
-	}
-
-	dec_info.deblock_data = (deblock_data_t *) malloc((height / MIN_PB_SIZE) * (width / MIN_PB_SIZE) * sizeof(deblock_data_t));
-
-	dec_info.frame_info.decode_order_frame_num = 0;
-	dec_info.frame_info.display_frame_num = 0;
-
-	dec_info.rec = &frame;
-	dec_info.frame_info.num_ref = min(decode_frame_num, dec_info.max_num_ref);
-	dec_info.rec->frame_num = dec_info.frame_info.display_frame_num;
-
-	decode_frame(&dec_info);
-
-	for (r = 0; r < MAX_REF_FRAMES; r++)
-	{
-		close_yuv_frame(&ref[r]);
-	}
-
-	free(dec_info.deblock_data);
+	decode_frame(info);
 
 	return 1;
+}
+
+void thor_decoder_set_sequence_header(thor_decoder_t* ctx, thor_sequence_header_t* hdr)
+{
+	int i;
+	yuv_frame_t* ref = ctx->ref;
+	decoder_info_t* info = &ctx->info;
+
+	memcpy(&ctx->hdr, hdr, sizeof(thor_sequence_header_t));
+
+	info->width = ctx->width = hdr->width;
+	info->height = ctx->height = hdr->height;
+
+	info->pb_split_enable = hdr->pb_split_enable;
+	info->tb_split_enable = hdr->tb_split_enable;
+	info->max_num_ref = hdr->max_num_ref;
+	info->num_reorder_pics = hdr->num_reorder_pics;
+	info->max_delta_qp = hdr->max_delta_qp;
+	info->deblocking = hdr->deblocking;
+	info->clpf = hdr->clpf;
+	info->use_block_contexts = hdr->use_block_contexts;
+	info->bipred = hdr->enable_bipred;
+	info->bit_count.sequence_header = 64;
+
+	for (i = 0; i < MAX_REF_FRAMES; i++)
+	{
+		create_yuv_frame(&ref[i], ctx->width, ctx->height, PADDING_Y, PADDING_Y, PADDING_Y / 2, PADDING_Y / 2);
+		info->ref[i] = &ref[i];
+	}
+
+	info->deblock_data = (deblock_data_t*) malloc((ctx->height / MIN_PB_SIZE) * (ctx->width / MIN_PB_SIZE) * sizeof(deblock_data_t));
+}
+
+thor_decoder_t* thor_decoder_new()
+{
+	thor_decoder_t* ctx;
+
+	init_use_simd();
+
+	ctx = (thor_decoder_t*) calloc(1, sizeof(thor_decoder_t));
+
+	if (!ctx)
+		return NULL;
+
+	ctx->info.stream = &ctx->stream;
+
+	return ctx;
+}
+
+void thor_decoder_free(thor_decoder_t* ctx)
+{
+	int i;
+	yuv_frame_t* ref = ctx->ref;
+	decoder_info_t* info = &ctx->info;
+
+	if (!ctx)
+		return;
+
+	for (i = 0; i < MAX_REF_FRAMES; i++)
+	{
+		close_yuv_frame(&ref[i]);
+	}
+
+	free(info->deblock_data);
+
+	free(ctx);
 }

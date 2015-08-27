@@ -461,4 +461,26 @@ typedef struct
 
 #include <thor/thor.h>
 
+struct thor_encoder_s
+{
+	int width;
+	int height;
+	stream_t stream;
+	enc_params* params;
+	encoder_info_t info;
+	thor_sequence_header_t hdr;
+	yuv_frame_t ref[MAX_REF_FRAMES];
+};
+
+struct thor_decoder_s
+{
+	int width;
+	int height;
+	int frame_num;
+	stream_t stream;
+	decoder_info_t info;
+	thor_sequence_header_t hdr;
+	yuv_frame_t ref[MAX_REF_FRAMES];
+};
+
 #endif
