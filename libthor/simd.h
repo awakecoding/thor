@@ -95,9 +95,13 @@ SIMD_INLINE unsigned int log2i(uint32_t x)
 
 SIMD_INLINE void *thor_alloc(size_t size, uintptr_t align)
 {
-	return (void*)((((uintptr_t)_alloca(size + align)) + align - 1) & ~(align - 1));
+	return _aligned_malloc(size, align);
 }
-SIMD_INLINE void thor_free(void *p) {}
+
+SIMD_INLINE void thor_free(void *p)
+{
+	_aligned_free(p);
+}
 
 #elif defined(__GNUC__) && !defined(__APPLE__)
 
