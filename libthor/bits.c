@@ -370,35 +370,32 @@ int read_delta_qp(stream_t *stream){
 
 int read_block(decoder_info_t *decoder_info,stream_t *stream,block_info_dec_t *block_info, frame_type_t frame_type)
 {
-	int width = decoder_info->width;
-	int height = decoder_info->height;
+	int i, idx;
+	cbp_t cbp;
 	int bit_start;
 	int code,tmp,tb_split;
 	int PBpart=0;
-	cbp_t cbp;
-
+	int width = decoder_info->width;
+	int height = decoder_info->height;
 	int size = block_info->block_pos.size;
 	int ypos = block_info->block_pos.ypos;
 	int xpos = block_info->block_pos.xpos;
-
-	YPOS = ypos;
-	XPOS = xpos;
-
 	int sizeY = size;
 	int sizeC = size/2;
-
-	mv_t mv,zerovec;
+	mv_t mv;
+	mv_t zerovec;
 	mv_t mvp;
 	mv_t mv_arr[4]; //TODO: Use mv_arr0 instead
 	mv_t mv_arr0[4];
 	mv_t mv_arr1[4];
-
 	block_mode_t mode;
 	intra_mode_t intra_mode = MODE_DC;
+	int16_t* coeff_y = block_info->coeffq_y;
+	int16_t* coeff_u = block_info->coeffq_u;
+	int16_t* coeff_v = block_info->coeffq_v;
 
-	int16_t *coeff_y = block_info->coeffq_y;
-	int16_t *coeff_u = block_info->coeffq_u;
-	int16_t *coeff_v = block_info->coeffq_v;
+	YPOS = ypos;
+	XPOS = xpos;
 
 	zerovec.y = zerovec.x = 0;
 	bit_start = stream->bitcnt;
@@ -414,7 +411,7 @@ int read_block(decoder_info_t *decoder_info,stream_t *stream,block_info_dec_t *b
 		int num_skip_vec,skip_idx;
 		mvb_t tmp_mvb_skip[MAX_NUM_SKIP];
 		num_skip_vec = get_mv_skip(ypos,xpos,width,height,size,decoder_info->deblock_data,tmp_mvb_skip);
-		for (int idx=0;idx<num_skip_vec;idx++){
+		for (idx=0;idx<num_skip_vec;idx++){
 			mv_skip[idx].x = tmp_mvb_skip[idx].x0;
 			mv_skip[idx].y = tmp_mvb_skip[idx].y0;
 		}
@@ -464,13 +461,15 @@ int read_block(decoder_info_t *decoder_info,stream_t *stream,block_info_dec_t *b
 		mv_arr1[3] = mv_arr1[0];
 
 	}
-	else if (mode == MODE_MERGE){
+	else if (mode == MODE_MERGE)
+	{
 		/* Derive skip vector candidates and number of skip vector candidates from neighbour blocks */
 		mv_t mv_skip[MAX_NUM_SKIP];
 		int num_skip_vec,skip_idx;
 		mvb_t tmp_mvb_skip[MAX_NUM_SKIP];
 		num_skip_vec = get_mv_merge(ypos,xpos,width,height,size,decoder_info->deblock_data,tmp_mvb_skip);
-		for (int idx=0;idx<num_skip_vec;idx++){
+		for (idx=0;idx<num_skip_vec;idx++)
+		{
 			mv_skip[idx].x = tmp_mvb_skip[idx].x0;
 			mv_skip[idx].y = tmp_mvb_skip[idx].y0;
 		}
@@ -639,22 +638,25 @@ int read_block(decoder_info_t *decoder_info,stream_t *stream,block_info_dec_t *b
 		mv_arr1[2] = mv_arr1[0];
 		mv_arr1[3] = mv_arr1[0];
 
-		if (decoder_info->frame_info.num_ref==2){
+		if (decoder_info->frame_info.num_ref==2)
+		{
 			int code = get_vlc0_limit(3,stream);
 			block_info->pred_data.ref_idx0 = (code>>0)&1;
 			block_info->pred_data.ref_idx1 = (code>>1)&1;
 		}
-		else{
+		else
+		{
 			int code = get_vlc(10,stream);
 			block_info->pred_data.ref_idx0 = (code>>0)&3;
 			block_info->pred_data.ref_idx1 = (code>>2)&3;
 		}
+
 		block_info->pred_data.dir = 2;
 		decoder_info->bit_count.bi_ref[block_info->pred_data.ref_idx0 * decoder_info->frame_info.num_ref + block_info->pred_data.ref_idx1] += 1;
 		decoder_info->bit_count.mv[frame_type] += (stream->bitcnt - bit_start);
 	}
-
-	else if (mode==MODE_INTRA){
+	else if (mode==MODE_INTRA)
+	{
 		/* Decode intra prediction mode */
 		if (decoder_info->frame_info.num_intra_modes<=4){
 			intra_mode = getbits(stream,2);
@@ -711,7 +713,7 @@ int read_block(decoder_info_t *decoder_info,stream_t *stream,block_info_dec_t *b
 		decoder_info->bit_count.size_and_intra_mode[frame_type][log2i(size)-3][intra_mode] += 1;
 
 		block_info->pred_data.intra_mode = intra_mode;
-		for (int i=0;i<4;i++){
+		for (i = 0; i < 4; i++) {
 			mv_arr[i] = zerovec; //Note: This is necessary for derivation of mvp and mv_skip
 		}
 		block_info->pred_data.ref_idx0 = 0;
@@ -720,7 +722,8 @@ int read_block(decoder_info_t *decoder_info,stream_t *stream,block_info_dec_t *b
 	}
 
 
-	if (mode!=MODE_SKIP){
+	if (mode!=MODE_SKIP)
+	{
 		int tmp,cbp2;
 		int cbp_table[8] = {1,0,5,2,6,3,7,4};
 
@@ -737,7 +740,8 @@ int read_block(decoder_info_t *decoder_info,stream_t *stream,block_info_dec_t *b
 			if (tb_split)
 				decoder_info->bit_count.cbp2_stat[0][frame_type][mode-1][log2i(size)-3][8] += 1;
 		}
-		else{
+		else
+		{
 			tb_split = 0;
 		}
 		block_info->tb_split = tb_split;

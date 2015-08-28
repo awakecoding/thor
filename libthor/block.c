@@ -140,15 +140,16 @@ int get_downleft_available(int ypos, int xpos, int size, int height){
 
 void dequantize (int16_t *coeff, int16_t *rcoeff, int qp, int size)
 {
+  int i, j, c;
   int tr_log2size = log2i(size);
   const int lshift = qp / 6;
   const int rshift = tr_log2size - 1;
   const int scale = gdequant_table[qp % 6];
   const int add = 1<<(rshift-1);
 
-  for (int i = 0; i < size ; i++){
-    for (int j = 0; j < size; j++){
-      int c = coeff[i*size+j];
+  for (i = 0; i < size ; i++){
+    for (j = 0; j < size; j++){
+      c = coeff[i*size+j];
       rcoeff[i*size+j] = ((c * scale << lshift) + add) >> rshift;
     }
   }
@@ -1240,8 +1241,9 @@ int quote_mv_bits(int mv_diff_y, int mv_diff_x)
   return bits;
 }
 
-int motion_estimate(uint8_t *orig, uint8_t *ref, int size, int stride_r, int width, int height, mv_t *mv, mv_t *mvp, mv_t *mvcand, double lambda,int encoder_speed, int sign){
-  int k,l,sad,range,step;
+int motion_estimate(uint8_t *orig, uint8_t *ref, int size, int stride_r, int width, int height, mv_t *mv, mv_t *mvp, mv_t *mvcand, double lambda,int encoder_speed, int sign)
+{
+  int idx, k,l,sad,range,step;
   uint32_t min_sad;
   uint8_t *rf = thor_alloc(MAX_BLOCK_SIZE*MAX_BLOCK_SIZE, 16);
   mv_t mv_cand;
@@ -1319,7 +1321,7 @@ int motion_estimate(uint8_t *orig, uint8_t *ref, int size, int stride_r, int wid
   mvcand[4] = *mvp;
   mvcand[5].y = 0;
   mvcand[5].x = 0;
-  for (int idx=0;idx<6;idx++){
+  for (idx=0;idx<6;idx++){
     mv_cand = mvcand[idx];
     get_inter_prediction_luma(rf,ref,width,height,stride_r,width,&mv_cand, sign);
     sad = sad_calc(orig,rf,size,width,width,height);
@@ -2169,6 +2171,7 @@ void encode_copy_deblock_data(encoder_info_t *encoder_info, block_info_t *block_
 
 int mode_decision_rdo(encoder_info_t *encoder_info,block_info_t *block_info)
 {
+  int i;
   int size = block_info->block_pos.size;
   int ypos = block_info->block_pos.ypos;
   int xpos = block_info->block_pos.xpos;
@@ -2519,7 +2522,7 @@ int mode_decision_rdo(encoder_info_t *encoder_info,block_info_t *block_info)
   block_info->pred_data.mode = best_mode;
   if (best_mode == MODE_SKIP){
     block_info->pred_data.skip_idx = best_skip_idx;
-    for (int i=0;i<4;i++){
+    for (i=0;i<4;i++){
       block_info->pred_data.mv_arr0[i].x = block_info->mvb_skip[best_skip_idx].x0;
       block_info->pred_data.mv_arr0[i].y = block_info->mvb_skip[best_skip_idx].y0;
       block_info->pred_data.mv_arr1[i].x = block_info->mvb_skip[best_skip_idx].x1;
@@ -2532,7 +2535,7 @@ int mode_decision_rdo(encoder_info_t *encoder_info,block_info_t *block_info)
   else if (best_mode == MODE_MERGE){
     block_info->pred_data.PBpart = PART_NONE;
     block_info->pred_data.skip_idx = best_skip_idx;
-    for (int i=0;i<4;i++){
+    for (i=0;i<4;i++){
       block_info->pred_data.mv_arr0[i].x = block_info->mvb_merge[best_skip_idx].x0;
       block_info->pred_data.mv_arr0[i].y = block_info->mvb_merge[best_skip_idx].y0;
       block_info->pred_data.mv_arr1[i].x = block_info->mvb_merge[best_skip_idx].x1;
@@ -2553,7 +2556,7 @@ int mode_decision_rdo(encoder_info_t *encoder_info,block_info_t *block_info)
   }
   else if (best_mode == MODE_INTRA){
     block_info->pred_data.intra_mode = intra_mode;
-    for (int i=0;i<4;i++){
+    for (i=0;i<4;i++){
       block_info->pred_data.mv_arr0[i] = zerovec;
       block_info->pred_data.mv_arr1[i] = zerovec;
     }
@@ -2578,6 +2581,7 @@ int mode_decision_rdo(encoder_info_t *encoder_info,block_info_t *block_info)
 
 int check_early_skip_transform_coeff (int16_t *coeff, int qp, int size, double relative_threshold)
 {
+  int i, j;
   int tr_log2size = log2i(size);
   const int qsize = min(MAX_QUANT_SIZE,size);
   int cstride = size;
@@ -2590,8 +2594,8 @@ int check_early_skip_transform_coeff (int16_t *coeff, int qp, int size, double r
   double threshold = relative_threshold * first_quantizer_level;
 
   /* Compare each coefficient with threshold */
-  for (int i = 0; i < qsize; i++){
-    for (int j = 0; j < qsize; j++){
+  for (i = 0; i < qsize; i++){
+    for (j = 0; j < qsize; j++){
       c = (int)coeff[i*cstride+j];
       if ((double)abs(c) > threshold)
         flag = 1;
@@ -2758,8 +2762,9 @@ int check_early_skip_block(encoder_info_t *encoder_info,block_info_t *block_info
   return (!significant_flag);
 }
 
-int search_early_skip_candidates(encoder_info_t *encoder_info,block_info_t *block_info){
-
+int search_early_skip_candidates(encoder_info_t *encoder_info,block_info_t *block_info)
+{
+  int i;
   uint32_t cost,min_cost;
   int skip_idx,nbit,tmp_early_skip_flag;
   int best_skip_idx = 0;
@@ -2809,7 +2814,7 @@ int search_early_skip_candidates(encoder_info_t *encoder_info,block_info_t *bloc
     {
       block_info->pred_data.skip_idx = best_skip_idx;
       block_info->pred_data.mode = MODE_SKIP;
-      for (int i=0;i<4;i++){
+      for (i=0;i<4;i++){
         block_info->pred_data.mv_arr0[i].x = block_info->mvb_skip[best_skip_idx].x0;
         block_info->pred_data.mv_arr0[i].y = block_info->mvb_skip[best_skip_idx].y0;
         block_info->pred_data.mv_arr1[i].x = block_info->mvb_skip[best_skip_idx].x1;
@@ -2975,7 +2980,7 @@ int process_block(encoder_info_t *encoder_info,int size,int ypos,int xpos,int qp
 
     if (cost <= cost_small){
 
-      /* Revind bitstream to reference position of this block size */
+      /* Rewind bitstream to reference position of this block size */
       write_stream_pos(stream,&stream_pos_ref);
 
       block_info.final_encode = 1;
@@ -2999,7 +3004,7 @@ int process_block(encoder_info_t *encoder_info,int size,int ypos,int xpos,int qp
     cost = mode_decision_rdo(encoder_info,&block_info);
 
     if (cost <= cost_small){
-      /* Revind bitstream to reference position of this block size */
+      /* Rewind bitstream to reference position of this block size */
       write_stream_pos(stream,&stream_pos_ref);
       block_info.final_encode = 1;
       encode_block(encoder_info,stream,&block_info,&block_info.pred_data,MODE_SKIP,0);

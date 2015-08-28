@@ -30,8 +30,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "thor.h"
 
 static void get_inter_prediction_luma_edge(int width, int height, int xoff, int yoff,
-                                             uint8_t *restrict qp, int qstride,
-                                             const uint8_t *restrict ip, int istride)
+                                             uint8_t *RESTRICT qp, int qstride,
+                                             const uint8_t *RESTRICT ip, int istride)
 {
   static const ALIGN(16) int16_t coeffs[4][6][4] = {
     { {   3,   3,   3,   3 },
@@ -56,24 +56,26 @@ static void get_inter_prediction_luma_edge(int width, int height, int xoff, int 
       {   3,   3,   3,   3 } }
   };
 
-  const unsigned char *restrict ip2 = ip;
-  int cf = xoff + yoff - 1;
-  int sx = !yoff;
-  int s1 = !xoff * istride;
-  ip += width - 2 * istride / 2;
-  ip2 += height - istride;
-  qp -= qstride;
+	int x, y;
+	int st1;
+	const uint8_t* RESTRICT ip2 = ip;
+	int cf = xoff + yoff - 1;
+	int sx = !yoff;
+	int s1 = !xoff * istride;
+	ip += width - 2 * istride / 2;
+	ip2 += height - istride;
+	qp -= qstride;
 
-  v64 c0 = v64_load_aligned(coeffs[cf][0]);
-  v64 c1 = v64_load_aligned(coeffs[cf][1]);
-  v64 c2 = v64_load_aligned(coeffs[cf][2]);
-  v64 c3 = v64_load_aligned(coeffs[cf][3]);
-  v64 c4 = v64_load_aligned(coeffs[cf][4]);
-  v64 c5 = v64_load_aligned(coeffs[cf][5]);
-  v64 cr = v64_dup_16(64);
-  int st1 = s1 + sx;
+	v64 c0 = v64_load_aligned(coeffs[cf][0]);
+	v64 c1 = v64_load_aligned(coeffs[cf][1]);
+	v64 c2 = v64_load_aligned(coeffs[cf][2]);
+	v64 c3 = v64_load_aligned(coeffs[cf][3]);
+	v64 c4 = v64_load_aligned(coeffs[cf][4]);
+	v64 c5 = v64_load_aligned(coeffs[cf][5]);
+	v64 cr = v64_dup_16(64);
+	st1 = s1 + sx;
 
-  for (int y = 0; y < height; y++) {
+  for (y = 0; y < height; y++) {
 
     qp += qstride;
     ip += istride - width;
@@ -83,7 +85,7 @@ static void get_inter_prediction_luma_edge(int width, int height, int xoff, int 
       v64 l0, l1, l2, l3, l4, l5;
       v64 r0, r1, r2, r3, r4, r5;
       v64 fx1b, rs;
-      const unsigned char *r = ip - 2 * s1 - 2 * sx;
+      const uint8_t* r = ip - 2 * s1 - 2 * sx;
       l0 = v64_load_unaligned(r);
       r += st1;
       l1 = v64_load_unaligned(r);
@@ -107,11 +109,11 @@ static void get_inter_prediction_luma_edge(int width, int height, int xoff, int 
       rs = v64_add_16(v64_shr_n_s16(rs, 7), fx1b);
       u32_store_aligned(qp, v64_low_u32(v64_pack_s16_u8(rs, rs)));
     } else {
-      for (int x = 0; x < width; x += 8) {
+      for (x = 0; x < width; x += 8) {
         v64 l0, l1, l2, l3, l4, l5;
         v64 r0, r1, r2, r3, r4, r5;
         v64 fx1a, fx1b, rs1, rs2;
-        const unsigned char *r = ip - 2 * s1 - 2 * sx;
+        const uint8_t* r = ip - 2 * s1 - 2 * sx;
         l0 = v64_load_unaligned(r);
         r += st1;
         l1 = v64_load_unaligned(r);
@@ -150,9 +152,12 @@ static void get_inter_prediction_luma_edge(int width, int height, int xoff, int 
 }
 
 static void get_inter_prediction_luma_inner(int width, int height, int xoff, int yoff,
-                                            uint8_t *restrict qp, int qstride,
-                                            const uint8_t *restrict ip, int istride)
+                                            uint8_t* RESTRICT qp, int qstride,
+                                            const uint8_t* RESTRICT ip, int istride)
 {
+	int x, y, i;
+	int a08, a18, a28, a38, a48, a58;
+
 #define F0 { 0,   0,   1,   0,   0, 0,   0, 0 }
 #define F1 { 3, -15, 111,  37, -10, 2,   0, 0 }
 #define F2 { 2, -10,  37, 111, -15, 3,   0, 0 }
@@ -192,7 +197,7 @@ static void get_inter_prediction_luma_inner(int width, int height, int xoff, int
     v128 c4 = v128_load_aligned(coeffs[yoff][4]);
     v128 c5 = v128_load_aligned(coeffs[yoff][5]);
 
-    for (int y = 0; y < height; y++) {
+    for (y = 0; y < height; y++) {
       int res;
       v128 ax = v128_unpacklo_u8_s16(v64_load_unaligned(ip - 2));
       v128 a0 = v128_mullo_s16(c0, v128_unpacklo_u8_s16(v64_load_unaligned(ip - 2 * istride - 2)));
@@ -202,7 +207,7 @@ static void get_inter_prediction_luma_inner(int width, int height, int xoff, int
       v128 a4 = v128_mullo_s16(c4, v128_unpacklo_u8_s16(v64_load_unaligned(ip + 2 * istride - 2)));
       v128 a5 = v128_mullo_s16(c5, v128_unpacklo_u8_s16(v64_load_unaligned(ip + 3 * istride - 2)));
 
-      for (int x = 0; x < 3; x++) {
+      for (x = 0; x < 3; x++) {
         res = (v128_dotp_s16(c, v128_add_16(v128_add_16(v128_add_16(v128_add_16(v128_add_16(a0, a1), a2), a3), a4), a5)) + v128_dotp_s16(c, ax) * 128 + 8192) >> 14;
         *qp++ = clip255(res);
         ax = v128_shr_n_byte(ax, 2);
@@ -214,7 +219,6 @@ static void get_inter_prediction_luma_inner(int width, int height, int xoff, int
         a5 = v128_shr_n_byte(a5, 2);
       }
 
-      int a08, a18, a28, a38, a48, a58;
       switch ((yoff == 1)*2+(xoff == 1)) {
       case 0:
         a08 = ip[6-2*istride]*3*3;
@@ -259,7 +263,7 @@ static void get_inter_prediction_luma_inner(int width, int height, int xoff, int
 
   } else {
     v128 c = v128_load_aligned(coeffs2[xoff + yoff*4][0]);
-    const uint8_t *restrict ip2 = ip;
+    const uint8_t* RESTRICT ip2 = ip;
     v128 c1, c2, c3;
     int16_t *ax = thor_alloc((width+8)*height*2, 16);
 
@@ -273,9 +277,9 @@ static void get_inter_prediction_luma_inner(int width, int height, int xoff, int
       c3 = v128_dup_16((-17 << 8) | (uint8_t)  3);
     }
 
-    for (int y = 0; y < height; y++) {
+    for (y = 0; y < height; y++) {
       int16_t *a = ax + y*(width+8);
-      for (int i = 0; i <= width; i += 8) {
+      for (i = 0; i <= width; i += 8) {
         v128 t1 = v128_madd_us8(v128_zip_8(v64_load_unaligned(ip - 2 * istride - 2),
                                            v64_load_unaligned(ip - 1 * istride - 2)), c1);
         v128 t2 = v128_madd_us8(v128_zip_8(v64_load_unaligned(ip - 0 * istride - 2),
@@ -289,9 +293,9 @@ static void get_inter_prediction_luma_inner(int width, int height, int xoff, int
     }
     ip = ip2 - 2;
 
-    for (int y = 0; y < height; y++) {
+    for (y = 0; y < height; y++) {
       int16_t *a = ax + y*(width+8);
-      for (int i = 0; i < width; i += 8) {
+      for (i = 0; i < width; i += 8) {
         v128 r0 = v128_from_64((v128_dotp_s16(c, v128_load_unaligned(a + i + 7)) + v128_dotp_s16(c, v128_unpack_u8_s16(v64_load_unaligned(ip + y*istride + i + 7))) * 128) << 32 |
                                (uint32_t)(v128_dotp_s16(c, v128_load_unaligned(a + i + 6)) + v128_dotp_s16(c, v128_unpack_u8_s16(v64_load_unaligned(ip + y*istride + i + 6))) * 128),
                                (v128_dotp_s16(c, v128_load_unaligned(a + i + 5)) + v128_dotp_s16(c, v128_unpack_u8_s16(v64_load_unaligned(ip + y*istride + i + 5))) * 128) << 32 |
@@ -311,12 +315,14 @@ static void get_inter_prediction_luma_inner(int width, int height, int xoff, int
 }
 
 static void get_inter_prediction_luma_centre(int width, int height,
-                                             uint8_t *restrict qp, int qstride,
-                                             const uint8_t *restrict ip, int istride)
+                                             uint8_t* RESTRICT qp, int qstride,
+                                             const uint8_t* RESTRICT ip, int istride)
 {
+	int i, j;
+
   if (width == 4) {
     v128 round = v128_dup_16(8);
-    for (int i = 0; i < height; i++) {
+    for (i = 0; i < height; i++) {
       v64 r, s;
       r = v64_add_16(v64_unpacklo_u8_s16(v64_from_32(0, u32_load_unaligned(ip - 1 * istride + 0))),
                      v64_unpacklo_u8_s16(v64_from_32(0, u32_load_unaligned(ip - 1 * istride + 1))));
@@ -340,8 +346,8 @@ static void get_inter_prediction_luma_centre(int width, int height,
     }
   } else {
     v128 round = v128_dup_16(8);
-    for (int i = 0; i < height; i++) {
-      for (int j = 0; j < width; j += 8) {
+    for (i = 0; i < height; i++) {
+      for (j = 0; j < width; j += 8) {
         v128 r, s;
         r = v128_add_16(v128_unpack_u8_s16(v64_load_unaligned(ip - 1 * istride + 0)),
                         v128_unpack_u8_s16(v64_load_unaligned(ip - 1 * istride + 1)));
@@ -369,8 +375,8 @@ static void get_inter_prediction_luma_centre(int width, int height,
 }
 
 void get_inter_prediction_luma_simd(int width, int height, int xoff, int yoff,
-                                    uint8_t *restrict qp, int qstride,
-                                    const uint8_t *restrict ip, int istride)
+                                    uint8_t* RESTRICT qp, int qstride,
+                                    const uint8_t* RESTRICT ip, int istride)
 {
   if (xoff == 2 && yoff == 2)
     get_inter_prediction_luma_centre(width, height, qp, qstride, ip, istride);
@@ -389,8 +395,8 @@ void get_inter_prediction_luma_simd(int width, int height, int xoff, int yoff,
 }
 
 void get_inter_prediction_chroma_simd(int width, int height, int xoff, int yoff,
-                                      unsigned char *restrict qp, int qstride,
-                                      const unsigned char *restrict ip, int istride) {
+                                      uint8_t* RESTRICT qp, int qstride,
+                                      const uint8_t* RESTRICT ip, int istride) {
   static const ALIGN(16) int16_t coeffs[8][4] = {
     { 0, 64,  0,  0},
     {-2, 58, 10, -2},
@@ -1723,6 +1729,7 @@ static void transform64(const int16_t *src, int16_t *dst, int shift, int it)
 
 void transform_simd(const int16_t *block, int16_t *coeff, int size, int fast)
 {
+	int i, j;
   if (size == 4) {
     transform4(block, coeff);
   } else if (size == 8) {
@@ -1740,13 +1747,13 @@ void transform_simd(const int16_t *block, int16_t *coeff, int size, int fast)
       int16_t *tmp = thor_alloc(16*16*2, 16);
       int16_t *tmp2 = thor_alloc(16*16*2, 16);
       int16_t *tmp3 = thor_alloc(16*16*2, 16);
-      for (int i = 0; i < 16; i++)
-        for (int j = 0; j < 16; j++)
+      for (i = 0; i < 16; i++)
+        for (j = 0; j < 16; j++)
           tmp2[i*16+j] = block[(i*2+0)*32+j*2+0] + block[(i*2+1)*32+j*2+0] + block[(i*2+0)*32+j*2+1] + block[(i*2+1)*32+j*2+1];
       transform16(tmp2, tmp, 6);
       transform16(tmp, tmp3, 9);
-      for (int i = 0; i < 16; i++)
-        for (int j = 0; j < 16; j++)
+      for (i = 0; i < 16; i++)
+        for (j = 0; j < 16; j++)
           coeff[i*32+j] = tmp3[i*16+j];
       thor_free(tmp);
       thor_free(tmp2);
@@ -1762,8 +1769,8 @@ void transform_simd(const int16_t *block, int16_t *coeff, int size, int fast)
       int16_t *tmp = thor_alloc(16*16*2, 16);
       int16_t *tmp2 = thor_alloc(16*16*2, 16);
       int16_t *tmp3 = thor_alloc(16*16*2, 16);
-      for (int i = 0; i < 16; i++)
-        for (int j = 0; j < 16; j++)
+      for (i = 0; i < 16; i++)
+        for (j = 0; j < 16; j++)
           tmp2[i*16+j] =
             block[(i*4+0)*64+j*4+0] + block[(i*4+1)*64+j*4+0] + block[(i*4+2)*64+j*4+0] + block[(i*4+3)*64+j*4+0] +
             block[(i*4+0)*64+j*4+1] + block[(i*4+1)*64+j*4+1] + block[(i*4+2)*64+j*4+1] + block[(i*4+3)*64+j*4+1] +
@@ -1771,8 +1778,8 @@ void transform_simd(const int16_t *block, int16_t *coeff, int size, int fast)
             block[(i*4+0)*64+j*4+3] + block[(i*4+1)*64+j*4+3] + block[(i*4+2)*64+j*4+3] + block[(i*4+3)*64+j*4+3];
       transform16(tmp2, tmp, 8);
       transform16(tmp, tmp3, 9);
-      for (int i = 0; i < 16; i++)
-        for (int j = 0; j < 16; j++)
+      for (i = 0; i < 16; i++)
+        for (j = 0; j < 16; j++)
           coeff[i*64+j] = tmp3[i*16+j];
       thor_free(tmp);
       thor_free(tmp2);

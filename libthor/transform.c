@@ -251,21 +251,18 @@ void transform (const int16_t *block, int16_t *coeff, int size, int fast)
   if (use_simd)
     transform_simd(block, coeff, size, fast);
   else {
+          int i, j, k;
     int dsize = size;
     int16_t tmp[MAX_TR_SIZE][MAX_TR_SIZE];
     int16_t tmp2[16*16];
     int tr_log2size = log2i(size);
     int tr = tr_log2size - 2;
     const int16_t * tr_matrix = transform_table[tr];
-
     const int bit_depth = 8;
-
     int shift_1 = tr_log2size + bit_depth - 8;
     int add_1 = 1 << (shift_1 - 1);
-
     int shift_2 = tr_log2size + 5;
     int add_2 = 1 << (shift_2 -1);
-
     int qsize = min(size,MAX_QUANT_SIZE);
     const int16_t *in = block;
 
@@ -276,8 +273,8 @@ void transform (const int16_t *block, int16_t *coeff, int size, int fast)
       add_1 = 1 << (shift_1 - 1);
       shift_2 = 9;
       add_2 = 256;
-      for (int i = 0; i < 16; i++)
-        for (int j = 0; j < 16; j++)
+      for (i = 0; i < 16; i++)
+        for (j = 0; j < 16; j++)
           if (size == 32)
             tmp2[i*16+j] =
               block[(i*2+0)*32+j*2+0] + block[(i*2+1)*32+j*2+0] +
@@ -293,10 +290,10 @@ void transform (const int16_t *block, int16_t *coeff, int size, int fast)
     }
 
     /* 1st dimension */
-    for (int i = 0; i < qsize; i++){
-      for (int j = 0; j < size; j++){
+    for (i = 0; i < qsize; i++){
+      for (j = 0; j < size; j++){
         int sum = 0;
-        for (int k = 0; k < size; k++){
+        for (k = 0; k < size; k++){
           sum += tr_matrix[i*size + k] * in[j*size + k];
         }
         tmp[i][j] = (sum + add_1) >> shift_1;
@@ -304,10 +301,10 @@ void transform (const int16_t *block, int16_t *coeff, int size, int fast)
     }
 
     /* 2nd dimension */
-    for (int i = 0; i < qsize; i++){
-      for (int j = 0; j < qsize; j++){
+    for (i = 0; i < qsize; i++){
+      for (j = 0; j < qsize; j++){
         int sum = 0;
-        for (int k = 0; k < size; k++){
+        for (k = 0; k < size; k++){
           sum += tr_matrix[i*size + k] * tmp[j][k];
         }
         coeff[i*dsize + j] = (sum + add_2) >> shift_2;

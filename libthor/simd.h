@@ -53,6 +53,18 @@ typedef unsigned long long intptr_t;
 #endif
 #endif
 
+#ifndef RESTRICT
+#if defined(__STDC__) && (__STDC_VERSION__ >= 199901L)
+#define RESTRICT restrict
+#elif __GNUC__
+#define RESTRICT __restrict__
+#elif _WIN32
+#define RESTRICT __restrict
+#else
+#define RESTRICT
+#endif
+#endif
+
 #ifdef __INTEL_COMPILER
 #define ALIGN(c) __declspec(align(c))
 #elif __arm__

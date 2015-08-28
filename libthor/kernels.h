@@ -28,9 +28,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define THOR_KERNELS_H
 
 #include <stdint.h>
+#include "simd.h"
 
-void get_inter_prediction_luma_simd(int width, int height, int xoff, int yoff, unsigned char *restrict qp, int qstride, const unsigned char *restrict ip, int istride);
-void get_inter_prediction_chroma_simd(int width, int height, int xoff, int yoff, unsigned char *restrict qp, int qstride, const unsigned char *restrict ip, int istride);
+void get_inter_prediction_luma_simd(int width, int height, int xoff, int yoff, uint8_t* RESTRICT qp, int qstride, const uint8_t* RESTRICT ip, int istride);
+void get_inter_prediction_chroma_simd(int width, int height, int xoff, int yoff, uint8_t* RESTRICT qp, int qstride, const uint8_t* RESTRICT ip, int istride);
 void transform_simd(const int16_t *block, int16_t *coeff, int size, int fast);
 void inverse_transform_simd(const int16_t *coeff, int16_t *block, int size);
 

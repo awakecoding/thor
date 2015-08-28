@@ -252,27 +252,26 @@ void deblock_frame_y(yuv_frame_t  *rec, deblock_data_t *deblock_data, int width,
 
 void deblock_frame_uv(yuv_frame_t  *rec, deblock_data_t *deblock_data, int width, int height, uint8_t qp)
 {
+	int uv;
 	int i,j,k,l;
 	int stride = rec->stride_c;
 	int p1,p0,q0,q1;
-
 	uint8_t do_filter;
 	uint8_t tc = tc_table[qp];
-
 	int p_index,q_index;
 	block_mode_t p_mode,q_mode;
 	int q_size;
 	int mode,interior;
 	int delta;
 
-	for (int uv=0;uv<2;uv++)
+	for (uv = 0; uv < 2; uv++)
 	{
 		uint8_t *recC = (uv ? rec->v : rec->u);
 
 		/* Vertical filtering */
-		for (i=0;i<height;i+=MIN_BLOCK_SIZE)
+		for (i = 0; i < height; i += MIN_BLOCK_SIZE)
 		{
-			for (j=MIN_BLOCK_SIZE;j<width-MIN_BLOCK_SIZE;j+=MIN_BLOCK_SIZE)
+			for (j = MIN_BLOCK_SIZE; j < width - MIN_BLOCK_SIZE; j += MIN_BLOCK_SIZE)
 			{
 				int i2 = i/2;
 				int j2 = j/2;
