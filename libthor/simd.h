@@ -70,52 +70,49 @@ typedef unsigned long long intptr_t;
 
 SIMD_INLINE unsigned int log2i(uint32_t x)
 {
-  unsigned long y;
-  _BitScanReverse(&y, x);
-  return y;
+	unsigned long y;
+	_BitScanReverse(&y, x);
+	return y;
 }
 
 SIMD_INLINE void *thor_alloc(size_t size, uintptr_t align)
 {
-  return (void*)((((uintptr_t)_alloca(size + align)) + align - 1) & ~(align - 1));
+	return (void*)((((uintptr_t)_alloca(size + align)) + align - 1) & ~(align - 1));
 }
 SIMD_INLINE void thor_free(void *p) {}
 
-#elif __GNUC__
+#elif defined(__GNUC__) && !defined(__APPLE__)
 
 SIMD_INLINE unsigned int log2i(uint32_t x)
 {
-  return 31 - __builtin_clz(x);
+	return 31 - __builtin_clz(x);
 }
 
 SIMD_INLINE void *thor_alloc(size_t size, uintptr_t align)
 {
-  return (void*)((((uintptr_t)__builtin_alloca(size + align)) + align - 1) & ~(align - 1));
+	return (void*)((((uintptr_t)__builtin_alloca(size + align)) + align - 1) & ~(align - 1));
 }
 SIMD_INLINE void thor_free(void *p) {}
 
 #else
 
-SIMD INLINE unsigned int log2i(uint32_t n)
+SIMD_INLINE unsigned int log2i(uint32_t x)
 {
-  assert(n > 0);
-  int c = 0;
-  while (n >>= 1)
-    c++;
-  return c;
+	return 31 - __builtin_clz(x);
 }
 
 /* Fallback to regular malloc */
 SIMD_INLINE void *thor_alloc(size_t size, uintptr_t align)
 {
-  void *m = malloc(size + sizeof(void*) + align);
-  void **r = (void**)((((uintptr_t)m) + sizeof(void*) + align - 1) & ~(align - 1));
-  r[-1] = m;
-  return r;
+	void *m = malloc(size + sizeof(void*) + align);
+	void **r = (void**)((((uintptr_t)m) + sizeof(void*) + align - 1) & ~(align - 1));
+	r[-1] = m;
+	return r;
 }
+
 SIMD_INLINE void thor_free(void *p)
 {
-  free(((void**)p)[-1]);
+	free(((void**)p)[-1]);
 }
 
 #endif
@@ -137,9 +134,9 @@ static const int simd_available = 0;
 extern int use_simd;
 SIMD_INLINE void init_use_simd()
 {
-  /* SIMD optimisations supported only for little endian architectures */
-  const uint16_t t = 0x100;
-  use_simd = simd_available && !*(const uint8_t *)&t;
+	/* SIMD optimisations supported only for little endian architectures */
+	const uint16_t t = 0x100;
+	use_simd = simd_available && !*(const uint8_t *)&t;
 }
 
 #endif /* THOR_SIMD_H */
