@@ -12,9 +12,10 @@ set(THOR_API_VERSION "${FREERDP_VERSION_MAJOR}.${FREERDP_VERSION_MINOR}")
 set(THOR_VERSION "${FREERDP_API_VERSION}.${FREERDP_VERSION_REVISION}")
 
 if(MSVC)
-	
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_CRT_SECURE_NO_WARNINGS")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DWIN32_LEAN_AND_MEAN")
 else()
-	set(CMAKE_C_FLAGS "-g -O3 -Wall -Wno-unused-result")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O3 -Wall -Wno-unused-result")
 endif()
 
 include_directories(include)

@@ -12,8 +12,10 @@ install_manifest.txt
 *.opensdf
 *.vcxproj
 *.vcxproj.*
-Win32/
 *.dir/
+Win32/
+Debug/
+Release/
 
 *.build/
 DerivedData/

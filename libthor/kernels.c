@@ -199,13 +199,13 @@ static void get_inter_prediction_luma_inner(int width, int height, int xoff, int
 
     for (y = 0; y < height; y++) {
       int res;
-      v128 ax = v128_unpacklo_u8_s16(v64_load_unaligned(ip - 2));
-      v128 a0 = v128_mullo_s16(c0, v128_unpacklo_u8_s16(v64_load_unaligned(ip - 2 * istride - 2)));
-      v128 a1 = v128_mullo_s16(c1, v128_unpacklo_u8_s16(v64_load_unaligned(ip - 1 * istride - 2)));
+      v128 ax = v128_unpacklo_u8_s16(v128_load_unaligned(ip - 2));
+      v128 a0 = v128_mullo_s16(c0, v128_unpacklo_u8_s16(v128_load_unaligned(ip - 2 * istride - 2)));
+      v128 a1 = v128_mullo_s16(c1, v128_unpacklo_u8_s16(v128_load_unaligned(ip - 1 * istride - 2)));
       v128 a2 = v128_mullo_s16(c2, ax);
-      v128 a3 = v128_mullo_s16(c3, v128_unpacklo_u8_s16(v64_load_unaligned(ip + 1 * istride - 2)));
-      v128 a4 = v128_mullo_s16(c4, v128_unpacklo_u8_s16(v64_load_unaligned(ip + 2 * istride - 2)));
-      v128 a5 = v128_mullo_s16(c5, v128_unpacklo_u8_s16(v64_load_unaligned(ip + 3 * istride - 2)));
+      v128 a3 = v128_mullo_s16(c3, v128_unpacklo_u8_s16(v128_load_unaligned(ip + 1 * istride - 2)));
+      v128 a4 = v128_mullo_s16(c4, v128_unpacklo_u8_s16(v128_load_unaligned(ip + 2 * istride - 2)));
+      v128 a5 = v128_mullo_s16(c5, v128_unpacklo_u8_s16(v128_load_unaligned(ip + 3 * istride - 2)));
 
       for (x = 0; x < 3; x++) {
         res = (v128_dotp_s16(c, v128_add_16(v128_add_16(v128_add_16(v128_add_16(v128_add_16(a0, a1), a2), a3), a4), a5)) + v128_dotp_s16(c, ax) * 128 + 8192) >> 14;
@@ -321,7 +321,7 @@ static void get_inter_prediction_luma_centre(int width, int height,
 	int i, j;
 
   if (width == 4) {
-    v128 round = v128_dup_16(8);
+    v64 round = v64_dup_16(8);
     for (i = 0; i < height; i++) {
       v64 r, s;
       r = v64_add_16(v64_unpacklo_u8_s16(v64_from_32(0, u32_load_unaligned(ip - 1 * istride + 0))),
