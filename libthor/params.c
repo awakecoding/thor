@@ -351,7 +351,7 @@ enc_params *parse_config_params(int argc, char **argv)
   }
 
   /* Check if input file is y4m and if so use its geometry */
-  if ((infile = fopen(params->infilestr, "rb"))) {
+  if (params->infilestr && (infile = fopen(params->infilestr, "rb"))) {
     char buf[256];
     int len = fread(buf, 1, sizeof(buf), infile);
     int pos = 10;
