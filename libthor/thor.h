@@ -39,6 +39,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #endif
 
+#ifndef INLINE
+#ifdef _WIN32
+#define INLINE __inline
+#else
+#define INLINE inline
+#endif
+#endif
+
 #define clip255(n) min(255, max(0, (n)))
 #define clip(n, low, high) min ((high), max ((n), (low)))
 
@@ -83,7 +91,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /* Testing and analysis*/
 #define STAT 0                   //Extended statistics printout in decoder
 
-static inline void fatalerror(char error_text[])
+static INLINE void fatalerror(char error_text[])
 {
 	fprintf(stderr,"Run-time error...\n");
 	fprintf(stderr,"%s\n",error_text);

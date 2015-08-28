@@ -6,6 +6,15 @@ CMakeScripts/
 cmake_install.cmake
 install_manifest.txt
 
+*.sln
+*.suo
+*.sdf
+*.opensdf
+*.vcxproj
+*.vcxproj.*
+Win32/
+*.dir/
+
 *.build/
 DerivedData/
 *.xcodeproj/

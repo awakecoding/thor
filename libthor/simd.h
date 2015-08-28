@@ -40,7 +40,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define SIMD_INLINE static inline
 #include <stdint.h>
 #else
+#ifndef _WIN32
 #define SIMD_INLINE static
+#else
+#define SIMD_INLINE static __inline
+#endif
 typedef unsigned char uint8_t;
 typedef signed char int8_t;
 typedef unsigned short uint16_t;
@@ -49,7 +53,9 @@ typedef unsigned int uint32_t;
 typedef int int32_t;
 typedef unsigned long long uint64_t;
 typedef long long int64_t;
+#ifndef _WIN32
 typedef unsigned long long intptr_t;
+#endif
 #endif
 #endif
 

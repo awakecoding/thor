@@ -40,7 +40,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "inter.h"
 #include "intra.h"
 #include "simd.h"
-#include "strings.h"
 #include "kernels.h"
 
 int YPOS,XPOS;

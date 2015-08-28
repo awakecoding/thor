@@ -11,7 +11,11 @@ set(THOR_VERSION_REVISION "0")
 set(THOR_API_VERSION "${FREERDP_VERSION_MAJOR}.${FREERDP_VERSION_MINOR}")
 set(THOR_VERSION "${FREERDP_API_VERSION}.${FREERDP_VERSION_REVISION}")
 
-set(CMAKE_C_FLAGS "-g -O3 -Wall -Wno-unused-result")
+if(MSVC)
+	
+else()
+	set(CMAKE_C_FLAGS "-g -O3 -Wall -Wno-unused-result")
+endif()
 
 include_directories(include)
 include_directories(libthor)
