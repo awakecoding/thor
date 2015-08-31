@@ -40,6 +40,37 @@ void rferror(char error_text[])
 	exit(1);
 }
 
+#ifndef _WIN32
+
+#include <time.h>
+
+#ifndef CLOCK_MONOTONIC_RAW
+#define CLOCK_MONOTONIC_RAW	4
+#endif
+
+#endif
+
+uint32_t thor_get_tick_count(void)
+{
+	uint32_t ticks = 0;
+
+#ifdef _WIN32
+	ticks = GetTickCount();
+#elif defined(__linux__)
+	struct timespec ts;
+
+	if (!clock_gettime(CLOCK_MONOTONIC_RAW, &ts))
+		ticks = (ts.tv_sec * 1000) + (ts.tv_nsec / 1000000);
+#else
+	struct timeval tv;
+
+	if (!gettimeofday(&tv, NULL))
+		ticks = (tv.tv_sec * 1000) + (tv.tv_usec / 1000);
+#endif
+
+	return ticks;
+}
+
 int main_dec(int argc, char** argv)
 {
 	int width;
@@ -53,6 +84,7 @@ int main_dec(int argc, char** argv)
 	FILE* infile = NULL;
 	FILE* outfile = NULL;
 	thor_decoder_t* dec;
+	uint32_t beg, end, diff;
 	thor_sequence_header_t hdr;
 
 	dec = thor_decoder_new();
@@ -95,7 +127,12 @@ int main_dec(int argc, char** argv)
 
 	thor_decoder_set_sequence_header(dec, &hdr);
 
+	beg = thor_get_tick_count();
 	thor_decode(dec, &buffer[8], size - 8, pDst, dstStep);
+	end = thor_get_tick_count();
+
+	diff = end - beg;
+	fprintf(stderr, "thor_decode: %d ms\n", diff);
 
 	if (strstr(argv[2], ".png"))
 	{
@@ -165,6 +202,7 @@ int main_enc(int argc, char **argv)
 	thor_image_t img;
 	enc_params* params;
 	thor_encoder_t* enc;
+	uint32_t beg, end, diff;
 	thor_sequence_header_t hdr;
 
 	enc = thor_encoder_new();
@@ -253,7 +291,12 @@ int main_enc(int argc, char **argv)
 
 	thor_write_sequence_header(buffer, &hdr);
 
+	beg = thor_get_tick_count();
 	size = thor_encode(enc, pSrc, srcStep, &buffer[8], size - 8) + 8;
+	end = thor_get_tick_count();
+
+	diff = end - beg;
+	fprintf(stderr, "thor_encode: %d ms\n", diff);
 
 	if (!(strfile = fopen(params->outfilestr, "wb")))
 	{

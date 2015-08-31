@@ -71,15 +71,11 @@ typedef unsigned long long intptr_t;
 #endif
 #endif
 
-#ifdef __INTEL_COMPILER
+#if defined(_MSC_VER) || defined(__INTEL_COMPILER)
 #define ALIGN(c) __declspec(align(c))
-#elif __arm__
+#elif defined(__GNUC__) || defined(__arm__)
 #define ALIGN(c) __attribute__((aligned(c)))
-#elif __GNUC__
-#define ALIGN(c) __attribute__((aligned(c)))
-#endif
-
-#ifndef ALIGN
+#else
 #define ALIGN(c)
 #endif
 
