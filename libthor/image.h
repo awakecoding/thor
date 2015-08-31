@@ -29,30 +29,48 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "thor.h"
 
-#define THOR_IMAGE_BITMAP		0
-#define THOR_IMAGE_PNG			1
+#define THOR_IMAGE_NONE			0
+#define THOR_IMAGE_BMP			1
+#define THOR_IMAGE_PNG			2
+#define THOR_IMAGE_Y4M			3
 
 struct thor_image_s
 {
 	int type;
+	FILE* fp;
 	int width;
 	int height;
 	uint8_t* data;
 	int scanline;
 	int bitsPerPixel;
 	int bytesPerPixel;
+
+	double y4m_fps;
+	int y4m_frame_index;
+	int y4m_frame_count;
+	int y4m_file_hdrlen;
+	int y4m_frame_hdrlen;
 };
 typedef struct thor_image_s thor_image_t;
 
-int thor_bitmap_write(const char* filename, uint8_t* data, int width, int height, int bpp);
-int thor_png_write(const char* filename, uint8_t* data, int width, int height, int bpp);
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-int thor_image_write(thor_image_t* image, const char* filename);
-int thor_image_read(thor_image_t* image, const char* filename);
+THOR_EXPORT int thor_bmp_write(const char* filename, uint8_t* data, int width, int height, int bpp);
+THOR_EXPORT int thor_png_write(const char* filename, uint8_t* data, int width, int height, int bpp);
 
-int thor_image_read_buffer(thor_image_t* image, uint8_t* buffer, int size);
+THOR_EXPORT int thor_y4m_read_frame(thor_image_t* img, uint8_t* pDst[3], int32_t dstStep[3]);
+THOR_EXPORT int thor_y4m_write_frame(thor_image_t* img, uint8_t* pSrc[3], int32_t srcStep[3]);
 
-thor_image_t* thor_image_new();
-void thor_image_free(thor_image_t* image, int freeBuffer);
+THOR_EXPORT int thor_image_read(thor_image_t* img, const char* filename);
+THOR_EXPORT int thor_image_write(thor_image_t* img, const char* filename);
+
+THOR_EXPORT thor_image_t* thor_image_new();
+THOR_EXPORT void thor_image_free(thor_image_t* img, int freeBuffer);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* THOR_IMAGE_H */

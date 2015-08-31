@@ -32,14 +32,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "image.h"
 #include "params.h"
 
-void rferror(char error_text[])
-{
-	fprintf(stderr,"Run-time error...\n");
-	fprintf(stderr,"%s\n",error_text);
-	fprintf(stderr,"...now exiting to system...\n");
-	exit(1);
-}
-
 #ifndef _WIN32
 
 #include <time.h>
@@ -80,11 +72,9 @@ int main_dec(int argc, char** argv)
 	uint8_t* pDst[3];
 	uint8_t* buffer;
 	uint32_t size;
-	uint32_t lumaSize;
-	uint32_t chromaSize;
 	FILE* infile = NULL;
-	FILE* outfile = NULL;
 	thor_decoder_t* dec;
+	thor_image_t* img;
 	uint32_t beg, end, diff;
 	thor_sequence_header_t hdr;
 
@@ -93,13 +83,13 @@ int main_dec(int argc, char** argv)
 	if (argc < 3)
 	{
 		fprintf(stdout, "usage: %s infile outfile\n", argv[0]);
-		rferror("Wrong number of arguments.");
+		return -1;
 	}
 
 	if (!(infile = fopen(argv[1], "rb")))
 	{
 		fprintf(stderr, "Could not open in-file for reading: %s\n", argv[1]);
-		rferror("");
+		return -1;
 	}
 
 	fseek(infile, 0, SEEK_END);
@@ -138,6 +128,20 @@ int main_dec(int argc, char** argv)
 	if (strstr(argv[2], ".png"))
 	{
 		int rgbStep;
+		uint8_t *pRgb;
+
+		rgbStep = width * 4;
+		pRgb = (uint8_t *) malloc(rgbStep * height);
+
+		thor_YUV420ToRGB_8u_P3AC4R((const uint8_t **) pDst, dstStep, pRgb, rgbStep, width, height);
+
+		thor_png_write(argv[2], pRgb, width, height, 32);
+
+		free(pRgb);
+	}
+	else if (strstr(argv[2], ".bmp"))
+	{
+		int rgbStep;
 		uint8_t* pRgb;
 
 		rgbStep = width * 4;
@@ -145,36 +149,22 @@ int main_dec(int argc, char** argv)
 
 		thor_YUV420ToRGB_8u_P3AC4R((const uint8_t**) pDst, dstStep, pRgb, rgbStep, width, height);
 
-		thor_png_write(argv[2], pRgb, width, height, 32);
+		thor_bmp_write(argv[2], pRgb, width, height, 32);
 
 		free(pRgb);
 	}
-	else
+	else if (strstr(argv[2], ".y4m"))
 	{
-		lumaSize = width * height;
-		chromaSize = lumaSize / 4;
+		img = thor_image_new();
 
-		if (!(outfile = fopen(argv[2], "wb")))
-		{
-			fprintf(stderr, "Could not open out-file for writing.");
-			rferror("");
-		}
+		img->type = THOR_IMAGE_Y4M;
+		img->width = width;
+		img->height = height;
 
-		fprintf(outfile, "YUV4MPEG2 W%d H%d F30:1 Ip A1:1\n", width, height);
-		fprintf(outfile, "FRAME\n");
+		thor_image_write(img, argv[2]);
+		thor_y4m_write_frame(img, pDst, dstStep);
 
-		if (fwrite(pDst[0], 1, lumaSize, outfile) != lumaSize)
-		{
-			fatalerror("Error writing Y to file");
-		}
-		if (fwrite(pDst[1], 1, chromaSize, outfile) != chromaSize)
-		{
-			fatalerror("Error writing U to file");
-		}
-		if (fwrite(pDst[2], 1, chromaSize, outfile) != chromaSize)
-		{
-			fatalerror("Error writing V to file");
-		}
+		thor_image_free(img, 0);
 	}
 
 	free(pDst[0]);
@@ -192,14 +182,11 @@ int main_enc(int argc, char **argv)
 {
 	int width;
 	int height;
-	FILE* infile;
 	FILE* strfile;
 	int srcStep[3];
 	uint8_t* buffer;
 	uint32_t size;
 	uint8_t* pSrc[3];
-	uint32_t lumaSize;
-	uint32_t chromaSize;
 	thor_image_t img;
 	enc_params* params;
 	thor_encoder_t* enc;
@@ -221,7 +208,13 @@ int main_enc(int argc, char **argv)
 	}
 	check_parameters(params);
 
-	if (strstr(params->infilestr, ".png"))
+	if ((strstr(params->infilestr, ".png")) || (strstr(params->infilestr, ".bmp")))
+	{
+		thor_image_read(&img, params->infilestr);
+		params->width = img.width;
+		params->height = img.height;
+	}
+	else if (strstr(params->infilestr, ".y4m"))
 	{
 		thor_image_read(&img, params->infilestr);
 		params->width = img.width;
@@ -248,32 +241,10 @@ int main_enc(int argc, char **argv)
 		thor_RGBToYUV420_8u_P3AC4R(img.data, img.scanline, pSrc, srcStep, width, height);
 		free(img.data);
 	}
-	else
+	else if (strstr(params->infilestr, ".y4m"))
 	{
-		if (!(infile = fopen(params->infilestr, "rb")))
-		{
-			fatalerror("Could not open in-file for reading.");
-		}
-
-		fseek(infile, params->file_headerlen + params->frame_headerlen, SEEK_SET);
-
-		lumaSize = width * height;
-		chromaSize = lumaSize / 4;
-
-		if (fread(pSrc[0], 1, lumaSize, infile) != lumaSize)
-		{
-			fatalerror("Error reading Y from file");
-		}
-		if (fread(pSrc[1], 1, chromaSize, infile) != chromaSize)
-		{
-			fatalerror("Error reading U from file");
-		}
-		if (fread(pSrc[2], 1, chromaSize, infile) != chromaSize)
-		{
-			fatalerror("Error reading V from file");
-		}
-
-		fclose(infile);
+		thor_y4m_read_frame(&img, pSrc, srcStep);
+		fclose(img.fp);
 	}
 
 	hdr.width = width;

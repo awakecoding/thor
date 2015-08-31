@@ -68,7 +68,7 @@ typedef struct _THOR_BITMAP_CORE_HEADER THOR_BITMAP_CORE_HEADER;
 
 #pragma pack(pop)
 
-int thor_bitmap_write(const char* filename, uint8_t* data, int width, int height, int bpp)
+int thor_bmp_write(const char* filename, uint8_t* data, int width, int height, int bpp)
 {
 	FILE* fp;
 	int status = 1;
@@ -120,23 +120,64 @@ int thor_png_write(const char* filename, uint8_t* data, int width, int height, i
 	return status;
 }
 
-int thor_image_write(thor_image_t* image, const char* filename)
+int thor_y4m_write(thor_image_t* img, const char* filename)
+{
+	img->fp = fopen(filename, "wb");
+
+	if (!img->fp)
+		return -1;
+
+	fprintf(img->fp, "YUV4MPEG2 W%d H%d F30:1 Ip A1:1 C420jpeg XYSCSS=420JPEG\n",
+		img->width, img->height);
+
+	return 1;
+}
+
+int thor_y4m_write_frame(thor_image_t* img, uint8_t* pSrc[3], int32_t srcStep[3])
+{
+	uint32_t lumaSize;
+	uint32_t chromaSize;
+
+	lumaSize = img->width * img->height;
+	chromaSize = lumaSize / 4;
+
+	fprintf(img->fp, "FRAME\n");
+
+	if (fwrite(pSrc[0], 1, lumaSize, img->fp) != lumaSize)
+		return -1;
+
+	if (fwrite(pSrc[1], 1, chromaSize, img->fp) != chromaSize)
+		return -1;
+
+	if (fwrite(pSrc[2], 1, chromaSize, img->fp) != chromaSize)
+		return -1;
+
+	img->y4m_frame_count++;
+
+	return 1;
+}
+
+int thor_image_write(thor_image_t* img, const char* filename)
 {
 	int status = -1;
 
-	if (image->type == THOR_IMAGE_BITMAP)
+	if (img->type == THOR_IMAGE_BMP)
 	{
-		status = thor_bitmap_write(filename, image->data, image->width, image->height, image->bitsPerPixel);
+		status = thor_bmp_write(filename, img->data, img->width, img->height, img->bitsPerPixel);
 	}
-	else
+	else if (img->type == THOR_IMAGE_PNG)
 	{
-		status = lodepng_encode32_file(filename, image->data, image->width, image->height) ? -1 : 1;
+		status = lodepng_encode32_file(filename, img->data, img->width, img->height) ? -1 : 1;
+	}
+	else if (img->type == THOR_IMAGE_Y4M)
+	{
+		status = thor_y4m_write(img, filename);
 	}
 
 	return status;
 }
 
-int thor_image_png_read_fp(thor_image_t* image, FILE* fp)
+int thor_image_png_read_fp(thor_image_t* img, FILE* fp)
 {
 	int size;
 	int status;
@@ -156,45 +197,24 @@ int thor_image_png_read_fp(thor_image_t* image, FILE* fp)
 	if (fread((void*) data, size, 1, fp) != 1)
 		return -1;
 
-	status = lodepng_decode32(&(image->data), &width, &height, data, size);
+	status = lodepng_decode32(&(img->data), &width, &height, data, size);
 
 	free(data);
 
 	if (status)
 		return -1;
 
-	image->width = width;
-	image->height = height;
+	img->width = width;
+	img->height = height;
 
-	image->bitsPerPixel = 32;
-	image->bytesPerPixel = 4;
-	image->scanline = image->bytesPerPixel * image->width;
-
-	return 1;
-}
-
-int thor_image_png_read_buffer(thor_image_t* image, uint8_t* buffer, int size)
-{
-	int status;
-	uint32_t width;
-	uint32_t height;
-
-	status = lodepng_decode32(&(image->data), &width, &height, buffer, size);
-
-	if (status)
-		return -1;
-
-	image->width = width;
-	image->height = height;
-
-	image->bitsPerPixel = 32;
-	image->bytesPerPixel = 4;
-	image->scanline = image->bytesPerPixel * image->width;
+	img->bitsPerPixel = 32;
+	img->bytesPerPixel = 4;
+	img->scanline = img->bytesPerPixel * img->width;
 
 	return 1;
 }
 
-int thor_image_bitmap_read_fp(thor_image_t* image, FILE* fp)
+int thor_image_bmp_read_fp(thor_image_t* img, FILE* fp)
 {
 	int index;
 	int vflip;
@@ -208,7 +228,7 @@ int thor_image_bitmap_read_fp(thor_image_t* image, FILE* fp)
 	if ((bf.bfType[0] != 'B') || (bf.bfType[1] != 'M'))
 		return -1;
 
-	image->type = THOR_IMAGE_BITMAP;
+	img->type = THOR_IMAGE_BMP;
 
 	if (fread((void*) &bi, sizeof(THOR_BITMAP_INFO_HEADER), 1, fp) != 1)
 		return -1;
@@ -218,129 +238,168 @@ int thor_image_bitmap_read_fp(thor_image_t* image, FILE* fp)
 		fseek(fp, bf.bfOffBits, SEEK_SET);
 	}
 
-	image->width = bi.biWidth;
+	img->width = bi.biWidth;
 
 	if (bi.biHeight < 0)
 	{
 		vflip = 0;
-		image->height = -1 * bi.biHeight;
+		img->height = -1 * bi.biHeight;
 	}
 	else
 	{
 		vflip = 1;
-		image->height = bi.biHeight;
+		img->height = bi.biHeight;
 	}
 
-	image->bitsPerPixel = bi.biBitCount;
-	image->bytesPerPixel = (image->bitsPerPixel / 8);
-	image->scanline = (bi.biSizeImage / image->height);
+	img->bitsPerPixel = bi.biBitCount;
+	img->bytesPerPixel = (img->bitsPerPixel / 8);
+	img->scanline = (bi.biSizeImage / img->height);
 
-	image->data = (uint8_t*) malloc(bi.biSizeImage);
+	img->data = (uint8_t*) malloc(bi.biSizeImage);
 
-	if (!image->data)
+	if (!img->data)
 		return -1;
 
 	if (!vflip)
 	{
-		if (fread((void*) image->data, bi.biSizeImage, 1, fp) != 1)
+		if (fread((void*) img->data, bi.biSizeImage, 1, fp) != 1)
 		{
-			free(image->data);
-			image->data = NULL;
+			free(img->data);
+			img->data = NULL;
 			return -1;
 		}
 	}
 	else
 	{
-		pDstData = &(image->data[(image->height - 1) * image->scanline]);
+		pDstData = &(img->data[(img->height - 1) * img->scanline]);
 
-		for (index = 0; index < image->height; index++)
+		for (index = 0; index < img->height; index++)
 		{
-			if (fread((void*) pDstData, image->scanline, 1, fp) != 1)
+			if (fread((void*) pDstData, img->scanline, 1, fp) != 1)
 			{
-				free(image->data);
-				image->data = NULL;
+				free(img->data);
+				img->data = NULL;
 				return -1;
 			}
-			pDstData -= image->scanline;
+			pDstData -= img->scanline;
 		}
 	}
 
 	return 1;
 }
 
-int thor_image_bitmap_read_buffer(thor_image_t* image, uint8_t* buffer, int size)
+int thor_image_y4m_read_fp(thor_image_t* img, FILE* fp)
 {
-	int index;
-	int vflip;
-	uint8_t* pSrcData;
-	uint8_t* pDstData;
-	THOR_BITMAP_FILE_HEADER bf;
-	THOR_BITMAP_INFO_HEADER bi;
+	int pos;
+	int len;
+	int num;
+	int den;
+	char* end;
+	char buf[256];
+	double fps = 30;
+	uint32_t width = 0;
+	uint32_t height = 0;
+	uint32_t lumaSize;
+	uint32_t chromaSize;
+	uint32_t frameSize;
+	uint32_t fileSize;
 
-	pSrcData = buffer;
+	len = fread(buf, 1, sizeof(buf), fp);
+	buf[255] = '\0';
 
-	memcpy(&bf, pSrcData, sizeof(THOR_BITMAP_FILE_HEADER));
-	pSrcData += sizeof(THOR_BITMAP_FILE_HEADER);
-
-	if ((bf.bfType[0] != 'B') || (bf.bfType[1] != 'M'))
+	if (strncmp(buf, "YUV4MPEG2 ", 10) != 0)
 		return -1;
 
-	image->type = THOR_IMAGE_BITMAP;
+	pos = 10;
 
-	memcpy(&bi, pSrcData, sizeof(THOR_BITMAP_INFO_HEADER));
-	pSrcData += sizeof(THOR_BITMAP_INFO_HEADER);
-
-	if ((pSrcData - buffer) != bf.bfOffBits)
+	while ((pos < len) && (buf[pos] != '\n'))
 	{
-		pSrcData = &buffer[bf.bfOffBits];
-	}
-
-	image->width = bi.biWidth;
-
-	if (bi.biHeight < 0)
-	{
-		vflip = 0;
-		image->height = -1 * bi.biHeight;
-	}
-	else
-	{
-		vflip = 1;
-		image->height = bi.biHeight;
-	}
-
-	image->bitsPerPixel = bi.biBitCount;
-	image->bytesPerPixel = (image->bitsPerPixel / 8);
-	image->scanline = (bi.biSizeImage / image->height);
-
-	image->data = (uint8_t*) malloc(bi.biSizeImage);
-
-	if (!image->data)
-		return -1;
-
-	if (!vflip)
-	{
-		memcpy(image->data, pSrcData, bi.biSizeImage);
-		pSrcData += bi.biSizeImage;
-	}
-	else
-	{
-		pDstData = &(image->data[(image->height - 1) * image->scanline]);
-
-		for (index = 0; index < image->height; index++)
+		switch (buf[pos++])
 		{
-			memcpy(pDstData, pSrcData, image->scanline);
-			pSrcData += image->scanline;
-			pDstData -= image->scanline;
+			case 'W':
+				width = strtol(buf + pos, &end, 10);
+				pos = end - buf + 1;
+				break;
+			case 'H':
+				height = strtol(buf + pos, &end, 10);
+				pos = end - buf + 1;
+				break;
+			case 'F':
+				den = strtol(buf+pos, &end, 10);
+				pos = end - buf + 1;
+				num = strtol(buf + pos, &end, 10);
+				pos = end - buf + 1;
+				fps = (double) (den / num);
+				break;
+			case 'I':
+				if (buf[pos] != 'p') {
+					fprintf(stderr, "Only progressive input supported\n");
+					return -1;
+				}
+				break;
+			case 'C':
+				if (strcmp(buf+pos, "C420")) {
+				}
+				/* Fallthrough */
+			case 'A': /* Ignored */
+			case 'X':
+			default:
+				while (buf[pos] != ' ' && buf[pos] != '\n' && pos < len)
+					pos++;
+				break;
 		}
 	}
+
+	if (strncmp(buf + pos, "\nFRAME\n", 7) != 0)
+		return -1;
+
+	img->y4m_fps = fps;
+	img->y4m_file_hdrlen = pos + 1;
+	img->y4m_frame_hdrlen = 6;
+
+	img->width = width;
+	img->height = height;
+
+	lumaSize = img->width * img->height;
+	chromaSize = lumaSize / 4;
+	frameSize = img->y4m_frame_hdrlen + lumaSize + (chromaSize * 2);
+
+	fseek(fp, 0, SEEK_END);
+	fileSize = (uint32_t) ftell(fp);
+	fseek(fp, img->y4m_file_hdrlen + img->y4m_frame_hdrlen, SEEK_SET);
+
+	img->y4m_frame_index = 0;
+	img->y4m_frame_count = (fileSize - img->y4m_file_hdrlen) / frameSize;
 
 	return 1;
 }
 
-int thor_image_read(thor_image_t* image, const char* filename)
+int thor_y4m_read_frame(thor_image_t* img, uint8_t* pDst[3], int32_t dstStep[3])
+{
+	uint32_t lumaSize;
+	uint32_t chromaSize;
+
+	lumaSize = img->width * img->height;
+	chromaSize = lumaSize / 4;
+
+	if (fread(pDst[0], 1, lumaSize, img->fp) != lumaSize)
+		return -1;
+
+	if (fread(pDst[1], 1, chromaSize, img->fp) != chromaSize)
+		return -1;
+
+	if (fread(pDst[2], 1, chromaSize, img->fp) != chromaSize)
+		return -1;
+
+	img->y4m_frame_index++;
+
+	return 1;
+}
+
+int thor_image_read(thor_image_t* img, const char* filename)
 {
 	FILE* fp;
-	uint8_t sig[8];
+	uint8_t sig[10];
 	int status = -1;
 
 	fp = fopen(filename, "r+b");
@@ -356,41 +415,33 @@ int thor_image_read(thor_image_t* image, const char* filename)
 
 	if ((sig[0] == 'B') && (sig[1] == 'M'))
 	{
-		image->type = THOR_IMAGE_BITMAP;
-		status = thor_image_bitmap_read_fp(image, fp);
+		img->type = THOR_IMAGE_BMP;
+		status = thor_image_bmp_read_fp(img, fp);
+		fclose(fp);
 	}
 	else if ((sig[0] == 0x89) && (sig[1] == 'P') && (sig[2] == 'N') && (sig[3] == 'G') &&
 		 (sig[4] == '\r') && (sig[5] == '\n') && (sig[6] == 0x1A) && (sig[7] == '\n'))
 	{
-		image->type = THOR_IMAGE_PNG;
-		status = thor_image_png_read_fp(image, fp);
+		img->type = THOR_IMAGE_PNG;
+		status = thor_image_png_read_fp(img, fp);
+		fclose(fp);
 	}
-	fclose(fp);
+	else if ((sig[0] == 'Y') && (sig[1] == 'U') && (sig[2] == 'V') && (sig[3] == '4') &&
+		 (sig[4] == 'M') && (sig[5] == 'P') && (sig[6] == 'E') && (sig[7] == 'G') &&
+		 (sig[8] == '2') && (sig[9] == ' '))
+	{
+		img->type = THOR_IMAGE_Y4M;
+		status = thor_image_y4m_read_fp(img, fp);
+		img->fp = fp;
+	}
+	else
+	{
+		img->type = THOR_IMAGE_NONE;
+		fclose(fp);
+	}
 
-	return status;
-}
-
-int thor_image_read_buffer(thor_image_t* image, uint8_t* buffer, int size)
-{
-	uint8_t sig[8];
-	int status = -1;
-
-	if (size < 8)
+	if (!img->type)
 		return -1;
-
-	memcpy(sig, buffer, 8);
-
-	if ((sig[0] == 'B') && (sig[1] == 'M'))
-	{
-		image->type = THOR_IMAGE_BITMAP;
-		status = thor_image_bitmap_read_buffer(image, buffer, size);
-	}
-	else if ((sig[0] == 0x89) && (sig[1] == 'P') && (sig[2] == 'N') && (sig[3] == 'G') &&
-		 (sig[4] == '\r') && (sig[5] == '\n') && (sig[6] == 0x1A) && (sig[7] == '\n'))
-	{
-		image->type = THOR_IMAGE_PNG;
-		status = thor_image_png_read_buffer(image, buffer, size);
-	}
 
 	return status;
 }
@@ -407,15 +458,24 @@ thor_image_t* thor_image_new()
 	return image;
 }
 
-void thor_image_free(thor_image_t * image, int freeBuffer)
+void thor_image_free(thor_image_t * img, int freeBuffer)
 {
-	if (!image)
+	if (!img)
 		return;
 
-	if (freeBuffer)
-		free(image->data);
+	if (img->fp)
+	{
+		fclose(img->fp);
+		img->fp = NULL;
+	}
 
-	free(image);
+	if (freeBuffer)
+	{
+		free(img->data);
+		img->data = NULL;
+	}
+
+	free(img);
 }
 
 #include "../external/lodepng/lodepng.c"
