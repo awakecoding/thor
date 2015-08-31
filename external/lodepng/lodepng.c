@@ -35,6 +35,7 @@ freely, subject to the following restrictions:
 #if defined(_MSC_VER) && (_MSC_VER >= 1310) /*Visual Studio: A few warning types are not desired here.*/
 #pragma warning( disable : 4244 ) /*implicit conversions: not warned by gcc -Wall -Wextra and requires too much casts*/
 #pragma warning( disable : 4996 ) /*VS does not like fopen, but fopen_s is not standard C so unusable here*/
+#pragma warning( disable : 4267 )
 #endif /*_MSC_VER */
 
 /*
@@ -3453,7 +3454,7 @@ unsigned lodepng_convert(unsigned char* out, const unsigned char* in,
 
   if(mode_out->colortype == LCT_PALETTE)
   {
-    size_t palsize = 1u << mode_out->bitdepth;
+    uint32_t palsize = 1u << mode_out->bitdepth;
     if(mode_out->palettesize < palsize) palsize = mode_out->palettesize;
     color_tree_init(&tree);
     for(i = 0; i < palsize; i++)

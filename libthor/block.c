@@ -42,6 +42,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "simd.h"
 #include "kernels.h"
 
+#if defined(_MSC_VER)
+#pragma warning(disable:4018) /* signed/unsigned mismatch */
+#endif
+
 int YPOS,XPOS;
 
 int zigzag16[16] = {

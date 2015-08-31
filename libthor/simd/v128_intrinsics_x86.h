@@ -31,8 +31,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "v64_intrinsics_x86.h"
 
+#if 1
+#define v128 __m128i
+#else
 typedef __m128i v128;
-
+#endif
 
 SIMD_INLINE uint32_t v128_low_u32(v128 a) {
   return (uint32_t)_mm_cvtsi128_si32(a);
@@ -47,7 +50,11 @@ SIMD_INLINE v64 v128_high_v64(v128 a) {
 }
 
 SIMD_INLINE v128 v128_from_64(uint64_t a, uint64_t b) {
+#if 1
+  return _mm_set_epi64x(a, b);
+#else
   return _mm_set_epi64(_mm_cvtsi64_m64(a), _mm_cvtsi64_m64(b));
+#endif
 }
 
 SIMD_INLINE v128 v128_from_v64(v64 a, v64 b) {
@@ -66,7 +73,7 @@ SIMD_INLINE v128 v128_load_aligned(const void *p) {
 
 SIMD_INLINE v128 v128_load_unaligned(const void *p) {
 #if defined (__SSSE3__)
-  return (__m128i)_mm_lddqu_si128((__m128i *)p);
+  return _mm_lddqu_si128((__m128i *)p);
 #else
   return _mm_loadu_si128((__m128i *)p);
 #endif

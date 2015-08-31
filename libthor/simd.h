@@ -80,6 +80,14 @@ typedef unsigned long long intptr_t;
 #endif
 
 #ifdef _WIN32
+
+#ifndef __SSE2__
+#define __SSE2__
+#define __SSE3__
+#define __SSSE3__
+#define __SSE4_1__
+#endif
+
 #include <intrin.h>
 
 SIMD_INLINE unsigned int log2i(uint32_t x)
@@ -135,13 +143,12 @@ SIMD_INLINE void thor_free(void *p)
 
 #endif
 
-
 static const int simd_check = 1;
 
-#if defined(__ARM_NEON__) && defined(ALIGN)
+#if defined(__ARM_NEON__)
 static const int simd_available = 1;
 #include "simd/v128_intrinsics_arm.h"
-#elif defined(__SSE2__) && defined(ALIGN)
+#elif defined(__SSE2__)
 static const int simd_available = 1;
 #include "simd/v128_intrinsics_x86.h"
 #else
