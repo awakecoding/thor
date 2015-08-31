@@ -246,11 +246,14 @@ const int16_t g5mat_hevc[64][64] = {
 
 static const int16_t *transform_table[5] = { &g1mat_hevc[0][0], &g2mat_hevc[0][0], &g3mat_hevc[0][0], &g4mat_hevc[0][0], &g5mat_hevc[0][0]};
 
-void transform (const int16_t *block, int16_t *coeff, int size, int fast)
+void transform(const int16_t *block, int16_t *coeff, int size, int fast)
 {
   if (use_simd)
+  {
     transform_simd(block, coeff, size, fast);
-  else {
+  }
+  else
+  {
           int i, j, k;
     int dsize = size;
     int16_t tmp[MAX_TR_SIZE][MAX_TR_SIZE];
@@ -412,12 +415,14 @@ void transform_1d_even_l0(const int16_t *coeff, const int16_t *tr_matrix, int si
   }
 }
 
-
-void inverse_transform (const int16_t * coeff, int16_t *block, int size)
+void inverse_transform(const int16_t * coeff, int16_t *block, int size)
 {
   if (size < 32)
+  {
     inverse_transform_simd(coeff, block, size);
-  else {
+  }
+  else
+  {
     int i,j;
     int out[MAX_TR_SIZE];
     int16_t tmp[MAX_TR_SIZE*MAX_TR_SIZE];

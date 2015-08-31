@@ -193,7 +193,7 @@ void find_block_contexts(int ypos, int xpos, int height, int width, int size, de
 void clpf_block(uint8_t *rec,int x0, int x1, int y0, int y1,int stride){
 
   int y,x,A,B,C,D,X,Xprime,delta,sum,sign;
-  uint8_t tmp_block[MAX_BLOCK_SIZE*MAX_BLOCK_SIZE];
+  ALIGN(16) uint8_t tmp_block[MAX_BLOCK_SIZE*MAX_BLOCK_SIZE];
 
   for (y=y0;y<y1;y++){
     for (x=x0;x<x1;x++){
@@ -1359,11 +1359,11 @@ uint32_t cost_calc(yuv_block_t *org_block,yuv_block_t *rec_block,int stride,int 
 
 int search_intra_prediction_params(uint8_t *org_y,yuv_frame_t *rec,block_pos_t *block_pos,int width,int height,int num_intra_modes,intra_mode_t *intra_mode)
 {
-  int size = block_pos->size;
-  int yposY = block_pos->ypos;
-  int xposY = block_pos->xpos;
-  int sad,min_sad;
-  uint8_t pblock[MAX_BLOCK_SIZE*MAX_BLOCK_SIZE];
+	int sad, min_sad;
+	int size = block_pos->size;
+	int yposY = block_pos->ypos;
+	int xposY = block_pos->xpos;
+	ALIGN(16) uint8_t pblock[MAX_BLOCK_SIZE*MAX_BLOCK_SIZE];
 
   /* Search for intra modes */
   min_sad = (1<<30);
@@ -1527,7 +1527,7 @@ int search_inter_prediction_params(uint8_t *org_y,yuv_frame_t *ref,block_pos_t *
   return sad;
 }
 
-int encode_and_reconstruct_block (encoder_info_t *encoder_info, uint8_t *orig, int orig_stride, int size, int qp, uint8_t *pblock, int16_t *coeffq, uint8_t *rec, int frame_type, int chroma_flag,int tb_split,int rdoq)
+int encode_and_reconstruct_block(encoder_info_t *encoder_info, uint8_t *orig, int orig_stride, int size, int qp, uint8_t *pblock, int16_t *coeffq, uint8_t *rec, int frame_type, int chroma_flag,int tb_split,int rdoq)
 {
   int cbp, cbpbit;
   ALIGN(16) int16_t block[2*MAX_TR_SIZE*MAX_TR_SIZE];
@@ -2389,7 +2389,7 @@ int mode_decision_rdo(encoder_info_t *encoder_info,block_info_t *block_info)
         int r,i,ref_posY;
         mv_t mv;
         uint8_t *ref_y;
-        uint8_t pblock_y[MAX_BLOCK_SIZE*MAX_BLOCK_SIZE];
+        ALIGN(16) uint8_t pblock_y[MAX_BLOCK_SIZE*MAX_BLOCK_SIZE];
         ALIGN(16) uint8_t org8[MAX_BLOCK_SIZE*MAX_BLOCK_SIZE];
 
         /* Initialize using ME for ref_idx=0 */
@@ -2472,7 +2472,7 @@ int mode_decision_rdo(encoder_info_t *encoder_info,block_info_t *block_info)
 #else
       if (encoder_info->params->intra_rdo){
 #endif
-      uint8_t pblock[MAX_BLOCK_SIZE*MAX_BLOCK_SIZE];
+      ALIGN(16) uint8_t pblock[MAX_BLOCK_SIZE*MAX_BLOCK_SIZE];
       uint32_t min_intra_cost = MAX_UINT32;
       intra_mode_t best_intra_mode = MODE_DC;
       int upright_available = get_upright_available(ypos,xpos,size,width);

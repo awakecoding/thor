@@ -629,7 +629,8 @@ static void transform4(const int16_t *src, int16_t *dst)
 }
 
 
-static void inverse_transform4(const int16_t *coeff, int16_t *block) {
+static void inverse_transform4(const int16_t *coeff, int16_t *block)
+{
 	v128 round1 = v128_dup_32(64);
 	v128 round2 = v128_dup_32(2048);
 	v64 c83 = v64_dup_16(83);
@@ -689,7 +690,8 @@ static void inverse_transform4(const int16_t *coeff, int16_t *block) {
 	v64_store_aligned(block + 12, v64_pack_s32_s16(v128_high_v64(x3), v128_high_v64(x1)));
 }
 
-static void inverse_transform8_4x4(const int16_t *coeff, int16_t *block) {
+static void inverse_transform8_4x4(const int16_t *coeff, int16_t *block)
+{
 	v128 t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12;
 	v128 round =  v128_dup_32(64);
 	v128 c0  = v128_dup_32( 83 << 16 |   64);
@@ -786,8 +788,6 @@ static void inverse_transform8_4x4(const int16_t *coeff, int16_t *block) {
 	t4 = v128_pack_s32_s16(v128_shr_n_s32(v128_add_32(v128_add_32(t9, t4), round), 12),
 			       v128_shr_n_s32(v128_add_32(v128_add_32(t8, t10), round), 12));
 
-
-
 	/* Transpose */
 	t8 = v128_ziplo_16(t1, t0);
 	t9 = v128_ziplo_16(t3, t2);
@@ -815,9 +815,9 @@ static void inverse_transform8_4x4(const int16_t *coeff, int16_t *block) {
 	v128_store_aligned(block + 56, v128_ziphi_64(t0, t8));
 }
 
-
 /* Inverse transform, take advantage of symmetries to minimise operations */
-static void inverse_transform8(const int16_t *coeff, int16_t *block) {
+static void inverse_transform8(const int16_t *coeff, int16_t *block)
+{
 	v128 t0, t1, t2, t3, t4 ,t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16;
 	v128 round = v128_dup_32(64);
 	v128 c0  = v128_dup_16(64);
@@ -1030,7 +1030,8 @@ static void inverse_transform8(const int16_t *coeff, int16_t *block) {
 	v128_store_aligned(block + 56, v128_ziphi_64(t3, t5));
 }
 
-static void inverse_transform16(const int16_t *src, int16_t *dst, int shift) {
+static void inverse_transform16(const int16_t *src, int16_t *dst, int shift)
+{
 	int j;
 	v64 c9 = v64_dup_16(9);
 	v64 c25 = v64_dup_16(25);
@@ -1049,7 +1050,8 @@ static void inverse_transform16(const int16_t *src, int16_t *dst, int shift) {
 	v64 c89 = v64_dup_16(89);
 	v64 c75 = v64_dup_16(75);
 
-	for (j = 0; j < 16; j += 4) {
+	for (j = 0; j < 16; j += 4)
+	{
 		v128 E0, E1, E2, E3, E4, E5, E6, E7;
 		v128 O0, O1, O2, O3, O4, O5, O6, O7;
 		v128 d0, d1, d2, d3, d4, d5, d6, d7;
@@ -1247,7 +1249,8 @@ static void inverse_transform16(const int16_t *src, int16_t *dst, int shift) {
 }
 
 /* 16x16 inverse transform assuming everything but top left 4x4 is 0 */
-static void inverse_transform16_4x4(const int16_t *coeff, int16_t *block) {
+static void inverse_transform16_4x4(const int16_t *coeff, int16_t *block)
+{
 	static const ALIGN(16) int16_t c[] = {
 		64,  89,  64,  89,  64,  89,  64,  89,
 		90,  87,  90,  87,  90,  87,  90,  87,
@@ -1274,7 +1277,8 @@ static void inverse_transform16_4x4(const int16_t *coeff, int16_t *block) {
 	v128 hi = v128_ziphi_16(load1, load0);
 	int i, j;
 
-	for (i = 0; i < 4; i++) {
+	for (i = 0; i < 4; i++)
+	{
 		v128 t0 = v128_madd_s16(v128_load_aligned(c + i*32 +  0), lo);
 		v128 t1 = v128_madd_s16(v128_load_aligned(c + i*32 +  8), hi);
 		v128 t2 = v128_madd_s16(v128_load_aligned(c + i*32 + 16), lo);
@@ -1333,7 +1337,8 @@ static void inverse_transform16_4x4(const int16_t *coeff, int16_t *block) {
 
 	round = v128_dup_32(2048);
 
-	for (i = 0; i < 8; i++) {
+	for (i = 0; i < 8; i++)
+	{
 		int i1 = i*16;
 		int i2 = 240 - i1;
 		int i3 = i & 1 ? i2 - 120 : i1;
@@ -1366,7 +1371,9 @@ static void inverse_transform16_4x4(const int16_t *coeff, int16_t *block) {
 	}
 
 	for (i = 0; i < 16; i += 8)
-		for (j = 0; j < 16; j += 8) {
+	{
+		for (j = 0; j < 16; j += 8)
+		{
 			int16_t *p = block + i*16 + j;
 			v128 load0 = v128_load_aligned(p +   0);
 			v128 load1 = v128_load_aligned(p +  16);
@@ -1401,6 +1408,7 @@ static void inverse_transform16_4x4(const int16_t *coeff, int16_t *block) {
 			v128_store_aligned(p +  96, v128_ziplo_64(t24, t20));
 			v128_store_aligned(p + 112, v128_ziphi_64(t24, t20));
 		}
+	}
 }
 
 static void transform8(const int16_t *src, int16_t *dst, int shift)
@@ -1413,7 +1421,8 @@ static void transform8(const int16_t *src, int16_t *dst, int shift)
 	const v64 shuffle4 = v64_from_64(0x0100030205040706LL);
 	const v128 round = v128_dup_32(1 << (shift-1));
 
-	for (j = 0; j < 8; j += 4) {
+	for (j = 0; j < 8; j += 4)
+	{
 		v64 c;
 		v128 t, EO, EEE, EEO, E, E_, O, O_;
 
@@ -1492,7 +1501,8 @@ static void transform16(const int16_t *src, int16_t *dst, int shift)
 	const v128 shuffle2 = v128_from_64(0x0302010007060504LL, 0x0b0a09080f0e0d0cLL);
 	const v128 round = v128_dup_32(1 << (shift-1));
 
-	for (j = 0; j < 16; j += 4) {
+	for (j = 0; j < 16; j += 4)
+	{
 		v128 t0, t1, t2, t3, t4, t5, t6, t7;
 		v128 EEE0, EEE1, EEO0, EEO1;
 		v128 EE0, EE1, EE2, EE3;
@@ -1634,7 +1644,6 @@ static void transform16(const int16_t *src, int16_t *dst, int shift)
 	}
 }
 
-
 static void transform32(const int16_t *src, int16_t *dst, int shift, int it)
 {
 	extern const int16_t g4mat_hevc[32][32];
@@ -1646,7 +1655,8 @@ static void transform32(const int16_t *src, int16_t *dst, int shift, int it)
 	int EEEEE;
 	int add = 1<<(shift-1);
 
-	for (j = 0; j < it; j++) {
+	for (j = 0; j < it; j++)
+	{
 		/* E and O*/
 		for (k = 0; k < 16; k++) {
 			E[k] = src[k] + src[31-k];
@@ -1703,7 +1713,8 @@ static void transform64(const int16_t *src, int16_t *dst, int shift, int it)
 	int EEEEEE;
 	int add = 1<<(shift-1);
 
-	for (j = 0; j < it; j++) {
+	for (j = 0; j < it; j++)
+	{
 		/* E and O*/
 		for (k = 0; k < 32; k++) {
 			E[k] = src[k] + src[63-k];
