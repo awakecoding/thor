@@ -43,6 +43,7 @@ void rferror(char error_text[])
 #ifndef _WIN32
 
 #include <time.h>
+#include <sys/time.h>
 
 #ifndef CLOCK_MONOTONIC_RAW
 #define CLOCK_MONOTONIC_RAW	4
