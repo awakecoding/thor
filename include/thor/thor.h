@@ -77,6 +77,15 @@ typedef struct
         uint8_t enable_bipred;
 } thor_sequence_header_t;
 
+typedef struct
+{
+	uint32_t size;
+	uint8_t reserved1;
+	uint8_t reserved2;
+	uint8_t reserved3;
+	uint8_t reserved4;
+} thor_frame_header_t;
+
 typedef struct thor_encoder_s thor_encoder_t;
 typedef struct thor_decoder_s thor_decoder_t;
 
@@ -88,8 +97,11 @@ extern "C" {
  * Thor Common API
  */
 
-THOR_EXPORT void thor_read_sequence_header(uint8_t* buffer, thor_sequence_header_t* hdr);
-THOR_EXPORT void thor_write_sequence_header(uint8_t* buffer, thor_sequence_header_t* hdr);
+THOR_EXPORT void thor_read_sequence_header(uint8_t* buffer, thor_sequence_header_t* shdr);
+THOR_EXPORT void thor_write_sequence_header(uint8_t* buffer, thor_sequence_header_t* shdr);
+
+THOR_EXPORT void thor_read_frame_header(uint8_t* buffer, thor_frame_header_t* fhdr);
+THOR_EXPORT void thor_write_frame_header(uint8_t* buffer, thor_frame_header_t* fhdr);
 
 /**
  * Thor Encoder API

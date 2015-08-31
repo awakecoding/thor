@@ -56,7 +56,7 @@ const char* thor_default_params[] =
 
 int thor_default_param_count = sizeof(thor_default_params) / sizeof(const char*);
 
-void thor_read_sequence_header(uint8_t* buffer, thor_sequence_header_t* hdr)
+void thor_read_sequence_header(uint8_t* buffer, thor_sequence_header_t* shdr)
 {
 	stream_t stream;
 
@@ -66,21 +66,21 @@ void thor_read_sequence_header(uint8_t* buffer, thor_sequence_header_t* hdr)
 	stream.rdbfr = buffer;
 	stream.rdptr = stream.rdbfr;
 
-	hdr->width = getbits(&stream, 16);
-	hdr->height = getbits(&stream, 16);
-	hdr->pb_split_enable = getbits(&stream, 1);
-	hdr->tb_split_enable = getbits(&stream, 1);
-	hdr->max_num_ref = getbits(&stream, 2) + 1;
-	hdr->num_reorder_pics = getbits(&stream, 4);
-	hdr->max_delta_qp = getbits(&stream, 2);
-	hdr->deblocking = getbits(&stream, 1);
-	hdr->clpf = getbits(&stream, 1);
-	hdr->use_block_contexts = getbits(&stream, 1);
-	hdr->enable_bipred = getbits(&stream, 1);
+	shdr->width = getbits(&stream, 16);
+	shdr->height = getbits(&stream, 16);
+	shdr->pb_split_enable = getbits(&stream, 1);
+	shdr->tb_split_enable = getbits(&stream, 1);
+	shdr->max_num_ref = getbits(&stream, 2) + 1;
+	shdr->num_reorder_pics = getbits(&stream, 4);
+	shdr->max_delta_qp = getbits(&stream, 2);
+	shdr->deblocking = getbits(&stream, 1);
+	shdr->clpf = getbits(&stream, 1);
+	shdr->use_block_contexts = getbits(&stream, 1);
+	shdr->enable_bipred = getbits(&stream, 1);
 	getbits(&stream, 18); /* pad */
 }
 
-void thor_write_sequence_header(uint8_t* buffer, thor_sequence_header_t* hdr)
+void thor_write_sequence_header(uint8_t* buffer, thor_sequence_header_t* shdr)
 {
 	stream_t stream;
 
@@ -90,18 +90,54 @@ void thor_write_sequence_header(uint8_t* buffer, thor_sequence_header_t* hdr)
 	stream.bitbuf = 0;
 	stream.bytesize = 8;
 
-	putbits(16, hdr->width, &stream);
-	putbits(16, hdr->height, &stream);
-	putbits(1, hdr->pb_split_enable, &stream);
-	putbits(1, hdr->tb_split_enable, &stream);
-	putbits(2, hdr->max_num_ref-1, &stream);
-	putbits(4, hdr->num_reorder_pics, &stream);
-	putbits(2, hdr->max_delta_qp, &stream);
-	putbits(1, hdr->deblocking, &stream);
-	putbits(1, hdr->clpf, &stream);
-	putbits(1, hdr->use_block_contexts, &stream);
-	putbits(1, hdr->enable_bipred, &stream);
+	putbits(16, shdr->width, &stream);
+	putbits(16, shdr->height, &stream);
+	putbits(1, shdr->pb_split_enable, &stream);
+	putbits(1, shdr->tb_split_enable, &stream);
+	putbits(2, shdr->max_num_ref-1, &stream);
+	putbits(4, shdr->num_reorder_pics, &stream);
+	putbits(2, shdr->max_delta_qp, &stream);
+	putbits(1, shdr->deblocking, &stream);
+	putbits(1, shdr->clpf, &stream);
+	putbits(1, shdr->use_block_contexts, &stream);
+	putbits(1, shdr->enable_bipred, &stream);
 	putbits(18, 0, &stream); /* pad */
+
+	flush_bitbuf(&stream);
+}
+
+void thor_read_frame_header(uint8_t* buffer, thor_frame_header_t* fhdr)
+{
+	stream_t stream;
+
+	stream.incnt = 0;
+	stream.bitcnt = 0;
+	stream.capacity = 8;
+	stream.rdbfr = buffer;
+	stream.rdptr = stream.rdbfr;
+
+	fhdr->size = getbits(&stream, 32);
+	fhdr->reserved1 = getbits(&stream, 8);
+	fhdr->reserved2 = getbits(&stream, 8);
+	fhdr->reserved3 = getbits(&stream, 8);
+	fhdr->reserved4 = getbits(&stream, 8);
+}
+
+void thor_write_frame_header(uint8_t* buffer, thor_frame_header_t*fhdr)
+{
+	stream_t stream;
+
+	stream.bitstream = buffer;
+	stream.bytepos = 0;
+	stream.bitrest = 32;
+	stream.bitbuf = 0;
+	stream.bytesize = 8;
+
+	putbits(32, fhdr->size, &stream);
+	putbits(8, fhdr->reserved1, &stream);
+	putbits(8, fhdr->reserved2, &stream);
+	putbits(8, fhdr->reserved3, &stream);
+	putbits(8, fhdr->reserved4, &stream);
 
 	flush_bitbuf(&stream);
 }
