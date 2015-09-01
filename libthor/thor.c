@@ -31,7 +31,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "bits.h"
 #include "simd.h"
 #include "frame.h"
-#include "params.h"
 
 const char* thor_default_params[] =
 {
@@ -145,8 +144,6 @@ void thor_write_frame_header(uint8_t* buffer, thor_frame_header_t*fhdr)
 int thor_encode(thor_encoder_t* ctx, uint8_t* pSrc[3], int srcStep[3], uint8_t* pDst, uint32_t dstSize)
 {
 	int status = 0;
-	uint8_t* pRec[3];
-	yuv_frame_t rec;
 	yuv_frame_t frame;
 	stream_t* stream = &ctx->stream;
 	encoder_info_t* info = &ctx->info;
@@ -160,21 +157,6 @@ int thor_encode(thor_encoder_t* ctx, uint8_t* pSrc[3], int srcStep[3], uint8_t* 
 	frame.y = pSrc[0];
 	frame.u = pSrc[1];
 	frame.v = pSrc[2];
-
-	pRec[0] = (uint8_t*) malloc((ctx->height * srcStep[0]) + (ctx->height * srcStep[1]));
-	pRec[1] = pRec[0] + (ctx->height * srcStep[0]);
-	pRec[2] = pRec[1] + ((ctx->height / 2) * srcStep[2]);
-
-	rec.width = ctx->width;
-	rec.height = ctx->height;
-	rec.stride_y = srcStep[0];
-	rec.stride_c = srcStep[1];
-	rec.offset_y = 0;
-	rec.offset_c = 0;
-	rec.y = pRec[0];
-	rec.u = pRec[1];
-	rec.v = pRec[2];
-
 	frame.frame_num = info->frame_info.frame_num;
 
 	stream->bitstream = pDst;
@@ -184,20 +166,18 @@ int thor_encode(thor_encoder_t* ctx, uint8_t* pSrc[3], int srcStep[3], uint8_t* 
 	stream->bytesize = dstSize;
 
 	info->frame_info.frame_num = 0;
-	info->rec = &rec;
+	info->rec = &ctx->rec;
 	info->orig = &frame;
 	info->rec->frame_num = info->frame_info.frame_num;
 	info->frame_info.frame_type = I_FRAME;
-	info->frame_info.qp = ctx->params->qp + ctx->params->dqpI;
-	info->frame_info.num_ref = min(0, ctx->params->max_num_ref);
+	info->frame_info.qp = ctx->settings->qp + ctx->settings->dqpI;
+	info->frame_info.num_ref = min(0, ctx->settings->max_num_ref);
 	info->frame_info.num_intra_modes = 4;
 
 	encode_frame(info);
 
 	flush_all_bits(stream);
 	status = stream->bytepos;
-
-	free(pRec[0]);
 
 	return status;
 }
@@ -213,6 +193,8 @@ void thor_encoder_set_sequence_header(thor_encoder_t* ctx, thor_sequence_header_
 	info->width = ctx->width = hdr->width;
 	info->height = ctx->height = hdr->height;
 
+	create_yuv_frame(&ctx->rec, ctx->width, ctx->height, 0, 0, 0, 0);
+
 	for (i = 0; i < MAX_REF_FRAMES; i++)
 	{
 		create_yuv_frame(&ref[i], ctx->width, ctx->height, PADDING_Y, PADDING_Y, PADDING_Y / 2, PADDING_Y / 2);
@@ -222,7 +204,7 @@ void thor_encoder_set_sequence_header(thor_encoder_t* ctx, thor_sequence_header_
 	info->deblock_data = (deblock_data_t*) malloc((ctx->height / MIN_PB_SIZE) * (ctx->width / MIN_PB_SIZE) * sizeof(deblock_data_t));
 }
 
-thor_encoder_t* thor_encoder_new()
+thor_encoder_t* thor_encoder_new(thor_encoder_settings_t* settings)
 {
 	thor_encoder_t* ctx;
 
@@ -235,12 +217,15 @@ thor_encoder_t* thor_encoder_new()
 
 	ctx->info.stream = &ctx->stream;
 
-	ctx->params = parse_config_params(thor_default_param_count, (char**) thor_default_params);
+	ctx->settings = settings;
 
-	if (!ctx->params)
+	if (!ctx->settings)
+		ctx->settings = thor_encoder_settings_new(thor_default_param_count, (char**) thor_default_params);
+
+	if (!ctx->settings)
 		return NULL;
 
-	ctx->info.params = ctx->params;
+	ctx->info.params = ctx->settings;
 
 	return ctx;
 }
@@ -254,6 +239,8 @@ void thor_encoder_free(thor_encoder_t* ctx)
 	if (!ctx)
 		return;
 
+	close_yuv_frame(&ctx->rec);
+
 	for (i = 0; i < MAX_REF_FRAMES; i++)
 	{
 		close_yuv_frame(&ref[i]);
@@ -261,7 +248,7 @@ void thor_encoder_free(thor_encoder_t* ctx)
 
 	free(info->deblock_data);
 
-	delete_config_params(ctx->params);
+	thor_encoder_settings_free(ctx->settings);
 
 	free(ctx);
 }
@@ -330,7 +317,7 @@ void thor_decoder_set_sequence_header(thor_decoder_t* ctx, thor_sequence_header_
 	info->deblock_data = (deblock_data_t*) malloc((ctx->height / MIN_PB_SIZE) * (ctx->width / MIN_PB_SIZE) * sizeof(deblock_data_t));
 }
 
-thor_decoder_t* thor_decoder_new()
+thor_decoder_t* thor_decoder_new(thor_decoder_settings_t* settings)
 {
 	thor_decoder_t* ctx;
 
@@ -342,6 +329,14 @@ thor_decoder_t* thor_decoder_new()
 		return NULL;
 
 	ctx->info.stream = &ctx->stream;
+
+	ctx->settings = settings;
+
+	if (!ctx->settings)
+		ctx->settings = thor_decoder_settings_new(0, NULL);
+
+	if (!ctx->settings)
+		return NULL;
 
 	return ctx;
 }

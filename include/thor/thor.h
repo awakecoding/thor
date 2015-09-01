@@ -86,8 +86,12 @@ typedef struct
 	uint8_t reserved4;
 } thor_frame_header_t;
 
+
 typedef struct thor_encoder_s thor_encoder_t;
+typedef struct thor_encoder_settings_s thor_encoder_settings_t;
+
 typedef struct thor_decoder_s thor_decoder_t;
+typedef struct thor_decoder_settings_s thor_decoder_settings_t;
 
 #ifdef __cplusplus
 extern "C" {
@@ -111,7 +115,7 @@ THOR_EXPORT void thor_encoder_set_sequence_header(thor_encoder_t* ctx, thor_sequ
 
 THOR_EXPORT int thor_encode(thor_encoder_t* ctx, uint8_t* pSrc[3], int srcStep[3], uint8_t* pDst, uint32_t dstSize);
 
-THOR_EXPORT thor_encoder_t* thor_encoder_new();
+THOR_EXPORT thor_encoder_t* thor_encoder_new(thor_encoder_settings_t* settings);
 THOR_EXPORT void thor_encoder_free(thor_encoder_t* ctx);
 
 /**
@@ -122,7 +126,7 @@ THOR_EXPORT void thor_decoder_set_sequence_header(thor_decoder_t* ctx, thor_sequ
 
 THOR_EXPORT int thor_decode(thor_decoder_t* ctx, uint8_t* pSrc, uint32_t srcSize, uint8_t* pDst[3], int dstStep[3]);
 
-THOR_EXPORT thor_decoder_t* thor_decoder_new();
+THOR_EXPORT thor_decoder_t* thor_decoder_new(thor_decoder_settings_t* settings);
 THOR_EXPORT void thor_decoder_free(thor_decoder_t* ctx);
 
 #ifdef __cplusplus

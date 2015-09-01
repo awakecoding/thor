@@ -24,13 +24,10 @@ ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "thor.h"
-
 #include <thor/thor.h>
 #include <thor/color.h>
-
-#include "image.h"
-#include "params.h"
+#include <thor/image.h>
+#include <thor/settings.h>
 
 #ifndef _WIN32
 
@@ -79,7 +76,7 @@ int main_enc(int argc, char **argv)
 	uint8_t hdrbuf[8];
 	thor_image_t img;
 	uint32_t thorSize;
-	enc_params* params;
+	thor_encoder_settings_t*settings;
 	thor_encoder_t* enc;
 	uint32_t beg, end, diff;
 	thor_frame_header_t fhdr;
@@ -88,36 +85,41 @@ int main_enc(int argc, char **argv)
 	memset(&shdr, 0, sizeof(shdr));
 	memset(&fhdr, 0, sizeof(fhdr));
 
-	enc = thor_encoder_new();
-
 	/* Read commands from command line and from configuration file(s) */
 	if (argc < 3)
 	{
-		fprintf(stdout,"usage: %s <parameters>\n",argv[0]);
-		fatalerror("");
-	}
-	params = parse_config_params(argc, argv);
-	if (params == NULL)
-	{
-		fatalerror("Error while reading encoder parameters.");
-	}
-	check_parameters(params);
-
-	if ((strstr(params->infilestr, ".png")) || (strstr(params->infilestr, ".bmp")))
-	{
-		thor_image_read(&img, params->infilestr);
-		params->width = img.width;
-		params->height = img.height;
-	}
-	else if (strstr(params->infilestr, ".y4m"))
-	{
-		thor_image_read(&img, params->infilestr);
-		params->width = img.width;
-		params->height = img.height;
+		fprintf(stdout, "usage: %s <parameters>\n",argv[0]);
+		return -1;
 	}
 
-	width = params->width;
-	height = params->height;
+	settings = thor_encoder_settings_new(argc, argv);
+
+	if (!settings)
+	{
+		fprintf(stderr, "Error while reading encoder parameters.");
+		return -1;
+	}
+
+	if (thor_encoder_settings_validate(settings) < 0)
+		return -1;
+
+	if ((strstr(settings->infilestr, ".png")) || (strstr(settings->infilestr, ".bmp")))
+	{
+		thor_image_read(&img, settings->infilestr);
+		settings->width = img.width;
+		settings->height = img.height;
+	}
+	else if (strstr(settings->infilestr, ".y4m"))
+	{
+		thor_image_read(&img, settings->infilestr);
+		settings->width = img.width;
+		settings->height = img.height;
+	}
+
+	width = settings->width;
+	height = settings->height;
+
+	enc = thor_encoder_new(settings);
 
 	size = width * height * 4;
 	buffer = (uint8_t*) malloc(size);
@@ -131,28 +133,28 @@ int main_enc(int argc, char **argv)
 
 	/* Read input frame */
 
-	if (strstr(params->infilestr, ".png"))
+	if (strstr(settings->infilestr, ".png"))
 	{
 		thor_RGBToYUV420_8u_P3AC4R(img.data, img.scanline, pSrc, srcStep, width, height);
 		free(img.data);
 	}
 
-	output = fopen(params->outfilestr, "wb");
+	output = fopen(settings->outfilestr, "wb");
 
 	if (!output)
 		return -1;
 
 	shdr.width = width;
 	shdr.height = height;
-	shdr.pb_split_enable = params->enable_pb_split;
-	shdr.tb_split_enable = params->enable_tb_split;
-	shdr.max_num_ref = params->max_num_ref;
-	shdr.num_reorder_pics = params->num_reorder_pics;
-	shdr.max_delta_qp = params->max_delta_qp;
-	shdr.deblocking = params->deblocking;
-	shdr.clpf = params->clpf;
-	shdr.use_block_contexts = params->use_block_contexts;
-	shdr.enable_bipred = params->enable_bipred;
+	shdr.pb_split_enable = settings->enable_pb_split;
+	shdr.tb_split_enable = settings->enable_tb_split;
+	shdr.max_num_ref = settings->max_num_ref;
+	shdr.num_reorder_pics = settings->num_reorder_pics;
+	shdr.max_delta_qp = settings->max_delta_qp;
+	shdr.deblocking = settings->deblocking;
+	shdr.clpf = settings->clpf;
+	shdr.use_block_contexts = settings->use_block_contexts;
+	shdr.enable_bipred = settings->enable_bipred;
 
 	thor_encoder_set_sequence_header(enc, &shdr);
 
@@ -215,8 +217,6 @@ int main_enc(int argc, char **argv)
 
 	free(buffer);
 
-	delete_config_params(params);
-
 	free(pSrc[0]);
 	free(pSrc[1]);
 	free(pSrc[2]);
@@ -247,7 +247,7 @@ int main_dec(int argc, char** argv)
 	thor_frame_header_t fhdr;
 	thor_sequence_header_t shdr;
 
-	dec = thor_decoder_new();
+	dec = thor_decoder_new(NULL);
 
 	if (argc < 3)
 	{

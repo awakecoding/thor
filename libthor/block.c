@@ -2387,7 +2387,7 @@ int mode_decision_rdo(encoder_info_t *encoder_info,block_info_t *block_info)
 #if 2
       if (frame_info->num_ref>1 && encoder_info->params->enable_bipred && do_inter){ //TODO: Should work with only one reference also
 #else
-        if (frame_info->num_ref>1 && encoder_info->params->enable_bipred){ //TODO: Should work with only one reference also
+        if (frame_info->num_ref>1 && encoder_info->settings->enable_bipred){ //TODO: Should work with only one reference also
 #endif
         int min_sad,sad;
         int r,i,ref_posY;
@@ -2474,7 +2474,7 @@ int mode_decision_rdo(encoder_info_t *encoder_info,block_info_t *block_info)
 #if 2
     if (do_intra && encoder_info->params->intra_rdo){
 #else
-      if (encoder_info->params->intra_rdo){
+      if (encoder_info->settings->intra_rdo){
 #endif
       ALIGN(16) uint8_t pblock[MAX_BLOCK_SIZE*MAX_BLOCK_SIZE];
       uint32_t min_intra_cost = MAX_UINT32;

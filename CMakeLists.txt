@@ -25,7 +25,6 @@ else()
 endif()
 
 include_directories(include)
-include_directories(libthor)
 
 add_subdirectory(include)
 add_subdirectory(libthor)

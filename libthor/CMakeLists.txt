@@ -8,8 +8,6 @@ set(THOR_HEADERS
 	simd.h
 	bits.h
 	vlc.h
-	image.h
-	params.h
 	kernels.h
 	transform.h
 	thor.h)
@@ -25,7 +23,7 @@ set(THOR_SOURCES
 	vlc.c
 	color.c
 	image.c
-	params.c
+	settings.c
 	kernels.c
 	transform.c
 	thor.c)

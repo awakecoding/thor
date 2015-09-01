@@ -27,7 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef THOR_IMAGE_H
 #define THOR_IMAGE_H
 
-#include "thor.h"
+#include <thor/thor.h>
 
 #define THOR_IMAGE_NONE			0
 #define THOR_IMAGE_BMP			1

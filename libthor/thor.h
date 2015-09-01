@@ -31,6 +31,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdint.h>
 #include <stdlib.h>
 
+#include <thor/settings.h>
+
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -58,7 +60,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define MIN_BLOCK_SIZE 8         //Minimum block size
 #define MIN_PB_SIZE 4            //Minimum pu block size
 #define MAX_QUANT_SIZE 16        //Maximum quantization block size
-#define MAX_BUFFER_SIZE 4000000  //Maximum compressed buffer size per frame
 #define MAX_TR_SIZE 64           //Maximum transform size
 #define PADDING_Y 96             //One-sided padding range for luma
 #define MAX_UINT32 1<<31         //Used e.g. to initialize search for minimum cost
@@ -339,44 +340,6 @@ typedef struct
 
 typedef struct
 {
-	unsigned int width;
-	unsigned int height;
-	unsigned int qp;
-	char *infilestr;
-	char *outfilestr;
-	unsigned int file_headerlen;
-	unsigned int frame_headerlen;
-	unsigned int num_frames;
-	int skip;
-	float frame_rate;
-	float lambda_coeffI;
-	float lambda_coeffP;
-	float lambda_coeffB;
-	float early_skip_thr;
-	int enable_tb_split;
-	int enable_pb_split;
-	int max_num_ref;
-	int HQperiod;
-	int num_reorder_pics;
-	int dqpP;
-	int dqpB;
-	float mqpP;
-	float mqpB;
-	int dqpI;
-	int intra_period;
-	int intra_rdo;
-	int rdoq;
-	int max_delta_qp;
-	int encoder_speed;
-	int deblocking;
-	int clpf;
-	int snrcalc;
-	int use_block_contexts;
-	int enable_bipred;
-} enc_params;
-
-typedef struct
-{
 	uint8_t y[MAX_BLOCK_SIZE*MAX_BLOCK_SIZE];
 	uint8_t u[MAX_BLOCK_SIZE/2*MAX_BLOCK_SIZE/2];
 	uint8_t v[MAX_BLOCK_SIZE/2*MAX_BLOCK_SIZE/2];
@@ -418,14 +381,14 @@ typedef struct
 
 typedef struct
 {
-	block_info_t *block_info;
+	block_info_t* block_info;
 	frame_info_t frame_info;
-	enc_params *params;
-	yuv_frame_t *orig;
-	yuv_frame_t *rec;
-	yuv_frame_t *ref[MAX_REF_FRAMES];
-	stream_t *stream;
-	deblock_data_t *deblock_data;
+	thor_encoder_settings_t* params;
+	yuv_frame_t* orig;
+	yuv_frame_t* rec;
+	yuv_frame_t* ref[MAX_REF_FRAMES];
+	stream_t* stream;
+	deblock_data_t* deblock_data;
 	int width;
 	int height;
 	int depth;
@@ -448,10 +411,10 @@ typedef struct
 typedef struct
 {
 	frame_info_t frame_info;
-	yuv_frame_t *rec;
-	yuv_frame_t *ref[MAX_REF_FRAMES];
-	stream_t *stream;
-	deblock_data_t *deblock_data;
+	yuv_frame_t* rec;
+	yuv_frame_t* ref[MAX_REF_FRAMES];
+	stream_t* stream;
+	deblock_data_t* deblock_data;
 	int width;
 	int height;
 	bit_count_t bit_count;
@@ -478,10 +441,11 @@ struct thor_encoder_s
 	int width;
 	int height;
 	stream_t stream;
-	enc_params* params;
 	encoder_info_t info;
+	yuv_frame_t rec;
 	thor_sequence_header_t hdr;
 	yuv_frame_t ref[MAX_REF_FRAMES];
+	thor_encoder_settings_t* settings;
 };
 
 struct thor_decoder_s
@@ -493,6 +457,7 @@ struct thor_decoder_s
 	decoder_info_t info;
 	thor_sequence_header_t hdr;
 	yuv_frame_t ref[MAX_REF_FRAMES];
+	thor_decoder_settings_t* settings;
 };
 
 #endif
