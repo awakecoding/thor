@@ -373,5 +373,7 @@ void thor_decoder_free(thor_decoder_t* ctx)
 
 	free(info->deblock_data);
 
+	thor_decoder_settings_free(ctx->settings);
+
 	free(ctx);
 }
