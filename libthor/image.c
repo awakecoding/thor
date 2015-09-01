@@ -366,7 +366,7 @@ int thor_image_y4m_read_fp(thor_image_t* img, FILE* fp)
 
 	fseek(fp, 0, SEEK_END);
 	fileSize = (uint32_t) ftell(fp);
-	fseek(fp, img->y4m_file_hdrlen + img->y4m_frame_hdrlen, SEEK_SET);
+	fseek(fp, img->y4m_file_hdrlen, SEEK_SET);
 
 	img->y4m_frame_index = 0;
 	img->y4m_frame_count = (fileSize - img->y4m_file_hdrlen) / frameSize;
@@ -378,6 +378,9 @@ int thor_y4m_read_frame(thor_image_t* img, uint8_t* pDst[3], int32_t dstStep[3])
 {
 	uint32_t lumaSize;
 	uint32_t chromaSize;
+
+	if (fseek(img->fp, img->y4m_frame_hdrlen, SEEK_CUR) != 0)
+		return -1;
 
 	lumaSize = img->width * img->height;
 	chromaSize = lumaSize / 4;
