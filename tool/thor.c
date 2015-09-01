@@ -76,11 +76,13 @@ int main_enc(int argc, char **argv)
 	uint8_t hdrbuf[8];
 	thor_image_t img;
 	uint32_t thorSize;
-	thor_encoder_settings_t*settings;
 	thor_encoder_t* enc;
 	uint32_t beg, end, diff;
 	thor_frame_header_t fhdr;
 	thor_sequence_header_t shdr;
+	thor_encoder_settings_t* settings;
+	const char* input_file;
+	const char* output_file;
 
 	memset(&shdr, 0, sizeof(shdr));
 	memset(&fhdr, 0, sizeof(fhdr));
@@ -88,7 +90,7 @@ int main_enc(int argc, char **argv)
 	/* Read commands from command line and from configuration file(s) */
 	if (argc < 3)
 	{
-		fprintf(stdout, "usage: %s <parameters>\n",argv[0]);
+		fprintf(stdout, "usage: %s <parameters>\n", argv[0]);
 		return -1;
 	}
 
@@ -103,23 +105,17 @@ int main_enc(int argc, char **argv)
 	if (thor_encoder_settings_validate(settings) < 0)
 		return -1;
 
-	if ((strstr(settings->infilestr, ".png")) || (strstr(settings->infilestr, ".bmp")))
-	{
-		thor_image_read(&img, settings->infilestr);
-		settings->width = img.width;
-		settings->height = img.height;
-	}
-	else if (strstr(settings->infilestr, ".y4m"))
-	{
-		thor_image_read(&img, settings->infilestr);
-		settings->width = img.width;
-		settings->height = img.height;
-	}
+	input_file = settings->infilestr;
+	output_file = settings->outfilestr;
 
-	width = settings->width;
-	height = settings->height;
+	thor_image_read(&img, input_file);
+	width = img.width;
+	height = img.height;
 
 	enc = thor_encoder_new(settings);
+
+	settings->width = width;
+	settings->height = height;
 
 	size = width * height * 4;
 	buffer = (uint8_t*) malloc(size);
@@ -133,13 +129,13 @@ int main_enc(int argc, char **argv)
 
 	/* Read input frame */
 
-	if (strstr(settings->infilestr, ".png"))
+	if ((img.type == THOR_IMAGE_PNG) || (img.type == THOR_IMAGE_BMP))
 	{
 		thor_RGBToYUV420_8u_P3AC4R(img.data, img.scanline, pSrc, srcStep, width, height);
 		free(img.data);
 	}
 
-	output = fopen(settings->outfilestr, "wb");
+	output = fopen(output_file, "wb");
 
 	if (!output)
 		return -1;
@@ -155,6 +151,9 @@ int main_enc(int argc, char **argv)
 	shdr.clpf = settings->clpf;
 	shdr.use_block_contexts = settings->use_block_contexts;
 	shdr.enable_bipred = settings->enable_bipred;
+
+	//fprintf(stderr, "width: %d height: %d pb_split_enable: %d tb_split_enable: %d max_num_ref: %d max_num_reorder_pics: %d max_delta_qp: %d deblocking: %d clpf: %d use_block_contexts: %d enable_bipred: %d\n",
+	//	shdr.width, shdr.height, shdr.pb_split_enable, shdr.tb_split_enable, shdr.max_num_ref, shdr.num_reorder_pics, shdr.max_delta_qp, shdr.deblocking, shdr.clpf, shdr.use_block_contexts, shdr.enable_bipred);
 
 	thor_encoder_set_sequence_header(enc, &shdr);
 
@@ -206,7 +205,7 @@ int main_enc(int argc, char **argv)
 
 		thor_write_frame_header(hdrbuf, &fhdr);
 
-		if (fwrite(hdrbuf, 1, 8, output) != thorSize)
+		if (fwrite(hdrbuf, 1, 8, output) != 8)
 			return -1;
 
 		if (fwrite(buffer, 1, thorSize, output) != thorSize)
@@ -230,6 +229,7 @@ int main_dec(int argc, char** argv)
 {
 	int width;
 	int height;
+	int status;
 	int index = 0;
 	int dstStep[3];
 	uint8_t* pDst[3];
@@ -310,8 +310,13 @@ int main_dec(int argc, char** argv)
 
 		thor_read_frame_header(hdrbuf, &fhdr);
 
-		if (fread(buffer, 1, fhdr.size, input) != fhdr.size)
+		status = fread(buffer, 1, fhdr.size, input);
+
+		if (status != fhdr.size)
+		{
+			fprintf(stderr, "incomplete frame data: actual: %d, expected: %d\n", status, fhdr.size);
 			break;
+		}
 
 		beg = thor_get_tick_count();
 		thor_decode(dec, buffer, fhdr.size, pDst, dstStep);

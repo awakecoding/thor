@@ -182,6 +182,14 @@ int thor_encode(thor_encoder_t* ctx, uint8_t* pSrc[3], int srcStep[3], uint8_t* 
 	return status;
 }
 
+thor_encoder_settings_t* thor_encoder_get_settings(thor_encoder_t* ctx)
+{
+	if (!ctx)
+		return NULL;
+
+	return ctx->settings;
+}
+
 void thor_encoder_set_sequence_header(thor_encoder_t* ctx, thor_sequence_header_t* hdr)
 {
 	int i;
@@ -284,6 +292,14 @@ int thor_decode(thor_decoder_t* ctx, uint8_t* pSrc, uint32_t srcSize, uint8_t* p
 	decode_frame(info);
 
 	return 1;
+}
+
+thor_decoder_settings_t* thor_decoder_get_settings(thor_decoder_t* ctx)
+{
+	if (!ctx)
+		return NULL;
+
+	return ctx->settings;
 }
 
 void thor_decoder_set_sequence_header(thor_decoder_t* ctx, thor_sequence_header_t* hdr)
