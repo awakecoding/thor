@@ -115,7 +115,7 @@ int thor_png_write(const char* filename, uint8_t* data, int width, int height, i
 {
 	int status;
 
-	status = lodepng_encode32_file(filename, data, width, height) ? -1 : 1;
+	status = thor_lodepng_encode32_file(filename, data, width, height) ? -1 : 1;
 
 	return status;
 }
@@ -167,7 +167,7 @@ int thor_image_write(thor_image_t* img, const char* filename)
 	}
 	else if (img->type == THOR_IMAGE_PNG)
 	{
-		status = lodepng_encode32_file(filename, img->data, img->width, img->height) ? -1 : 1;
+		status = thor_lodepng_encode32_file(filename, img->data, img->width, img->height) ? -1 : 1;
 	}
 	else if (img->type == THOR_IMAGE_Y4M)
 	{
@@ -197,7 +197,7 @@ int thor_image_png_read_fp(thor_image_t* img, FILE* fp)
 	if (fread((void*) data, size, 1, fp) != 1)
 		return -1;
 
-	status = lodepng_decode32(&(img->data), &width, &height, data, size);
+	status = thor_lodepng_decode32(&(img->data), &width, &height, data, size);
 
 	free(data);
 
