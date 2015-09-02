@@ -440,6 +440,7 @@ struct thor_encoder_s
 {
 	int width;
 	int height;
+	int frame_num;
 	stream_t stream;
 	encoder_info_t info;
 	yuv_frame_t rec;

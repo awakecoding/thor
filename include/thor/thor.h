@@ -53,13 +53,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * height			16 bits		16-31
  * pb_split_enable		1 bit		32
  * tb_split_enable		1 bit		33
- * max_num_ref			2 bits		34-35
- * num_reorder_pics		4 bits		36-39
- * max_delta_qp			2 bits		40-41
- * deblocking			1 bit		42
- * clpf				1 bit		43
- * use_block_contexts		1 bit		44
- * enable_bipred		1 bit		45
+ * max_num_ref			3 bits		34-36
+ * num_reorder_pics		4 bits		37-40
+ * max_delta_qp			2 bits		41-42
+ * deblocking			1 bit		43
+ * clpf				1 bit		44
+ * use_block_contexts		1 bit		45
+ * enable_bipred		1 bit		46
 */
 
 typedef struct

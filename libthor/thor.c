@@ -47,7 +47,7 @@ const char* thor_default_params[] =
 	"-enable_tb_split", "0",
 	"-enable_pb_split", "0",
 	"-early_skip_thr", "1.0",
-	"-max_num_ref", "2",
+	"-max_num_ref", "1",
 	"-use_block_contexts", "1",
 	"-enable_bipred", "0",
 	"-encoder_speed", "2"
@@ -69,14 +69,14 @@ void thor_read_sequence_header(uint8_t* buffer, thor_sequence_header_t* shdr)
 	shdr->height = getbits(&stream, 16);
 	shdr->pb_split_enable = getbits(&stream, 1);
 	shdr->tb_split_enable = getbits(&stream, 1);
-	shdr->max_num_ref = getbits(&stream, 2) + 1;
+	shdr->max_num_ref = getbits(&stream, 3);
 	shdr->num_reorder_pics = getbits(&stream, 4);
 	shdr->max_delta_qp = getbits(&stream, 2);
 	shdr->deblocking = getbits(&stream, 1);
 	shdr->clpf = getbits(&stream, 1);
 	shdr->use_block_contexts = getbits(&stream, 1);
 	shdr->enable_bipred = getbits(&stream, 1);
-	getbits(&stream, 18); /* pad */
+	getbits(&stream, 17); /* pad */
 }
 
 void thor_write_sequence_header(uint8_t* buffer, thor_sequence_header_t* shdr)
@@ -93,14 +93,14 @@ void thor_write_sequence_header(uint8_t* buffer, thor_sequence_header_t* shdr)
 	putbits(16, shdr->height, &stream);
 	putbits(1, shdr->pb_split_enable, &stream);
 	putbits(1, shdr->tb_split_enable, &stream);
-	putbits(2, shdr->max_num_ref-1, &stream);
+	putbits(3, shdr->max_num_ref, &stream);
 	putbits(4, shdr->num_reorder_pics, &stream);
 	putbits(2, shdr->max_delta_qp, &stream);
 	putbits(1, shdr->deblocking, &stream);
 	putbits(1, shdr->clpf, &stream);
 	putbits(1, shdr->use_block_contexts, &stream);
 	putbits(1, shdr->enable_bipred, &stream);
-	putbits(18, 0, &stream); /* pad */
+	putbits(17, 0, &stream); /* pad */
 
 	flush_bitbuf(&stream);
 }
@@ -145,8 +145,10 @@ int thor_encode(thor_encoder_t* ctx, uint8_t* pSrc[3], int srcStep[3], uint8_t* 
 {
 	int status = 0;
 	yuv_frame_t frame;
+	int r, r0, r1, r2, r3;
 	stream_t* stream = &ctx->stream;
 	encoder_info_t* info = &ctx->info;
+	thor_encoder_settings_t* settings = ctx->settings;
 
 	frame.width = ctx->width;
 	frame.height = ctx->height;
@@ -157,7 +159,7 @@ int thor_encode(thor_encoder_t* ctx, uint8_t* pSrc[3], int srcStep[3], uint8_t* 
 	frame.y = pSrc[0];
 	frame.u = pSrc[1];
 	frame.v = pSrc[2];
-	frame.frame_num = info->frame_info.frame_num;
+	frame.frame_num = ctx->frame_num;
 
 	stream->bitstream = pDst;
 	stream->bitbuf = 0;
@@ -165,16 +167,95 @@ int thor_encode(thor_encoder_t* ctx, uint8_t* pSrc[3], int srcStep[3], uint8_t* 
 	stream->bytepos = 0;
 	stream->bytesize = dstSize;
 
-	info->frame_info.frame_num = 0;
 	info->rec = &ctx->rec;
 	info->orig = &frame;
-	info->rec->frame_num = info->frame_info.frame_num;
-	info->frame_info.frame_type = I_FRAME;
-	info->frame_info.qp = ctx->settings->qp + ctx->settings->dqpI;
-	info->frame_info.num_ref = min(0, ctx->settings->max_num_ref);
-	info->frame_info.num_intra_modes = 4;
+	info->rec->frame_num = ctx->frame_num;
+
+	if (settings->max_num_ref > 0)
+		info->frame_info.frame_type = (ctx->frame_num == 0) ? I_FRAME : P_FRAME;
+	else
+		info->frame_info.frame_type = I_FRAME;
+
+	info->frame_info.frame_num = ctx->frame_num;
+
+	if (info->frame_info.frame_type == I_FRAME)
+	{
+		info->frame_info.qp = settings->qp + settings->dqpI;
+	}
+	else
+	{
+		if (settings->HQperiod && (ctx->frame_num % settings->HQperiod))
+		{
+			info->frame_info.qp = (int) (settings->mqpP * (float) settings->qp) + settings->dqpP;
+		}
+		else
+		{
+			info->frame_info.qp = settings->qp;
+		}
+	}
+
+	info->frame_info.num_ref = min(ctx->frame_num, settings->max_num_ref);
+
+	if (info->frame_info.num_ref == 1)
+	{
+		/* If num_ref==1 always use most recent frame */
+		info->frame_info.ref_array[0] = 0;
+	}
+	else if (info->frame_info.num_ref == 2)
+	{
+		/* If num_ref==2 use most recent LQ frame and most recent HQ frame */
+		r0 = 0;
+		r1 = ((ctx->frame_num + settings->HQperiod - 2) % settings->HQperiod) + 1;
+		info->frame_info.ref_array[0] = r0;
+		info->frame_info.ref_array[1] = r1;
+	}
+	else if (info->frame_info.num_ref == 3)
+	{
+		r0 = 0;
+		r1 = ((ctx->frame_num + settings->HQperiod - 2) % settings->HQperiod) + 1;
+		r2 = (r1 == 1) ? 2 : 1;
+		info->frame_info.ref_array[0] = r0;
+		info->frame_info.ref_array[1] = r1;
+		info->frame_info.ref_array[2] = r2;
+	}
+	else if (info->frame_info.num_ref == 4)
+	{
+		r0 = 0;
+		r1 = ((ctx->frame_num + settings->HQperiod - 2) % settings->HQperiod) + 1;
+		r2 = (r1 == 1) ? 2 : 1;
+		r3 = r2 + 1;
+
+		if (r3 == r1)
+			r3 += 1;
+
+		info->frame_info.ref_array[0] = r0;
+		info->frame_info.ref_array[1] = r1;
+		info->frame_info.ref_array[2] = r2;
+		info->frame_info.ref_array[3] = r3;
+	}
+	else
+	{
+		for (r = 0; r <info->frame_info.num_ref; r++)
+		{
+			info->frame_info.ref_array[r] = r;
+		}
+	}
+
+	if (settings->intra_rdo)
+	{
+		if (info->frame_info.frame_type == I_FRAME)
+			info->frame_info.num_intra_modes = 10;
+		else
+			info->frame_info.num_intra_modes = settings->encoder_speed > 0 ? 4 : 10;
+	}
+	else
+	{
+		info->frame_info.num_intra_modes = 4;
+	}
 
 	encode_frame(info);
+
+	ctx->frame_num++;
 
 	flush_all_bits(stream);
 	status = stream->bytepos;
@@ -283,13 +364,15 @@ int thor_decode(thor_decoder_t* ctx, uint8_t* pSrc, uint32_t srcSize, uint8_t* p
 	frame.u = pDst[1];
 	frame.v = pDst[2];
 
-	info->frame_info.decode_order_frame_num = 0;
-	info->frame_info.display_frame_num = 0;
+	info->frame_info.decode_order_frame_num = ctx->frame_num;
+	info->frame_info.display_frame_num = ctx->frame_num;
 	info->rec = &frame;
 	info->frame_info.num_ref = min(ctx->frame_num, info->max_num_ref);
 	info->rec->frame_num = info->frame_info.display_frame_num;
 
 	decode_frame(info);
+
+	ctx->frame_num++;
 
 	return 1;
 }

@@ -376,7 +376,7 @@ int thor_encoder_settings_validate(thor_encoder_settings_t* settings)
 		return -1;
 	}
 
-	if (settings->max_num_ref < 1 || settings->max_num_ref > 4)
+	if (settings->max_num_ref > 4)
 	{
 		fprintf(stderr, "This number of max reference frames is not supported\n");
 		return -1;
