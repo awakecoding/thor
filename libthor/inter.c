@@ -506,9 +506,11 @@ int get_mv_merge(int yposY,int xposY,int width,int height,int size,deblock_data_
 #endif
 	mvb_skip[0] = tmb_skip[0];
 
-	for (i=1;i<MAX_NUM_SKIP;i++){
+	for (i=1;i<MAX_NUM_SKIP;i++)
+	{
 		duplicate = 0;
-		for (idx=0; idx<num_skip_vec; idx++){
+		for (idx=0; idx<num_skip_vec; idx++)
+		{
 			if (tmb_skip[i].x0 == mvb_skip[idx].x0 && tmb_skip[i].y0 == mvb_skip[idx].y0 && tmb_skip[i].ref_idx0 == mvb_skip[idx].ref_idx0 &&
 			    tmb_skip[i].x1 == mvb_skip[idx].x1 && tmb_skip[i].y1 == mvb_skip[idx].y1 && tmb_skip[i].ref_idx1 == mvb_skip[idx].ref_idx1 &&
 			    (tmb_skip[i].dir == mvb_skip[idx].dir || tmb_skip[i].dir == -1)) duplicate = 1; //TODO: proper handling fo dir for intra
@@ -654,17 +656,19 @@ int get_mv_skip(int yposY,int xposY,int width,int height,int size,deblock_data_t
 #if ENABLE_SKIP_BIPRED
 #else
 	for (i=0;i<MAX_NUM_SKIP;i++){
-    tmb_skip[i].dir = 0;
-    tmb_skip[i].x1 =  tmb_skip[i].x0;
-    tmb_skip[i].y1 =  tmb_skip[i].y0;
-    tmb_skip[i].ref_idx1 = tmb_skip[i].ref_idx0;
-  }
+		tmb_skip[i].dir = 0;
+		tmb_skip[i].x1 =  tmb_skip[i].x0;
+		tmb_skip[i].y1 =  tmb_skip[i].y0;
+		tmb_skip[i].ref_idx1 = tmb_skip[i].ref_idx0;
+	}
 #endif
 	mvb_skip[0] = tmb_skip[0];
 
-	for (i=1;i<MAX_NUM_SKIP;i++){
+	for (i=1;i<MAX_NUM_SKIP;i++)
+	{
 		duplicate = 0;
-		for (idx=0; idx<num_skip_vec; idx++){
+		for (idx=0; idx<num_skip_vec; idx++)
+		{
 			if (tmb_skip[i].x0 == mvb_skip[idx].x0 && tmb_skip[i].y0 == mvb_skip[idx].y0 && tmb_skip[i].ref_idx0 == mvb_skip[idx].ref_idx0 &&
 			    tmb_skip[i].x1 == mvb_skip[idx].x1 && tmb_skip[i].y1 == mvb_skip[idx].y1 && tmb_skip[i].ref_idx1 == mvb_skip[idx].ref_idx1 &&
 			    (tmb_skip[i].dir == mvb_skip[idx].dir || tmb_skip[i].dir == -1)) duplicate = 1; //TODO: proper handling fo dir for intra
@@ -675,7 +679,8 @@ int get_mv_skip(int yposY,int xposY,int width,int height,int size,deblock_data_t
 	}
 
 #if NO_SUBBLOCK_SKIP
-	if (size<MAX_BLOCK_SIZE){
+	if (size<MAX_BLOCK_SIZE)
+	{
 		tmb_skip[0].dir = 0;
 		tmb_skip[0].x0 = 0;
 		tmb_skip[0].y0 = 0;
