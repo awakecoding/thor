@@ -4,17 +4,36 @@ Implementation of [https://tools.ietf.org/html/draft-fuldseth-netvc-thor](https:
 
 ## Build
 
-Windows: Use Visual Studio with build/Thor.sln.
+Linux:
 
-Mac/Linux:
+cmake .
+cmake -G "Eclipse CDT4 - Unix Makefiles" .
 
-    make -j8
+OS X:
 
-Binaries will appear in the build/ directory.
+cmake .
+cmake -G Xcode .
+
+Windows:
+
+cmake -G "Visual Studio 12" .
+cmake -G "Visual Studio 12 Win64" .
+
+cmake -G "Visual Studio 12" -T "Intel C++ Compiler XE 15" .
+cmake -G "Visual Studio 12 Win64" -T "Intel C++ Compiler XE 15" .
 
 ## Usage
 
-encoder:        Thorenc -cf config.txt
+See [https://wiki.xiph.org/Daala_Quickstart](Daala Quickstart) for test media.
 
-decoder:        Thordec str.bit out.yuv
+encoder:
 
+thor enc -cf cfg.txt -if ducks.y4m -of ducks.thor
+thor enc -cf cfg.txt -if ducks.png -of ducks.thor
+thor enc -cf cfg.txt -if ducks.bmp -of ducks.thor
+
+decoder:
+
+thor dec ducks.thor ducks.y4m
+thor dec ducks.thor ducks.png
+thor dec ducks.thor ducks.bmp

@@ -893,36 +893,45 @@ int quantize(int16_t *coeff, int16_t *coeffq, int qp, int size, int frame_type, 
 	}
 
 	/* RDOQ light - adapted to coefficient encoding */
-	if (cbp){
+	if (cbp)
+	{
 		int pos;
 		int N = chroma_flag ? last_pos+1 : qsize*qsize;
 		int K1,K2,K3,K4;
 
-		for (pos=2;pos<N;pos++){
+		for (pos=2;pos<N;pos++)
+		{
 			int flag = 1;
-			if (pos>2){
+			if (pos>2)
+			{
 				if (scoeffq[pos-3] > 1) flag = 0;
 			}
-			if (pos>3){
+			if (pos>3)
+			{
 				if (scoeffq[pos-4] > 1 && scoeffq[pos-3] > 0) flag = 0;
 			}
-			if (pos==2 && (chroma_flag==0 || last_pos >= 6)){
+			if (pos==2 && (chroma_flag==0 || last_pos >= 6))
+			{
 				flag = 0;
 			}
-			if (flag && scoeffq[pos-2]==0 && scoeffq[pos-1]==0 && abs(scoeffq[pos])>1){
+			if (flag && scoeffq[pos-2]==0 && scoeffq[pos-1]==0 && abs(scoeffq[pos])>1)
+			{
 				K1 = abs(scoeff[pos]);
 				K2 = abs(scoeff[pos-1]);
 				K3 = abs(scoeff[pos-2]);
 				K4 = max(K2,K3);
 				int threshold = (73*gdequant_table[qp%6]<<(qp/6))>>(4+tr_log2size);
-				if (K1+K4 < threshold){
+
+				if (K1+K4 < threshold)
+				{
 					scoeffq[pos] = scoeff[pos] < 0 ? -1 : 1;
 				}
-				else{
+				else
+				{
 					if (K2 > K3)
 						scoeffq[pos-1] = scoeff[pos-1] < 0 ? -1 : 1;
 					else
-						scoeffq[pos-2] = scoeff[pos-2] < 0 ? -1 : 1;
+																															scoeffq[pos-2] = scoeff[pos-2] < 0 ? -1 : 1;
 				}
 			}
 		}
