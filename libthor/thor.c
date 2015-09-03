@@ -184,7 +184,7 @@ int thor_encode(thor_encoder_t* ctx, uint8_t* pSrc[3], int srcStep[3], uint8_t* 
 	}
 	else
 	{
-		if (settings->HQperiod && (ctx->frame_num % settings->HQperiod))
+		if (settings->HQperiod && !(ctx->frame_num % settings->HQperiod))
 		{
 			info->frame_info.qp = (int) (settings->mqpP * (float) settings->qp) + settings->dqpP;
 		}

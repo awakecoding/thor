@@ -330,6 +330,80 @@ static void get_inter_prediction_luma_inner(int width, int height, int xoff, int
 	}
 }
 
+void get_inter_prediction_int_simd(int width, int height, int xoff, int yoff,
+					     uint8_t* RESTRICT qp, int qstride, const uint8_t* RESTRICT ip, int istride)
+{
+	uint8_t* qp_end = qp + (qstride * height);
+
+	ip += yoff * istride + xoff;
+
+	if (width == 4)
+	{
+		while (qp < qp_end)
+		{
+			u32_store_aligned(qp, u32_load_unaligned(ip));
+			qp += qstride;
+			ip += istride;
+		}
+	}
+	else if (width == 8)
+	{
+		while (qp < qp_end)
+		{
+			v64_store_aligned(qp, v64_load_unaligned(ip));
+			qp += qstride;
+			ip += istride;
+		}
+	}
+	else if (width == 16)
+	{
+		while (qp < qp_end)
+		{
+			v64_store_aligned(qp, v64_load_unaligned(ip));
+			v64_store_aligned(qp + 8, v64_load_unaligned(ip + 8));
+			qp += qstride;
+			ip += istride;
+		}
+	}
+	else if (width == 32)
+	{
+		while (qp < qp_end)
+		{
+			v64_store_aligned(qp, v64_load_unaligned(ip));
+			v64_store_aligned(qp + 8, v64_load_unaligned(ip + 8));
+			v64_store_aligned(qp + 16, v64_load_unaligned(ip + 16));
+			v64_store_aligned(qp + 24, v64_load_unaligned(ip + 24));
+			qp += qstride;
+			ip += istride;
+		}
+	}
+	else if (width == 64)
+	{
+		while (qp < qp_end)
+		{
+			v64_store_aligned(qp, v64_load_unaligned(ip));
+			v64_store_aligned(qp + 8, v64_load_unaligned(ip + 8));
+			v64_store_aligned(qp + 16, v64_load_unaligned(ip + 16));
+			v64_store_aligned(qp + 24, v64_load_unaligned(ip + 24));
+			v64_store_aligned(qp + 32, v64_load_unaligned(ip + 32));
+			v64_store_aligned(qp + 40, v64_load_unaligned(ip + 40));
+			v64_store_aligned(qp + 48, v64_load_unaligned(ip + 48));
+			v64_store_aligned(qp + 56, v64_load_unaligned(ip + 56));
+			qp += qstride;
+			ip += istride;
+		}
+	}
+	else
+	{
+		while (qp < qp_end)
+		{
+			memcpy(qp, ip, width);
+			qp += qstride;
+			ip += istride;
+		}
+	}
+}
+
 static void get_inter_prediction_luma_centre(int width, int height,
 					     uint8_t* RESTRICT qp, int qstride,
 					     const uint8_t* RESTRICT ip, int istride)
@@ -397,10 +471,9 @@ static void get_inter_prediction_luma_centre(int width, int height,
 }
 
 void get_inter_prediction_luma_simd(int width, int height, int xoff, int yoff,
-				    uint8_t* RESTRICT qp, int qstride,
-				    const uint8_t* RESTRICT ip, int istride)
+				    uint8_t* RESTRICT qp, int qstride, const uint8_t* RESTRICT ip, int istride)
 {
-	if (xoff == 2 && yoff == 2)
+	if ((xoff == 2) && (yoff == 2))
 	{
 		get_inter_prediction_luma_centre(width, height, qp, qstride, ip, istride);
 	}
@@ -423,7 +496,8 @@ void get_inter_prediction_luma_simd(int width, int height, int xoff, int yoff,
 
 void get_inter_prediction_chroma_simd(int width, int height, int xoff, int yoff,
 				      uint8_t* RESTRICT qp, int qstride,
-				      const uint8_t* RESTRICT ip, int istride) {
+				      const uint8_t* RESTRICT ip, int istride)
+{
 	static const ALIGN(16) int16_t coeffs[8][4] = {
 		{ 0, 64,  0,  0},
 		{-2, 58, 10, -2},
@@ -443,7 +517,8 @@ void get_inter_prediction_chroma_simd(int width, int height, int xoff, int yoff,
 	const v64 filter = v64_load_aligned(coeffs[xoff]);
 	int i, j;
 
-	if (width == 4) {
+	if (width == 4)
+	{
 		v128 in0 = v128_unpack_u8_s16(v64_load_unaligned(ip - 1*istride - 1));
 		v128 in1 = v128_unpack_u8_s16(v64_load_unaligned(ip + 0*istride - 1));
 		v128 in2 = v128_unpack_u8_s16(v64_load_unaligned(ip + 1*istride - 1));

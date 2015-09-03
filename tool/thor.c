@@ -76,6 +76,9 @@ int main_enc(int argc, char **argv)
 	uint8_t hdrbuf[8];
 	thor_image_t img;
 	uint32_t thorSize;
+	int frame_index = 0;
+	int total_time = 0;
+	int total_size = 0;
 	thor_encoder_t* enc;
 	uint32_t beg, end, diff;
 	thor_frame_header_t fhdr;
@@ -164,9 +167,7 @@ int main_enc(int argc, char **argv)
 
 	if (img.type == THOR_IMAGE_Y4M)
 	{
-		int index;
-
-		for (index = 0; index < img.y4m_frame_count; index++)
+		for (frame_index = 0; frame_index < img.y4m_frame_count; frame_index++)
 		{
 			thor_y4m_read_frame(&img, pSrc, srcStep);
 
@@ -178,7 +179,10 @@ int main_enc(int argc, char **argv)
 			fhdr.size = thorSize;
 
 			fprintf(stderr, "thor_encode[%03d]: %d ms %d KB\n",
-				index, diff, thorSize / 1024);
+				frame_index, diff, thorSize / 1024);
+
+			total_time += diff;
+			total_size += fhdr.size;
 
 			thor_write_frame_header(hdrbuf, &fhdr);
 
@@ -203,6 +207,9 @@ int main_enc(int argc, char **argv)
 		fprintf(stderr, "thor_encode[%03d]: %d ms %d KB\n",
 			0, diff, thorSize / 1024);
 
+		total_time += diff;
+		total_size += fhdr.size;
+
 		thor_write_frame_header(hdrbuf, &fhdr);
 
 		if (fwrite(hdrbuf, 1, 8, output) != 8)
@@ -210,6 +217,8 @@ int main_enc(int argc, char **argv)
 
 		if (fwrite(buffer, 1, thorSize, output) != thorSize)
 			return -1;
+
+		frame_index++;
 	}
 
 	fclose(output);
@@ -219,6 +228,10 @@ int main_enc(int argc, char **argv)
 	free(pSrc[0]);
 	free(pSrc[1]);
 	free(pSrc[2]);
+
+	fprintf(stderr, "thor_encode: total: %d ms %d KB average: %d ms %d KB %f fps\n",
+		total_time, total_size / 1024, total_time / frame_index, (total_size / frame_index) / 1024,
+		1000.0f / ((float) total_time / (float) frame_index));
 
 	thor_encoder_free(enc);
 
