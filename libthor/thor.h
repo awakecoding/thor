@@ -256,9 +256,9 @@ typedef struct
 	intra_mode_t intra_mode;
 	mv_t mvp;
 	cbp_t *cbp;
-	int16_t *coeffq_y;
-	int16_t *coeffq_u;
-	int16_t *coeffq_v;
+	int16_t* coeffq_y;
+	int16_t* coeffq_u;
+	int16_t* coeffq_v;
 	uint8_t size;
 	int skip_idx;
 	int num_skip_vec;

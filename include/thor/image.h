@@ -30,9 +30,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <thor/thor.h>
 
 #define THOR_IMAGE_NONE			0
-#define THOR_IMAGE_BMP			1
-#define THOR_IMAGE_PNG			2
-#define THOR_IMAGE_Y4M			3
+#define THOR_IMAGE_RGB			1
+#define THOR_IMAGE_YUV			2
+#define THOR_IMAGE_BMP			3
+#define THOR_IMAGE_PNG			4
+#define THOR_IMAGE_Y4M			5
 
 struct thor_image_s
 {
@@ -42,12 +44,12 @@ struct thor_image_s
 	int height;
 	uint8_t* data;
 	int scanline;
+	int frameIndex;
+	int frameCount;
 	int bitsPerPixel;
 	int bytesPerPixel;
 
 	double y4m_fps;
-	int y4m_frame_index;
-	int y4m_frame_count;
 	int y4m_file_hdrlen;
 	int y4m_frame_hdrlen;
 };
@@ -62,6 +64,12 @@ THOR_EXPORT int thor_png_write(const char* filename, uint8_t* data, int width, i
 
 THOR_EXPORT int thor_y4m_read_frame(thor_image_t* img, uint8_t* pDst[3], int32_t dstStep[3]);
 THOR_EXPORT int thor_y4m_write_frame(thor_image_t* img, uint8_t* pSrc[3], int32_t srcStep[3]);
+
+THOR_EXPORT int thor_yuv_read_frame(thor_image_t* img, uint8_t* pDst[3], int32_t dstStep[3]);
+THOR_EXPORT int thor_yuv_write_frame(thor_image_t* img, uint8_t* pSrc[3], int32_t srcStep[3]);
+
+THOR_EXPORT int thor_rgb_read_frame(thor_image_t* img, uint8_t* pDst, int32_t dstStep);
+THOR_EXPORT int thor_rgb_write_frame(thor_image_t* img, uint8_t* pSrc, int32_t srcStep);
 
 THOR_EXPORT int thor_image_read(thor_image_t* img, const char* filename);
 THOR_EXPORT int thor_image_write(thor_image_t* img, const char* filename);

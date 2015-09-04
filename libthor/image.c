@@ -152,7 +152,61 @@ int thor_y4m_write_frame(thor_image_t* img, uint8_t* pSrc[3], int32_t srcStep[3]
 	if (fwrite(pSrc[2], 1, chromaSize, img->fp) != chromaSize)
 		return -1;
 
-	img->y4m_frame_count++;
+	img->frameCount++;
+
+	return 1;
+}
+
+int thor_yuv_write(thor_image_t* img, const char* filename)
+{
+	img->fp = fopen(filename, "wb");
+
+	if (!img->fp)
+		return -1;
+
+	return 1;
+}
+
+int thor_yuv_write_frame(thor_image_t* img, uint8_t* pSrc[3], int32_t srcStep[3])
+{
+	uint32_t lumaSize;
+	uint32_t chromaSize;
+
+	lumaSize = img->width * img->height;
+	chromaSize = lumaSize / 4;
+
+	if (fwrite(pSrc[0], 1, lumaSize, img->fp) != lumaSize)
+		return -1;
+
+	if (fwrite(pSrc[1], 1, chromaSize, img->fp) != chromaSize)
+		return -1;
+
+	if (fwrite(pSrc[2], 1, chromaSize, img->fp) != chromaSize)
+		return -1;
+
+	img->frameCount++;
+
+	return 1;
+}
+
+int thor_rgb_write(thor_image_t* img, const char* filename)
+{
+	img->fp = fopen(filename, "wb");
+
+	if (!img->fp)
+		return -1;
+
+	return 1;
+}
+
+int thor_rgb_write_frame(thor_image_t* img, uint8_t* pSrc, int32_t srcStep)
+{
+	int32_t srcSize = srcStep * img->height;
+
+	if (fwrite(pSrc, 1, srcSize, img->fp) != srcSize)
+		return -1;
+
+	img->frameCount++;
 
 	return 1;
 }
@@ -161,7 +215,15 @@ int thor_image_write(thor_image_t* img, const char* filename)
 {
 	int status = -1;
 
-	if (img->type == THOR_IMAGE_BMP)
+	if (img->type == THOR_IMAGE_RGB)
+	{
+		status = thor_rgb_write(img, filename);
+	}
+	else if (img->type == THOR_IMAGE_YUV)
+	{
+		status = thor_yuv_write(img, filename);
+	}
+	else if (img->type == THOR_IMAGE_BMP)
 	{
 		status = thor_bmp_write(filename, img->data, img->width, img->height, img->bitsPerPixel);
 	}
@@ -368,8 +430,8 @@ int thor_image_y4m_read_fp(thor_image_t* img, FILE* fp)
 	fileSize = (uint32_t) ftell(fp);
 	fseek(fp, img->y4m_file_hdrlen, SEEK_SET);
 
-	img->y4m_frame_index = 0;
-	img->y4m_frame_count = (fileSize - img->y4m_file_hdrlen) / frameSize;
+	img->frameIndex = 0;
+	img->frameCount = (fileSize - img->y4m_file_hdrlen) / frameSize;
 
 	return 1;
 }
@@ -394,7 +456,41 @@ int thor_y4m_read_frame(thor_image_t* img, uint8_t* pDst[3], int32_t dstStep[3])
 	if (fread(pDst[2], 1, chromaSize, img->fp) != chromaSize)
 		return -1;
 
-	img->y4m_frame_index++;
+	img->frameIndex++;
+
+	return 1;
+}
+
+int thor_yuv_read_frame(thor_image_t* img, uint8_t* pDst[3], int32_t dstStep[3])
+{
+	uint32_t lumaSize;
+	uint32_t chromaSize;
+
+	lumaSize = img->width * img->height;
+	chromaSize = lumaSize / 4;
+
+	if (fread(pDst[0], 1, lumaSize, img->fp) != lumaSize)
+		return -1;
+
+	if (fread(pDst[1], 1, chromaSize, img->fp) != chromaSize)
+		return -1;
+
+	if (fread(pDst[2], 1, chromaSize, img->fp) != chromaSize)
+		return -1;
+
+	img->frameIndex++;
+
+	return 1;
+}
+
+int thor_rgb_read_frame(thor_image_t* img, uint8_t* pDst, int32_t dstStep)
+{
+	uint32_t frameSize = img->scanline * img->height;
+
+	if (fread(pDst, 1, frameSize, img->fp) != frameSize)
+		return -1;
+
+	img->frameIndex++;
 
 	return 1;
 }
@@ -403,12 +499,47 @@ int thor_image_read(thor_image_t* img, const char* filename)
 {
 	FILE* fp;
 	uint8_t sig[10];
+	size_t fileSize;
+	size_t frameSize;
 	int status = -1;
 
 	fp = fopen(filename, "r+b");
 
 	if (!fp)
 		return -1;
+
+	fseek(fp, 0, SEEK_END);
+	fileSize = ftell(fp);
+	fseek(fp, 0, SEEK_SET);
+
+	if (!img->type)
+	{
+		if (strstr(filename, ".png"))
+			img->type = THOR_IMAGE_PNG;
+		else if (strstr(filename, ".bmp"))
+			img->type = THOR_IMAGE_BMP;
+		else if (strstr(filename, ".y4m"))
+			img->type = THOR_IMAGE_Y4M;
+		else if (strstr(filename, ".yuv"))
+			img->type = THOR_IMAGE_YUV;
+		else if (strstr(filename, ".rgb"))
+			img->type = THOR_IMAGE_RGB;
+	}
+
+	if (img->type == THOR_IMAGE_RGB)
+	{
+		img->fp = fp;
+		frameSize = img->scanline * img->height;
+		img->frameCount = fileSize / frameSize;
+		return 1;
+	}
+	else if (img->type == THOR_IMAGE_YUV)
+	{
+		img->fp = fp;
+		frameSize = (img->width * img->height) + ((img->width * img->height) / 2);
+		img->frameCount = fileSize / frameSize;
+		return 1;
+	}
 
 	if (fread((void*) &sig, sizeof(sig), 1, fp) != 1 || fseek(fp, 0, SEEK_SET) < 0)
 	{
@@ -433,9 +564,9 @@ int thor_image_read(thor_image_t* img, const char* filename)
 		 (sig[4] == 'M') && (sig[5] == 'P') && (sig[6] == 'E') && (sig[7] == 'G') &&
 		 (sig[8] == '2') && (sig[9] == ' '))
 	{
+		img->fp = fp;
 		img->type = THOR_IMAGE_Y4M;
 		status = thor_image_y4m_read_fp(img, fp);
-		img->fp = fp;
 	}
 	else
 	{

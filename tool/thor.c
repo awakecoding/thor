@@ -74,9 +74,9 @@ int main_enc(int argc, char **argv)
 	uint32_t size;
 	uint8_t* pSrc[3];
 	uint8_t hdrbuf[8];
-	thor_image_t img;
 	uint32_t thorSize;
-	int frame_index = 0;
+	thor_image_t* img;
+	int frameIndex = 0;
 	int total_time = 0;
 	int total_size = 0;
 	thor_encoder_t* enc;
@@ -111,9 +111,18 @@ int main_enc(int argc, char **argv)
 	input_file = settings->infilestr;
 	output_file = settings->outfilestr;
 
-	thor_image_read(&img, input_file);
-	width = img.width;
-	height = img.height;
+	img = thor_image_new();
+
+	img->width = settings->width;
+	img->height = settings->height;
+	img->bytesPerPixel = 4;
+	img->bitsPerPixel = 32;
+	img->scanline = img->width * img->bytesPerPixel;
+
+	thor_image_read(img, input_file);
+
+	width = img->width;
+	height = img->height;
 
 	enc = thor_encoder_new(settings);
 
@@ -130,12 +139,16 @@ int main_enc(int argc, char **argv)
 	pSrc[1] = (uint8_t*) malloc(height / 2 * srcStep[1] * sizeof(uint8_t));
 	pSrc[2] = (uint8_t*) malloc(height / 2 * srcStep[2] * sizeof(uint8_t));
 
-	/* Read input frame */
-
-	if ((img.type == THOR_IMAGE_PNG) || (img.type == THOR_IMAGE_BMP))
+	if ((img->type == THOR_IMAGE_PNG) || (img->type == THOR_IMAGE_BMP))
 	{
-		thor_RGBToYUV420_8u_P3AC4R(img.data, img.scanline, pSrc, srcStep, width, height);
-		free(img.data);
+		thor_RGBToYUV420_8u_P3AC4R(img->data, img->scanline, pSrc, srcStep, width, height);
+	}
+	else if (img->type == THOR_IMAGE_RGB)
+	{
+		img->bitsPerPixel = 32;
+		img->bytesPerPixel = 4;
+		img->scanline = img->width * img->bytesPerPixel;
+		img->data = (uint8_t*) malloc(img->scanline * img->height);
 	}
 
 	output = fopen(output_file, "wb");
@@ -155,9 +168,6 @@ int main_enc(int argc, char **argv)
 	shdr.use_block_contexts = settings->use_block_contexts;
 	shdr.enable_bipred = settings->enable_bipred;
 
-	//fprintf(stderr, "width: %d height: %d pb_split_enable: %d tb_split_enable: %d max_num_ref: %d max_num_reorder_pics: %d max_delta_qp: %d deblocking: %d clpf: %d use_block_contexts: %d enable_bipred: %d\n",
-	//	shdr.width, shdr.height, shdr.pb_split_enable, shdr.tb_split_enable, shdr.max_num_ref, shdr.num_reorder_pics, shdr.max_delta_qp, shdr.deblocking, shdr.clpf, shdr.use_block_contexts, shdr.enable_bipred);
-
 	thor_encoder_set_sequence_header(enc, &shdr);
 
 	thor_write_sequence_header(hdrbuf, &shdr);
@@ -165,11 +175,23 @@ int main_enc(int argc, char **argv)
 	if (fwrite(hdrbuf, 1, 8, output) != 8)
 		return -1;
 
-	if (img.type == THOR_IMAGE_Y4M)
+	if (img->frameCount > 1)
 	{
-		for (frame_index = 0; frame_index < img.y4m_frame_count; frame_index++)
+		for (frameIndex = 0; frameIndex < img->frameCount; frameIndex++)
 		{
-			thor_y4m_read_frame(&img, pSrc, srcStep);
+			if (img->type == THOR_IMAGE_Y4M)
+			{
+				thor_y4m_read_frame(img, pSrc, srcStep);
+			}
+			else if (img->type == THOR_IMAGE_YUV)
+			{
+				thor_yuv_read_frame(img, pSrc, srcStep);
+			}
+			else if (img->type == THOR_IMAGE_RGB)
+			{
+				thor_rgb_read_frame(img, img->data, img->scanline);
+				thor_RGBToYUV420_8u_P3AC4R(img->data, img->scanline, pSrc, srcStep, width, height);
+			}
 
 			beg = thor_get_tick_count();
 			thorSize = thor_encode(enc, pSrc, srcStep, buffer, size);
@@ -179,7 +201,7 @@ int main_enc(int argc, char **argv)
 			fhdr.size = thorSize;
 
 			fprintf(stderr, "thor_encode[%03d]: %d ms %d KB\n",
-				frame_index, diff, thorSize / 1024);
+				frameIndex, diff, thorSize / 1024);
 
 			total_time += diff;
 			total_size += fhdr.size;
@@ -192,8 +214,6 @@ int main_enc(int argc, char **argv)
 			if (fwrite(buffer, 1, thorSize, output) != thorSize)
 				return -1;
 		}
-
-		fclose(img.fp);
 	}
 	else
 	{
@@ -218,8 +238,10 @@ int main_enc(int argc, char **argv)
 		if (fwrite(buffer, 1, thorSize, output) != thorSize)
 			return -1;
 
-		frame_index++;
+		frameIndex++;
 	}
+
+	thor_image_free(img, 1);
 
 	fclose(output);
 
@@ -230,8 +252,8 @@ int main_enc(int argc, char **argv)
 	free(pSrc[2]);
 
 	fprintf(stderr, "thor_encode: total: %d ms %d KB average: %d ms %d KB %f fps\n",
-		total_time, total_size / 1024, total_time / frame_index, (total_size / frame_index) / 1024,
-		1000.0f / ((float) total_time / (float) frame_index));
+		total_time, total_size / 1024, total_time / frameIndex, (total_size / frameIndex) / 1024,
+		1000.0f / ((float) total_time / (float) frameIndex));
 
 	thor_encoder_free(enc);
 
@@ -243,15 +265,16 @@ int main_dec(int argc, char** argv)
 	int width;
 	int height;
 	int status;
-	int index = 0;
 	int dstStep[3];
 	uint8_t* pDst[3];
 	uint8_t* buffer;
 	uint32_t size;
 	uint8_t hdrbuf[8];
+	uint32_t fileSize;
 	FILE* input = NULL;
 	thor_decoder_t* dec;
 	thor_image_t* img;
+	int frameIndex = 0;
 	char* name_base = NULL;
 	char* name_ext = NULL;
 	const char* input_file;
@@ -279,8 +302,16 @@ int main_dec(int argc, char** argv)
 		img->type = THOR_IMAGE_BMP;
 	else if (strstr(output_file, ".y4m"))
 		img->type = THOR_IMAGE_Y4M;
+	else if (strstr(output_file, ".yuv"))
+		img->type = THOR_IMAGE_YUV;
+	else if (strstr(output_file, ".rgb"))
+		img->type = THOR_IMAGE_RGB;
 
 	input = fopen(input_file, "rb");
+
+	fseek(input, 0, SEEK_END);
+	fileSize = ftell(input);
+	fseek(input, 0, SEEK_SET);
 
 	if (fread(hdrbuf, 1, 8, input) != 8)
 		return -1;
@@ -293,7 +324,7 @@ int main_dec(int argc, char** argv)
 	size = width * height * 4;
 	buffer = (uint8_t*) malloc(size);
 
-	if ((img->type == THOR_IMAGE_PNG) || (img->type == THOR_IMAGE_BMP))
+	if ((img->type == THOR_IMAGE_PNG) || (img->type == THOR_IMAGE_BMP) || (img->type == THOR_IMAGE_RGB))
 	{
 		char* p;
 
@@ -316,6 +347,14 @@ int main_dec(int argc, char** argv)
 
 	thor_decoder_set_sequence_header(dec, &shdr);
 
+	img->width = width;
+	img->height = height;
+
+	if ((img->type == THOR_IMAGE_Y4M) || (img->type == THOR_IMAGE_YUV) || (img->type == THOR_IMAGE_RGB))
+	{
+		thor_image_write(img, output_file);
+	}
+
 	while (1)
 	{
 		if (fread(hdrbuf, 1, 8, input) != 8)
@@ -337,33 +376,41 @@ int main_dec(int argc, char** argv)
 
 		diff = end - beg;
 
-		fprintf(stderr, "thor_decode[%03d]: %d ms\n", index, diff);
+		fprintf(stderr, "thor_decode[%03d]: %d ms\n", frameIndex, diff);
 
 		if ((img->type == THOR_IMAGE_PNG) || (img->type == THOR_IMAGE_BMP))
 		{
-			char frame_file[256];
-
-			img->width = width;
-			img->height = height;
 			img->bitsPerPixel = 32;
 			img->bytesPerPixel = 4;
 
 			thor_YUV420ToRGB_8u_P3AC4R((const uint8_t**) pDst, dstStep, img->data, img->scanline, width, height);
 
-			sprintf_s(frame_file, sizeof(frame_file), "%s_%03d.%s", name_base, index, name_ext);
-
-			thor_image_write(img, frame_file);
+			if ((frameIndex == 0) && (ftell(input) == fileSize))
+			{
+				thor_image_write(img, output_file); /* single frame */
+			}
+			else
+			{
+				char frame_file[256];
+				sprintf_s(frame_file, sizeof(frame_file), "%s_%03d.%s", name_base, frameIndex, name_ext);
+				thor_image_write(img, frame_file);
+			}
+		}
+		else if (img->type == THOR_IMAGE_RGB)
+		{
+			thor_YUV420ToRGB_8u_P3AC4R((const uint8_t**) pDst, dstStep, img->data, img->scanline, width, height);
+			thor_rgb_write_frame(img, img->data, img->scanline);
 		}
 		else if (img->type == THOR_IMAGE_Y4M)
 		{
-			img->width = width;
-			img->height = height;
-
-			thor_image_write(img, output_file);
 			thor_y4m_write_frame(img, pDst, dstStep);
 		}
+		else if (img->type == THOR_IMAGE_YUV)
+		{
+			thor_yuv_write_frame(img, pDst, dstStep);
+		}
 
-		index++;
+		frameIndex++;
 	}
 
 	thor_image_free(img, 1);

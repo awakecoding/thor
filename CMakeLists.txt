@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 2.8.10)
 project(Thor C)
 
 include(GNUInstallDirs)
+include(CheckCCompilerFlag)
 include(CMakePackageConfigHelpers)
 
 set(THOR_VERSION_MAJOR "0")
@@ -21,7 +22,7 @@ if(MSVC)
 		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /Qip /O2 /QxSSE3 /Qrestrict /Qansi_alias /Qalias_args- /fp:fast=2")
 	endif()
 else()
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O3 -Wall -Wno-unused-result")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -O3 -Wall")
 endif()
 
 include_directories(include)
