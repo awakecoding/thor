@@ -74,7 +74,6 @@ int main_enc(int argc, char **argv)
 	uint32_t size;
 	uint8_t* pSrc[3];
 	uint8_t hdrbuf[8];
-	uint32_t thorSize;
 	thor_image_t* img;
 	int frameIndex = 0;
 	int total_time = 0;
@@ -194,14 +193,12 @@ int main_enc(int argc, char **argv)
 			}
 
 			beg = thor_get_tick_count();
-			thorSize = thor_encode(enc, pSrc, srcStep, buffer, size);
+			fhdr.size = thor_encode(enc, pSrc, srcStep, buffer, size);
 			end = thor_get_tick_count();
-
 			diff = end - beg;
-			fhdr.size = thorSize;
 
-			fprintf(stderr, "thor_encode[%03d]: %d ms %d KB\n",
-				frameIndex, diff, thorSize / 1024);
+			fprintf(stderr, "thor_encode[%03d]: %d ms %4d KB %8d bytes\n",
+				frameIndex, diff, fhdr.size / 1024, fhdr.size);
 
 			total_time += diff;
 			total_size += fhdr.size;
@@ -211,21 +208,19 @@ int main_enc(int argc, char **argv)
 			if (fwrite(hdrbuf, 1, 8, output) != 8)
 				return -1;
 
-			if (fwrite(buffer, 1, thorSize, output) != thorSize)
+			if (fwrite(buffer, 1, fhdr.size, output) != fhdr.size)
 				return -1;
 		}
 	}
 	else
 	{
 		beg = thor_get_tick_count();
-		thorSize = thor_encode(enc, pSrc, srcStep, buffer, size);
+		fhdr.size = thor_encode(enc, pSrc, srcStep, buffer, size);
 		end = thor_get_tick_count();
-
 		diff = end - beg;
-		fhdr.size = thorSize;
 
 		fprintf(stderr, "thor_encode[%03d]: %d ms %d KB\n",
-			0, diff, thorSize / 1024);
+			0, diff, fhdr.size / 1024);
 
 		total_time += diff;
 		total_size += fhdr.size;
@@ -235,7 +230,7 @@ int main_enc(int argc, char **argv)
 		if (fwrite(hdrbuf, 1, 8, output) != 8)
 			return -1;
 
-		if (fwrite(buffer, 1, thorSize, output) != thorSize)
+		if (fwrite(buffer, 1, fhdr.size, output) != fhdr.size)
 			return -1;
 
 		frameIndex++;
@@ -373,7 +368,6 @@ int main_dec(int argc, char** argv)
 		beg = thor_get_tick_count();
 		thor_decode(dec, buffer, fhdr.size, pDst, dstStep);
 		end = thor_get_tick_count();
-
 		diff = end - beg;
 
 		fprintf(stderr, "thor_decode[%03d]: %d ms\n", frameIndex, diff);
@@ -412,6 +406,8 @@ int main_dec(int argc, char** argv)
 
 		frameIndex++;
 	}
+
+	thor_decoder_print_stats(dec);
 
 	thor_image_free(img, 1);
 	free(name_base);

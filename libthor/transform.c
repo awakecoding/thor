@@ -270,33 +270,47 @@ void transform(const int16_t *block, int16_t *coeff, int size, int fast)
 		const int16_t *in = block;
 
 		/* Add into 16x16 block and do a 16x16 transform */
-		if (size > 16 && fast) {
+		if (size > 16 && fast)
+		{
 			tr_matrix = transform_table[2];
 			shift_1 += 1 + (size == 64);
 			add_1 = 1 << (shift_1 - 1);
 			shift_2 = 9;
 			add_2 = 256;
+
 			for (i = 0; i < 16; i++)
+			{
 				for (j = 0; j < 16; j++)
+				{
 					if (size == 32)
+					{
 						tmp2[i*16+j] =
 								block[(i*2+0)*32+j*2+0] + block[(i*2+1)*32+j*2+0] +
 								block[(i*2+0)*32+j*2+1] + block[(i*2+1)*32+j*2+1];
+					}
 					else
+					{
 						tmp2[i*16+j] =
 								block[(i*4+0)*64+j*4+0] + block[(i*4+1)*64+j*4+0] + block[(i*4+2)*64+j*4+0] + block[(i*4+3)*64+j*4+0] +
 								block[(i*4+0)*64+j*4+1] + block[(i*4+1)*64+j*4+1] + block[(i*4+2)*64+j*4+1] + block[(i*4+3)*64+j*4+1] +
 								block[(i*4+0)*64+j*4+2] + block[(i*4+1)*64+j*4+2] + block[(i*4+2)*64+j*4+2] + block[(i*4+3)*64+j*4+2] +
 								block[(i*4+0)*64+j*4+3] + block[(i*4+1)*64+j*4+3] + block[(i*4+2)*64+j*4+3] + block[(i*4+3)*64+j*4+3];
+					}
+				}
+			}
+
 			size = 16;
 			in = tmp2;
 		}
 
 		/* 1st dimension */
-		for (i = 0; i < qsize; i++){
-			for (j = 0; j < size; j++){
+		for (i = 0; i < qsize; i++)
+		{
+			for (j = 0; j < size; j++)
+			{
 				int sum = 0;
-				for (k = 0; k < size; k++){
+				for (k = 0; k < size; k++)
+				{
 					sum += tr_matrix[i*size + k] * in[j*size + k];
 				}
 				tmp[i][j] = (sum + add_1) >> shift_1;
@@ -304,10 +318,13 @@ void transform(const int16_t *block, int16_t *coeff, int size, int fast)
 		}
 
 		/* 2nd dimension */
-		for (i = 0; i < qsize; i++){
-			for (j = 0; j < qsize; j++){
+		for (i = 0; i < qsize; i++)
+		{
+			for (j = 0; j < qsize; j++)
+			{
 				int sum = 0;
-				for (k = 0; k < size; k++){
+				for (k = 0; k < size; k++)
+				{
 					sum += tr_matrix[i*size + k] * tmp[j][k];
 				}
 				coeff[i*dsize + j] = (sum + add_2) >> shift_2;
@@ -320,97 +337,137 @@ void transform_1d_odd_l4(const int16_t *coeff, const int16_t *tr_matrix, int siz
 {
 	int i;
 	int length = size>>4;
-	for (i=0;i<length;i++){
+
+	for (i=0;i<length;i++)
+	{
 		o[i] = tr_matrix[8*size+i]*coeff[8*size+j];
 	}
 }
+
 void transform_1d_even_l4(const int16_t *coeff, const int16_t *tr_matrix, int size, int j, int *out)
 {
 	int i;
 	int length = size>>4;
-	for (i=0;i<length;i++){
+
+	for (i=0;i<length;i++)
+	{
 		out[i] = tr_matrix[0*size+i]*coeff[0*size+j];
 	}
 }
+
 void transform_1d_odd_l3(const int16_t *coeff, const int16_t *tr_matrix, int size, int j, int *o)
 {
 	int i;
 	int length = size>>3;
-	for (i=0;i<length;i++){
+
+	for (i=0;i<length;i++)
+	{
 		o[i] = tr_matrix[4*size+i]*coeff[4*size+j] + tr_matrix[12*size+i]*coeff[12*size+j];
 	}
 }
+
 void transform_1d_even_l3(const int16_t *coeff, const int16_t *tr_matrix, int size, int j, int *out)
 {
 	int i;
 	int length = size>>3;
 	int e[4],o[4];
+
 	transform_1d_odd_l4(coeff,tr_matrix,size,j,o);
 	transform_1d_even_l4(coeff,tr_matrix,size,j,e);
-	for (i=0;i<length/2;i++){
+
+	for (i=0;i<length/2;i++)
+	{
 		out[i] = e[i] + o[i];
 	}
-	for (i=length/2;i<length;i++){
+
+	for (i=length/2;i<length;i++)
+	{
 		out[i] = e[length-1-i] - o[length-1-i];
 	}
 }
+
 void transform_1d_odd_l2(const int16_t *coeff, const int16_t *tr_matrix, int size, int j, int *o)
 {
 	int i;
 	int length = size>>2;
-	for (i=0;i<length;i++){
-		o[i] = tr_matrix[2*size+i]*coeff[2*size+j] + tr_matrix[6*size+i]*coeff[6*size+j] + tr_matrix[10*size+i]*coeff[10*size+j] + tr_matrix[14*size+i]*coeff[14*size+j];
+
+	for (i=0;i<length;i++)
+	{
+		o[i] = tr_matrix[2*size+i]*coeff[2*size+j] + tr_matrix[6*size+i]*coeff[6*size+j] +
+				tr_matrix[10*size+i]*coeff[10*size+j] + tr_matrix[14*size+i]*coeff[14*size+j];
 	}
 }
+
 void transform_1d_even_l2(const int16_t *coeff, const int16_t *tr_matrix, int size, int j, int *out)
 {
 	int i;
 	int length = size>>2;
 	int e[8],o[8];
+
 	transform_1d_odd_l3(coeff,tr_matrix,size,j,o);
 	transform_1d_even_l3(coeff,tr_matrix,size,j,e);
-	for (i=0;i<length/2;i++){
+
+	for (i=0;i<length/2;i++)
+	{
 		out[i] = e[i] + o[i];
 	}
-	for (i=length/2;i<length;i++){
+
+	for (i=length/2;i<length;i++)
+	{
 		out[i] = e[length-1-i] - o[length-1-i];
 	}
-
 }
+
 void transform_1d_odd_l1(const int16_t *coeff, const int16_t *tr_matrix, int size, int j, int *o)
 {
 	int i;
 	int length = size>>1;
-	for (i=0;i<length;i++){
-		o[i] = tr_matrix[ 1*size+i]*coeff[ 1*size+j] + tr_matrix[ 3*size+i]*coeff[ 3*size+j] + tr_matrix[ 5*size+i]*coeff[ 5*size+j] + tr_matrix[ 7*size+i]*coeff[ 7*size+j] +
-				tr_matrix[ 9*size+i]*coeff[ 9*size+j] + tr_matrix[11*size+i]*coeff[11*size+j] + tr_matrix[13*size+i]*coeff[13*size+j] + tr_matrix[15*size+i]*coeff[15*size+j];
+
+	for (i=0;i<length;i++)
+	{
+		o[i] = tr_matrix[ 1*size+i]*coeff[ 1*size+j] + tr_matrix[ 3*size+i]*coeff[ 3*size+j] +
+				tr_matrix[ 5*size+i]*coeff[ 5*size+j] + tr_matrix[ 7*size+i]*coeff[ 7*size+j] +
+				tr_matrix[ 9*size+i]*coeff[ 9*size+j] + tr_matrix[11*size+i]*coeff[11*size+j] +
+				tr_matrix[13*size+i]*coeff[13*size+j] + tr_matrix[15*size+i]*coeff[15*size+j];
 	}
 }
+
 void transform_1d_even_l1(const int16_t *coeff, const int16_t *tr_matrix, int size, int j, int *out)
 {
 	int i;
 	int length = size>>1;
 	int e[16],o[16];
+
 	transform_1d_odd_l2(coeff,tr_matrix,size,j,o);
 	transform_1d_even_l2(coeff,tr_matrix,size,j,e);
-	for (i=0;i<length/2;i++){
+
+	for (i=0;i<length/2;i++)
+	{
 		out[i] = e[i] + o[i];
 	}
-	for (i=length/2;i<length;i++){
+
+	for (i=length/2;i<length;i++)
+	{
 		out[i] = e[length-1-i] - o[length-1-i];
 	}
 }
+
 void transform_1d_even_l0(const int16_t *coeff, const int16_t *tr_matrix, int size, int j, int *out)
 {
 	int i;
 	int length = size>>0;
 	int e[32],o[32];
+
 	transform_1d_odd_l1(coeff,tr_matrix,size,j,o);
 	transform_1d_even_l1(coeff,tr_matrix,size,j,e);
-	for (i = 0; i < length/2; i++){
+
+	for (i = 0; i < length/2; i++)
+	{
 		out[i] = e[i] + o[i];
 	}
-	for (i = length/2; i < length; i++){
+
+	for (i = length/2; i < length; i++)
+	{
 		out[i] = e[length-1-i] - o[length-1-i];
 	}
 }
@@ -434,43 +491,51 @@ void inverse_transform(const int16_t * coeff, int16_t *block, int size)
 		const int add_2 = 1 << (shift_2 -1);
 
 		/* 1st dimension */
-		for (i=0;i<MAX_QUANT_SIZE;i++){
+		for (i=0;i<MAX_QUANT_SIZE;i++)
+		{
 #if 1
-/* Partial factorization */
+			/* Partial factorization */
 			transform_1d_even_l0(coeff, tr_matrix, size, i, out);
 #else
 			/* Matrix multiplication */
 			int k;
-			for (j=0;j<size;j++){
+			for (j=0;j<size;j++)
+			{
 				out[j] = 0;
-				for (k=0;k<MAX_QUANT_SIZE;k++){
+				for (k=0;k<MAX_QUANT_SIZE;k++)
+				{
 					out[j] += tr_matrix[k*size+j] * coeff[k*size+i];
 				}
 			}
 #endif
-for (j=0;j<size;j++){
-	tmp[i*size+j] = clip((out[j] + add_1) >> shift_1, -32768, 32767);
-}
+			for (j=0;j<size;j++)
+			{
+				tmp[i*size+j] = clip((out[j] + add_1) >> shift_1, -32768, 32767);
+			}
 		}
 
 		/* 2nd dimension */
-		for (i=0;i<size;i++){
+		for (i=0;i<size;i++)
+		{
 #if 1
 			/* Partial factorization */
 			transform_1d_even_l0(tmp, tr_matrix, size, i, out);
 #else
 			/* Matrix multiplication */
 			int k;
-			for (j=0;j<size;j++){
+			for (j=0;j<size;j++)
+			{
 				out[j] = 0;
-				for (k=0;k<MAX_QUANT_SIZE;k++){
+				for (k=0;k<MAX_QUANT_SIZE;k++)
+				{
 					out[j] += tr_matrix[k*size+j] * tmp[k*size+i];
 				}
 			}
 #endif
-for (j=0;j<size;j++){
-	block[i*size + j] = clip((out[j] + add_2) >> shift_2, -32768, 32767);
-}
+			for (j=0;j<size;j++)
+			{
+				block[i*size + j] = clip((out[j] + add_2) >> shift_2, -32768, 32767);
+			}
 		}
 	}
 }

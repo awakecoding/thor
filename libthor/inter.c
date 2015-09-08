@@ -164,24 +164,24 @@ void get_inter_prediction_luma(uint8_t* pblock, uint8_t* ref, int width, int hei
 
 #if HEVC_INTERPOLATION
 	/* Vertical filtering */
-  for(i=-OFFYM1;i<width+OFFY;i++){
-    for (j=0;j<height;j++){
-      int sum = 0;
-      i_off = i + hor_int;
-      j_off = j + ver_int;
-      for (m=0;m<NTAPY;m++) sum += filter_coeffsY[ver_frac][m] * ref[(j_off + m - OFFYM1) * stride + i_off];
-      tmp[j][i+OFFYM1] = sum;
-    }
-  }
-  /* Horizontal filtering */
-  for(i=0;i<width;i++){
-    for (j=0;j<height;j++){
-      int sum = 0;
-      for (m=0;m<NTAPY;m++) sum += filter_coeffsY[hor_frac][m] * tmp[j][i+m];
-      pblock[j*pstride+i] = clip255((sum + 2048)>>12);
-    }
-  }
-  return;
+	for(i=-OFFYM1;i<width+OFFY;i++){
+		for (j=0;j<height;j++){
+			int sum = 0;
+			i_off = i + hor_int;
+			j_off = j + ver_int;
+			for (m=0;m<NTAPY;m++) sum += filter_coeffsY[ver_frac][m] * ref[(j_off + m - OFFYM1) * stride + i_off];
+			tmp[j][i+OFFYM1] = sum;
+		}
+	}
+	/* Horizontal filtering */
+	for(i=0;i<width;i++){
+		for (j=0;j<height;j++){
+			int sum = 0;
+			for (m=0;m<NTAPY;m++) sum += filter_coeffsY[hor_frac][m] * tmp[j][i+m];
+			pblock[j*pstride+i] = clip255((sum + 2048)>>12);
+		}
+	}
+	return;
 #endif
 
 	if (use_simd)
@@ -296,61 +296,71 @@ mv_t get_mv_pred(int ypos,int xpos,int width,int height,int size,int ref_idx,deb
 	int DL = downleft_available;
 
 
-	if (U==0 && UR==0 && L==0 && DL==0){
+	if (U==0 && UR==0 && L==0 && DL==0)
+	{
 		mvba = zerovecb;
 		mvbb = zerovecb;
 		mvbc = zerovecb;
 	}
-	else if (U==1 && UR==0 && L==0 && DL==0){
+	else if (U==1 && UR==0 && L==0 && DL==0)
+	{
 		mvba = deblock_data[up_index0].mvb;
 		mvbb = deblock_data[up_index1].mvb;
 		mvbc = deblock_data[up_index2].mvb;
 	}
-	else if (U==1 && UR==1 && L==0 && DL==0){
+	else if (U==1 && UR==1 && L==0 && DL==0)
+	{
 		mvba = deblock_data[up_index0].mvb;
 		mvbb = deblock_data[up_index2].mvb;
 		mvbc = deblock_data[upright_index].mvb;
 	}
-	else if (U==0 && UR==0 && L==1 && DL==0){
+	else if (U==0 && UR==0 && L==1 && DL==0)
+	{
 		mvba = deblock_data[left_index0].mvb;
 		mvbb = deblock_data[left_index1].mvb;
 		mvbc = deblock_data[left_index2].mvb;
 	}
-	else if (U==1 && UR==0 && L==1 && DL==0){
+	else if (U==1 && UR==0 && L==1 && DL==0)
+	{
 		mvba = deblock_data[upleft_index].mvb;
 		mvbb = deblock_data[up_index2].mvb;
 		mvbc = deblock_data[left_index2].mvb;
 	}
-	else if (U==1 && UR==1 && L==1 && DL==0){
+	else if (U==1 && UR==1 && L==1 && DL==0)
+	{
 		mvba = deblock_data[up_index0].mvb;
 		mvbb = deblock_data[upright_index].mvb;
 		mvbc = deblock_data[left_index2].mvb;
 	}
-	else if (U==0 && UR==0 && L==1 && DL==1){
+	else if (U==0 && UR==0 && L==1 && DL==1)
+	{
 		mvba = deblock_data[left_index0].mvb;
 		mvbb = deblock_data[left_index2].mvb;
 		mvbc = deblock_data[downleft_index].mvb;
 	}
-	else if (U==1 && UR==0 && L==1 && DL==1){
+	else if (U==1 && UR==0 && L==1 && DL==1)
+	{
 		mvba = deblock_data[up_index2].mvb;
 		mvbb = deblock_data[left_index0].mvb;
 		mvbc = deblock_data[downleft_index].mvb;
 	}
-	else if (U==1 && UR==1 && L==1 && DL==1){
+	else if (U==1 && UR==1 && L==1 && DL==1)
+	{
 		mvba = deblock_data[up_index0].mvb;
 		mvbb = deblock_data[upright_index].mvb;
 		mvbc = deblock_data[left_index0].mvb;
 	}
-	else{
+	else
+	{
 		printf("Error in mvp definition\n");
 	}
+
 	mva.x = mvba.x0;
 	mva.y = mvba.y0;
 	mvb.x = mvbb.x0;
 	mvb.y = mvbb.y0;
 	mvc.x = mvbc.x0;
 	mvc.y = mvbc.y0;
-
 
 	/* Median */
 	if (mva.x < mvb.x)
@@ -362,10 +372,11 @@ mv_t get_mv_pred(int ypos,int xpos,int width,int height,int size,int ref_idx,deb
 		mvp.y = min(mvb.y,max(mva.y,mvc.y));
 	else
 		mvp.y = min(mva.y,max(mvb.y,mvc.y));
+
 	return mvp;
 }
 
-int get_mv_merge(int yposY,int xposY,int width,int height,int size,deblock_data_t *deblock_data, mvb_t *mvb_skip)
+int get_mv_merge(int yposY, int xposY, int width, int height, int size, deblock_data_t* deblock_data, mvb_t* mvb_skip)
 {
 	int num_skip_vec=0;
 	int idx,duplicate;
@@ -421,61 +432,71 @@ int get_mv_merge(int yposY,int xposY,int width,int height,int size,deblock_data_
 	int L = left_available;
 	int DL = downleft_available;
 
-	if (U==0 && UR==0 && L==0 && DL==0){
+	if (U==0 && UR==0 && L==0 && DL==0)
+	{
 		tmb_skip[0] = zerovecb;
 		tmb_skip[1] = zerovecb;
 		tmb_skip[2] = zerovecb;
 		tmb_skip[3] = zerovecb;
 	}
-	else if (U==1 && UR==0 && L==0 && DL==0){
+	else if (U==1 && UR==0 && L==0 && DL==0)
+	{
 		tmb_skip[0] = deblock_data[up_index0].mvb;
 		tmb_skip[1] = deblock_data[up_index1].mvb;
 		tmb_skip[2] = deblock_data[up_index2].mvb;
 		tmb_skip[3] = deblock_data[up_index2].mvb;
 	}
-	else if (U==1 && UR==1 && L==0 && DL==0){
+	else if (U==1 && UR==1 && L==0 && DL==0)
+	{
 		tmb_skip[0] = deblock_data[up_index0].mvb;
 		tmb_skip[1] = deblock_data[up_index2].mvb;
 		tmb_skip[2] = deblock_data[upright_index].mvb;
 		tmb_skip[3] = deblock_data[upright_index].mvb;
 	}
-	else if (U==0 && UR==0 && L==1 && DL==0){
+	else if (U==0 && UR==0 && L==1 && DL==0)
+	{
 		tmb_skip[0] = deblock_data[left_index0].mvb;
 		tmb_skip[1] = deblock_data[left_index1].mvb;
 		tmb_skip[2] = deblock_data[left_index2].mvb;
 		tmb_skip[3] = deblock_data[left_index2].mvb;
 	}
-	else if (U==1 && UR==0 && L==1 && DL==0){
+	else if (U==1 && UR==0 && L==1 && DL==0)
+	{
 		tmb_skip[0] = deblock_data[upleft_index].mvb;
 		tmb_skip[1] = deblock_data[up_index2].mvb;
 		tmb_skip[2] = deblock_data[left_index2].mvb;
 		tmb_skip[3] = deblock_data[up_index0].mvb;
 	}
-	else if (U==1 && UR==1 && L==1 && DL==0){
+	else if (U==1 && UR==1 && L==1 && DL==0)
+	{
 		tmb_skip[0] = deblock_data[up_index0].mvb;
 		tmb_skip[1] = deblock_data[upright_index].mvb;
 		tmb_skip[2] = deblock_data[left_index2].mvb;
 		tmb_skip[3] = deblock_data[left_index0].mvb;
 	}
-	else if (U==0 && UR==0 && L==1 && DL==1){
+	else if (U==0 && UR==0 && L==1 && DL==1)
+	{
 		tmb_skip[0] = deblock_data[left_index0].mvb;
 		tmb_skip[1] = deblock_data[left_index2].mvb;
 		tmb_skip[2] = deblock_data[downleft_index].mvb;
 		tmb_skip[3] = deblock_data[downleft_index].mvb;
 	}
-	else if (U==1 && UR==0 && L==1 && DL==1){
+	else if (U==1 && UR==0 && L==1 && DL==1)
+	{
 		tmb_skip[0] = deblock_data[up_index2].mvb;
 		tmb_skip[1] = deblock_data[left_index0].mvb;
 		tmb_skip[2] = deblock_data[downleft_index].mvb;
 		tmb_skip[3] = deblock_data[up_index0].mvb;
 	}
-	else if (U==1 && UR==1 && L==1 && DL==1){
+	else if (U==1 && UR==1 && L==1 && DL==1)
+	{
 		tmb_skip[0] = deblock_data[up_index0].mvb;
 		tmb_skip[1] = deblock_data[upright_index].mvb;
 		tmb_skip[2] = deblock_data[left_index0].mvb;
 		tmb_skip[3] = deblock_data[downleft_index].mvb;
 	}
-	else{
+	else
+	{
 		printf("Error in skip vector definition\n");
 	}
 
@@ -498,11 +519,11 @@ int get_mv_merge(int yposY,int xposY,int width,int height,int size,deblock_data_
 #if ENABLE_SKIP_BIPRED
 #else
 	for (i=0;i<MAX_NUM_SKIP;i++){
-    tmb_skip[i].dir = 0;
-    tmb_skip[i].x1 =  tmb_skip[i].x0;
-    tmb_skip[i].y1 =  tmb_skip[i].y0;
-    tmb_skip[i].ref_idx1 = tmb_skip[i].ref_idx0;
-  }
+		tmb_skip[i].dir = 0;
+		tmb_skip[i].x1 =  tmb_skip[i].x0;
+		tmb_skip[i].y1 =  tmb_skip[i].y0;
+		tmb_skip[i].ref_idx1 = tmb_skip[i].ref_idx0;
+	}
 #endif
 	mvb_skip[0] = tmb_skip[0];
 
@@ -523,7 +544,7 @@ int get_mv_merge(int yposY,int xposY,int width,int height,int size,deblock_data_
 	return num_skip_vec;
 }
 
-int get_mv_skip(int yposY,int xposY,int width,int height,int size,deblock_data_t *deblock_data, mvb_t *mvb_skip)
+int get_mv_skip(int yposY, int xposY, int width, int height, int size, deblock_data_t* deblock_data, mvb_t* mvb_skip)
 {
 	int num_skip_vec=0;
 	int idx,duplicate;
@@ -579,61 +600,71 @@ int get_mv_skip(int yposY,int xposY,int width,int height,int size,deblock_data_t
 	int L = left_available;
 	int DL = downleft_available;
 
-	if (U==0 && UR==0 && L==0 && DL==0){
+	if (U==0 && UR==0 && L==0 && DL==0)
+	{
 		tmb_skip[0] = zerovecb;
 		tmb_skip[1] = zerovecb;
 		tmb_skip[2] = zerovecb;
 		tmb_skip[3] = zerovecb;
 	}
-	else if (U==1 && UR==0 && L==0 && DL==0){
+	else if (U==1 && UR==0 && L==0 && DL==0)
+	{
 		tmb_skip[0] = deblock_data[up_index0].mvb;
 		tmb_skip[1] = deblock_data[up_index1].mvb;
 		tmb_skip[2] = deblock_data[up_index2].mvb;
 		tmb_skip[3] = deblock_data[up_index2].mvb;
 	}
-	else if (U==1 && UR==1 && L==0 && DL==0){
+	else if (U==1 && UR==1 && L==0 && DL==0)
+	{
 		tmb_skip[0] = deblock_data[up_index0].mvb;
 		tmb_skip[1] = deblock_data[up_index2].mvb;
 		tmb_skip[2] = deblock_data[upright_index].mvb;
 		tmb_skip[3] = deblock_data[upright_index].mvb;
 	}
-	else if (U==0 && UR==0 && L==1 && DL==0){
+	else if (U==0 && UR==0 && L==1 && DL==0)
+	{
 		tmb_skip[0] = deblock_data[left_index0].mvb;
 		tmb_skip[1] = deblock_data[left_index1].mvb;
 		tmb_skip[2] = deblock_data[left_index2].mvb;
 		tmb_skip[3] = deblock_data[left_index2].mvb;
 	}
-	else if (U==1 && UR==0 && L==1 && DL==0){
+	else if (U==1 && UR==0 && L==1 && DL==0)
+	{
 		tmb_skip[0] = deblock_data[upleft_index].mvb;
 		tmb_skip[1] = deblock_data[up_index2].mvb;
 		tmb_skip[2] = deblock_data[left_index2].mvb;
 		tmb_skip[3] = deblock_data[up_index0].mvb;
 	}
-	else if (U==1 && UR==1 && L==1 && DL==0){
+	else if (U==1 && UR==1 && L==1 && DL==0)
+	{
 		tmb_skip[0] = deblock_data[up_index0].mvb;
 		tmb_skip[1] = deblock_data[upright_index].mvb;
 		tmb_skip[2] = deblock_data[left_index2].mvb;
 		tmb_skip[3] = deblock_data[left_index0].mvb;
 	}
-	else if (U==0 && UR==0 && L==1 && DL==1){
+	else if (U==0 && UR==0 && L==1 && DL==1)
+	{
 		tmb_skip[0] = deblock_data[left_index0].mvb;
 		tmb_skip[1] = deblock_data[left_index2].mvb;
 		tmb_skip[2] = deblock_data[downleft_index].mvb;
 		tmb_skip[3] = deblock_data[downleft_index].mvb;
 	}
-	else if (U==1 && UR==0 && L==1 && DL==1){
+	else if (U==1 && UR==0 && L==1 && DL==1)
+	{
 		tmb_skip[0] = deblock_data[up_index2].mvb;
 		tmb_skip[1] = deblock_data[left_index0].mvb;
 		tmb_skip[2] = deblock_data[downleft_index].mvb;
 		tmb_skip[3] = deblock_data[up_index0].mvb;
 	}
-	else if (U==1 && UR==1 && L==1 && DL==1){
+	else if (U==1 && UR==1 && L==1 && DL==1)
+	{
 		tmb_skip[0] = deblock_data[up_index0].mvb;
 		tmb_skip[1] = deblock_data[upright_index].mvb;
 		tmb_skip[2] = deblock_data[left_index0].mvb;
 		tmb_skip[3] = deblock_data[downleft_index].mvb;
 	}
-	else{
+	else
+	{
 		printf("Error in skip vector definition\n");
 	}
 

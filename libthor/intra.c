@@ -71,54 +71,54 @@ void get_dc_pred(uint8_t* rec, int ypos, int xpos, int stride, int size, uint8_t
 
 void get_hor_pred(uint8_t *rec,int ypos,int xpos,int stride,int size,uint8_t *pblock)
 {
-  int i,j,val;
+	int i,j,val;
 
 #if FILTER_HOR_AND_VER
-  if (xpos>0)
-  {
-	  uint16_t hor[MAX_TR_SIZE];
-	  uint8_t horF[MAX_TR_SIZE];
-	  for (i=0;i<size;i++){
-		  hor[i] = rec[(ypos+i)*stride+xpos-1];
-	  }
-	  horF[0] = (uint8_t)((hor[0] + 14*hor[0] + hor[1] + 8)>>4);
-	  for (j=1;j<size-1;j++){
-		  horF[j] = (uint8_t)((hor[j-1] + 14*hor[j] + hor[j+1] + 8)>>4);
-	  }
-	  horF[size-1] = (uint8_t)((hor[size-2] + 14*hor[size-1] + hor[size-1] + 8)>>4);
-	  for (i=0;i<size;i++){
-		  val = horF[i];
-		  for (j=0;j<size;j++){
-			  pblock[i*size+j] = val;
-		  }
-	  }
-  }
-  else
-  {
-	  for (i=0;i<size;i++){
-		  for (j=0;j<size;j++){
-			  pblock[i*size+j] = 128;
-		  }
-	  }
-  }
+	if (xpos>0)
+	{
+		uint16_t hor[MAX_TR_SIZE];
+		uint8_t horF[MAX_TR_SIZE];
+		for (i=0;i<size;i++){
+			hor[i] = rec[(ypos+i)*stride+xpos-1];
+		}
+		horF[0] = (uint8_t)((hor[0] + 14*hor[0] + hor[1] + 8)>>4);
+		for (j=1;j<size-1;j++){
+			horF[j] = (uint8_t)((hor[j-1] + 14*hor[j] + hor[j+1] + 8)>>4);
+		}
+		horF[size-1] = (uint8_t)((hor[size-2] + 14*hor[size-1] + hor[size-1] + 8)>>4);
+		for (i=0;i<size;i++){
+			val = horF[i];
+			for (j=0;j<size;j++){
+				pblock[i*size+j] = val;
+			}
+		}
+	}
+	else
+	{
+		for (i=0;i<size;i++){
+			for (j=0;j<size;j++){
+				pblock[i*size+j] = 128;
+			}
+		}
+	}
 #else
-  if (xpos>0)
-  {
-	  for (i=0;i<size;i++){
-		  val = rec[(ypos+i)*stride+xpos-1];
-		  for (j=0;j<size;j++){
-			  pblock[i*size+j] = val;
-		  }
-	  }
-  }
-  else
-  {
-	  for (i=0;i<size;i++){
-		  for (j=0;j<size;j++){
-			  pblock[i*size+j] = 128;
-		  }
-	  }
-  }
+	if (xpos>0)
+	{
+		for (i=0;i<size;i++){
+			val = rec[(ypos+i)*stride+xpos-1];
+			for (j=0;j<size;j++){
+				pblock[i*size+j] = val;
+			}
+		}
+	}
+	else
+	{
+		for (i=0;i<size;i++){
+			for (j=0;j<size;j++){
+				pblock[i*size+j] = 128;
+			}
+		}
+	}
 #endif
 }
 

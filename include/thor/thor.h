@@ -125,6 +125,7 @@ THOR_EXPORT void thor_encoder_free(thor_encoder_t* ctx);
 
 THOR_EXPORT thor_decoder_settings_t* thor_decoder_get_settings(thor_decoder_t* ctx);
 THOR_EXPORT void thor_decoder_set_sequence_header(thor_decoder_t* ctx, thor_sequence_header_t* hdr);
+THOR_EXPORT int thor_decoder_print_stats(thor_decoder_t* ctx);
 
 THOR_EXPORT int thor_decode(thor_decoder_t* ctx, uint8_t* pSrc, uint32_t srcSize, uint8_t* pDst[3], int dstStep[3]);
 

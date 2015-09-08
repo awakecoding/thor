@@ -416,6 +416,115 @@ void thor_decoder_set_sequence_header(thor_decoder_t* ctx, thor_sequence_header_
 	info->deblock_data = (deblock_data_t*) malloc((ctx->height / MIN_PB_SIZE) * (ctx->width / MIN_PB_SIZE) * sizeof(deblock_data_t));
 }
 
+int thor_decoder_print_stats(thor_decoder_t* ctx)
+{
+	int i, j;
+	uint32_t tot_bits[2] = {0};
+	decoder_info_t* decoder_info = &ctx->info;
+	bit_count_t bit_count = decoder_info->bit_count;
+
+	for (i = 0; i < 2; i++)
+	{
+		tot_bits[i] = bit_count.frame_header[i] + bit_count.super_mode[i] +
+				bit_count.intra_mode[i] + bit_count.mv[i] + bit_count.skip_idx[i] +
+				bit_count.coeff_y[i] + bit_count.coeff_u[i] + bit_count.coeff_v[i] +
+				bit_count.cbp[i] + bit_count.clpf[i];
+	}
+	tot_bits[0] += bit_count.sequence_header;
+	int ni = bit_count.frame_type[0];
+	int np = bit_count.frame_type[1];
+
+	if (np==0) np = (1<<30); //Hack to avoid division by zero if there are no P frames
+
+	printf("\n\nBIT STATISTICS:\n");
+	printf("Sequence header: %4d\n",bit_count.sequence_header);
+	printf("                           I pictures:           P pictures:\n");
+	printf("                           total    average      total    average\n");
+	printf("Frame header:          %9d  %9d  %9d  %9d\n",bit_count.frame_header[0],bit_count.frame_header[0]/ni,bit_count.frame_header[1],bit_count.frame_header[1]/np);
+	printf("Super mode:            %9d  %9d  %9d  %9d\n",bit_count.super_mode[0],bit_count.super_mode[0]/ni,bit_count.super_mode[1],bit_count.super_mode[1]/np);
+	printf("Intra mode:            %9d  %9d  %9d  %9d\n",bit_count.intra_mode[0],bit_count.intra_mode[0]/ni,bit_count.intra_mode[1],bit_count.intra_mode[1]/np);
+	printf("MV:                    %9d  %9d  %9d  %9d\n",bit_count.mv[0],bit_count.mv[0],bit_count.mv[1],bit_count.mv[1]/np);
+	printf("Skip idx:              %9d  %9d  %9d  %9d\n",bit_count.skip_idx[0],bit_count.skip_idx[0],bit_count.skip_idx[1],bit_count.skip_idx[1]/np);
+	printf("Coeff_y:               %9d  %9d  %9d  %9d\n",bit_count.coeff_y[0],bit_count.coeff_y[0]/ni,bit_count.coeff_y[1],bit_count.coeff_y[1]/np);
+	printf("Coeff_u:               %9d  %9d  %9d  %9d\n",bit_count.coeff_u[0],bit_count.coeff_u[0]/ni,bit_count.coeff_u[1],bit_count.coeff_u[1]/np);
+	printf("Coeff_v:               %9d  %9d  %9d  %9d\n",bit_count.coeff_v[0],bit_count.coeff_v[0]/ni,bit_count.coeff_v[1],bit_count.coeff_v[1]/np);
+	printf("CBP (TU-split):        %9d  %9d  %9d  %9d\n",bit_count.cbp[0],bit_count.cbp[0]/ni,bit_count.cbp[1],bit_count.cbp[1]/np);
+	printf("CLPF:                  %9d  %9d  %9d  %9d\n",bit_count.clpf[0],bit_count.clpf[0]/ni,bit_count.clpf[1],bit_count.clpf[1]/np);
+	printf("Total:                 %9d  %9d  %9d  %9d\n",tot_bits[0],tot_bits[0],tot_bits[1],tot_bits[1]/np);
+	printf("-----------------------------------------------------------------\n\n");
+
+	printf("PARAMETER STATISTICS:\n");
+	printf("                           I pictures:           P pictures:\n");
+	printf("                           total    average      total    average\n");
+	printf("Skip-blocks (8x8):     %9d  %9d  %9d  %9d\n",bit_count.mode[0][0],bit_count.mode[0][0]/ni,bit_count.mode[1][0],bit_count.mode[1][0]/np);
+	printf("Intra-blocks (8x8):    %9d  %9d  %9d  %9d\n",bit_count.mode[0][1],bit_count.mode[0][1]/ni,bit_count.mode[1][1],bit_count.mode[1][1]/np);
+	printf("Inter-blocks (8x8):    %9d  %9d  %9d  %9d\n",bit_count.mode[0][2],bit_count.mode[0][2]/ni,bit_count.mode[1][2],bit_count.mode[1][2]/np);
+	printf("Bipred-blocks (8x8):   %9d  %9d  %9d  %9d\n",bit_count.mode[0][3],bit_count.mode[0][3]/ni,bit_count.mode[1][3],bit_count.mode[1][3]/np);
+
+	printf("\n");
+	printf("8x8-blocks (8x8):      %9d  %9d  %9d  %9d\n",bit_count.size[0][0],bit_count.size[0][0]/ni,bit_count.size[1][0],bit_count.size[1][0]/np);
+	printf("16x16-blocks (8x8):    %9d  %9d  %9d  %9d\n",bit_count.size[0][1],bit_count.size[0][1]/ni,bit_count.size[1][1],bit_count.size[1][1]/np);
+	printf("32x32-blocks (8x8):    %9d  %9d  %9d  %9d\n",bit_count.size[0][2],bit_count.size[0][2]/ni,bit_count.size[1][2],bit_count.size[1][2]/np);
+	printf("64x64-blocks (8x8):    %9d  %9d  %9d  %9d\n",bit_count.size[0][3],bit_count.size[0][3]/ni,bit_count.size[1][3],bit_count.size[1][3]/np);
+
+	printf("\n");
+	printf("Mode and size distribution for P- pictures:\n");
+	printf("                            SKIP      INTRA      INTER     BIPRED\n");
+	printf("8x8-blocks (8x8):      %9d  %9d  %9d  %9d\n",bit_count.size_and_mode[0][0],bit_count.size_and_mode[0][1],bit_count.size_and_mode[0][2],bit_count.size_and_mode[0][3]);
+	printf("16x16-blocks (8x8):    %9d  %9d  %9d  %9d\n",bit_count.size_and_mode[1][0],bit_count.size_and_mode[1][1],bit_count.size_and_mode[1][2],bit_count.size_and_mode[1][3]);
+	printf("32x32-blocks (8x8):    %9d  %9d  %9d  %9d\n",bit_count.size_and_mode[2][0],bit_count.size_and_mode[2][1],bit_count.size_and_mode[2][2],bit_count.size_and_mode[2][3]);
+	printf("64x64-blocks (8x8):    %9d  %9d  %9d  %9d\n",bit_count.size_and_mode[3][0],bit_count.size_and_mode[3][1],bit_count.size_and_mode[3][2],bit_count.size_and_mode[3][3]);
+
+	int idx;
+	int num=9;
+	printf("\nSuper-mode distribution for P pictures:\n");
+	int index;
+	for (index=0;index<1;index++)
+	{
+		for (idx=0;idx<4;idx++)
+		{
+			int size = 8<<idx;
+			printf("%2d x %2d-blocks (8x8): ",size,size);
+			for (i=0;i<num;i++)
+			{
+				printf("%8d",bit_count.super_mode_stat[index][idx][i]/1);
+			}
+			printf("\n");
+		}
+	}
+
+	printf("\n");
+	printf("Ref_idx and size distribution for P pictures:\n");
+	int size;
+	int max_num_ref = 4;
+
+	for (i=0;i<4;i++)
+	{
+		size = 1<<(i+3);
+		printf("%2d x %2d-blocks: ",size,size);
+		for (j=0;j<max_num_ref;j++)
+		{
+			printf("%6d",bit_count.size_and_ref_idx[i][j]);
+		}
+		printf("\n");
+	}
+
+	{
+		int sum = 0;
+		printf("\nbi-ref:  ");
+		for (j=0;j<max_num_ref*max_num_ref;j++)
+		{
+			sum += bit_count.bi_ref[j];
+			printf("%7d",bit_count.bi_ref[j]);
+		}
+		printf("\n");
+	}
+
+	printf("-----------------------------------------------------------------\n");
+
+	return 1;
+}
+
 thor_decoder_t* thor_decoder_new(thor_decoder_settings_t* settings)
 {
 	thor_decoder_t* ctx;

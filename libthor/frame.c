@@ -519,111 +519,124 @@ void encode_clpf_frame(encoder_info_t *encoder_info){
 
 void encode_frame(encoder_info_t* encoder_info)
 {
-  int k,l;
-  int width = encoder_info->width;
-  int height = encoder_info->height;
-  int num_sb_hor = (width + MAX_BLOCK_SIZE - 1)/MAX_BLOCK_SIZE;
-  int num_sb_ver = (height + MAX_BLOCK_SIZE - 1)/MAX_BLOCK_SIZE;
-  stream_t *stream = encoder_info->stream;
+	uint8_t qp;
+	int k, l, r;
+	int width = encoder_info->width;
+	int height = encoder_info->height;
+	int num_sb_hor = (width + MAX_BLOCK_SIZE - 1)/MAX_BLOCK_SIZE;
+	int num_sb_ver = (height + MAX_BLOCK_SIZE - 1)/MAX_BLOCK_SIZE;
+	stream_t* stream = encoder_info->stream;
+	frame_info_t* frame_info = &(encoder_info->frame_info);
 
-  frame_info_t *frame_info = &(encoder_info->frame_info);
-  double lambda_coeff = frame_info->frame_type==I_FRAME ? encoder_info->params->lambda_coeffI :
-    (frame_info->frame_type==P_FRAME ? encoder_info->params->lambda_coeffP : encoder_info->params->lambda_coeffB);
-  frame_info->lambda = lambda_coeff*squared_lambda_QP[frame_info->qp];
+	double lambda_coeff = frame_info->frame_type==I_FRAME ? encoder_info->params->lambda_coeffI :
+			(frame_info->frame_type==P_FRAME ? encoder_info->params->lambda_coeffP : encoder_info->params->lambda_coeffB);
+	frame_info->lambda = lambda_coeff*squared_lambda_QP[frame_info->qp];
 
-  putbits(1,encoder_info->frame_info.frame_type!=I_FRAME,stream);
-  uint8_t qp = encoder_info->frame_info.qp;
-  putbits(8,(int)qp,stream);
-  putbits(4,(int)encoder_info->frame_info.num_intra_modes,stream);
+	putbits(1,encoder_info->frame_info.frame_type!=I_FRAME,stream);
+	qp = encoder_info->frame_info.qp;
+	putbits(8,(int)qp,stream);
+	putbits(4,(int)encoder_info->frame_info.num_intra_modes,stream);
 
-  int r;
-  for (r=0;r<encoder_info->frame_info.num_ref;r++){
-    putbits(4,encoder_info->frame_info.ref_array[r],stream);
-  }
+	for (r=0;r<encoder_info->frame_info.num_ref;r++){
+		putbits(4,encoder_info->frame_info.ref_array[r],stream);
+	}
 
-  for (k=0;k<num_sb_ver;k++){
-    for (l=0;l<num_sb_hor;l++){
-      int xposY = l*MAX_BLOCK_SIZE;
-      int yposY = k*MAX_BLOCK_SIZE;
+	for (k=0;k<num_sb_ver;k++)
+	{
+		for (l=0;l<num_sb_hor;l++)
+		{
+			int xposY = l*MAX_BLOCK_SIZE;
+			int yposY = k*MAX_BLOCK_SIZE;
 
-      int max_delta_qp = encoder_info->params->max_delta_qp;
-      if (max_delta_qp){
-        /* RDO-based search for best QP value */
-        int cost,min_cost,best_qp,qp0,max_delta_qp,min_qp,max_qp;
-        max_delta_qp = encoder_info->params->max_delta_qp;
-        min_cost = 1<<30;
-        stream_pos_t stream_pos_ref;
-        read_stream_pos(&stream_pos_ref,stream);
-        best_qp = qp;
-        min_qp = qp-max_delta_qp;
-        max_qp = qp;
-        for (qp0=min_qp;qp0<=max_qp;qp0++){
-          cost = process_block(encoder_info,MAX_BLOCK_SIZE,yposY,xposY,qp0);
-          if (cost < min_cost){
-            min_cost = cost;
-            best_qp = qp0;
-          }
-        }
-        write_stream_pos(stream,&stream_pos_ref);
-        process_block(encoder_info,MAX_BLOCK_SIZE,yposY,xposY,best_qp);
-      }
-      else{
+			int max_delta_qp = encoder_info->params->max_delta_qp;
+
+			if (max_delta_qp)
+			{
+				/* RDO-based search for best QP value */
+				int cost,min_cost,best_qp,qp0,max_delta_qp,min_qp,max_qp;
+				max_delta_qp = encoder_info->params->max_delta_qp;
+				min_cost = 1<<30;
+				stream_pos_t stream_pos_ref;
+				read_stream_pos(&stream_pos_ref,stream);
+				best_qp = qp;
+				min_qp = qp - max_delta_qp;
+				max_qp = qp;
+
+				for (qp0 = min_qp; qp0 <= max_qp; qp0++)
+				{
+					cost = process_block(encoder_info, MAX_BLOCK_SIZE, yposY, xposY, qp0);
+
+					if (cost < min_cost){
+						min_cost = cost;
+						best_qp = qp0;
+					}
+				}
+
+				write_stream_pos(stream, &stream_pos_ref);
+				process_block(encoder_info, MAX_BLOCK_SIZE, yposY, xposY, best_qp);
+			}
+			else
+			{
 #if NEW_BLOCK_STRUCTURE
-        int depth;
-        int best_depth;
-        uint32_t cost,min_cost;
-        stream_pos_t stream_pos_ref;
-        read_stream_pos(&stream_pos_ref,stream);
-        best_depth = 0;
-        min_cost = (1<<30);
-        int max_depth = frame_info->frame_type==I_FRAME || yposY + MAX_BLOCK_SIZE > height || xposY + MAX_BLOCK_SIZE > width ? 4 : 3;
-        for (depth=0;depth<max_depth;depth++){
-          encoder_info->depth = depth;
-          cost = process_block(encoder_info,MAX_BLOCK_SIZE,yposY,xposY,qp);
-          if (cost < min_cost){
-            min_cost = cost;
-            best_depth = depth;
-          }
-        }
-        write_stream_pos(stream,&stream_pos_ref);
-        encoder_info->depth = best_depth;
+				int depth;
+				int best_depth;
+				uint32_t cost,min_cost;
+				stream_pos_t stream_pos_ref;
+				read_stream_pos(&stream_pos_ref,stream);
+				best_depth = 0;
+				min_cost = (1<<30);
+				int max_depth = frame_info->frame_type==I_FRAME || yposY + MAX_BLOCK_SIZE > height || xposY + MAX_BLOCK_SIZE > width ? 4 : 3;
+				for (depth=0;depth<max_depth;depth++)
+				{
+					encoder_info->depth = depth;
+					cost = process_block(encoder_info,MAX_BLOCK_SIZE,yposY,xposY,qp);
+					if (cost < min_cost){
+						min_cost = cost;
+						best_depth = depth;
+					}
+				}
+				write_stream_pos(stream,&stream_pos_ref);
+				encoder_info->depth = best_depth;
 #endif
-        process_block(encoder_info,MAX_BLOCK_SIZE,yposY,xposY,qp);
-      }
-    }
-  }
+				process_block(encoder_info,MAX_BLOCK_SIZE,yposY,xposY,qp);
+			}
+		}
+	}
 
-  if (encoder_info->params->deblocking){
-    deblock_frame_y(encoder_info->rec, encoder_info->deblock_data, width, height, qp);
-    int qpc = chroma_qp[qp];
-    deblock_frame_uv(encoder_info->rec, encoder_info->deblock_data, width, height, qpc);
-  }
+	if (encoder_info->params->deblocking)
+	{
+		deblock_frame_y(encoder_info->rec, encoder_info->deblock_data, width, height, qp);
+		int qpc = chroma_qp[qp];
+		deblock_frame_uv(encoder_info->rec, encoder_info->deblock_data, width, height, qpc);
+	}
 
-  if (encoder_info->params->clpf){
-    if ((frame_info->frame_num%CLPF_PERIOD)==0){
-      encode_clpf_frame(encoder_info);
-    }
-  }
+	if (encoder_info->params->clpf)
+	{
+		if ((frame_info->frame_num % CLPF_PERIOD)==0)
+		{
+			encode_clpf_frame(encoder_info);
+		}
+	}
 
-  /* Sliding window operation for reference frame buffer by circular buffer */
+	/* Sliding window operation for reference frame buffer by circular buffer */
 
-  /* Store pointer to reference frame that is shifted out of reference buffer */
-  yuv_frame_t *tmp = encoder_info->ref[MAX_REF_FRAMES-1];
+	/* Store pointer to reference frame that is shifted out of reference buffer */
+	yuv_frame_t* tmp = encoder_info->ref[MAX_REF_FRAMES-1];
 
-  /* Update remaining pointers to implement sliding window reference buffer operation */
-  memmove(encoder_info->ref+1, encoder_info->ref, sizeof(yuv_frame_t*)*(MAX_REF_FRAMES-1));
+	/* Update remaining pointers to implement sliding window reference buffer operation */
+	memmove(encoder_info->ref+1, encoder_info->ref, sizeof(yuv_frame_t*)*(MAX_REF_FRAMES-1));
 
-  /* Set ref[0] to the memory slot where the new current reconstructed frame wil replace reference frame being shifted out */
-  encoder_info->ref[0] = tmp;
+	/* Set ref[0] to the memory slot where the new current reconstructed frame will replace reference frame being shifted out */
+	encoder_info->ref[0] = tmp;
 
-  /* Pad the reconstructed frame and write into ref[0] */
-  create_reference_frame(encoder_info->ref[0],encoder_info->rec);
+	/* Pad the reconstructed frame and write into ref[0] */
+	create_reference_frame(encoder_info->ref[0], encoder_info->rec);
 }
 
 /* decode_frame */
 
-void decode_clpf_frame(decoder_info_t *decoder_info){
-
+void decode_clpf_frame(decoder_info_t *decoder_info)
+{
 	/* Constrained low-pass filter (CLPF) */
 	stream_t *stream = decoder_info->stream;
 	frame_type_t frame_type = decoder_info->frame_info.frame_type;
