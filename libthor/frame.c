@@ -543,14 +543,16 @@ void encode_frame(encoder_info_t* encoder_info)
 			(frame_info->frame_type==P_FRAME ? encoder_info->params->lambda_coeffP : encoder_info->params->lambda_coeffB);
 	frame_info->lambda = lambda_coeff*squared_lambda_QP[frame_info->qp];
 
-	putbits(1,encoder_info->frame_info.frame_type!=I_FRAME,stream);
+	frame_info->frame_skip = 1;
+
+	putbits(1, encoder_info->frame_info.frame_type!=I_FRAME, stream);
 	qp = encoder_info->frame_info.qp;
-	putbits(8,(int)qp,stream);
-	putbits(4,(int)encoder_info->frame_info.num_intra_modes,stream);
+	putbits(8, (int)qp, stream);
+	putbits(4, (int)encoder_info->frame_info.num_intra_modes, stream);
 
 	for (r = 0; r < encoder_info->frame_info.num_ref; r++)
 	{
-		putbits(4,encoder_info->frame_info.ref_array[r],stream);
+		putbits(4,encoder_info->frame_info.ref_array[r], stream);
 	}
 
 	for (k = 0; k < num_sb_ver; k++)
@@ -737,6 +739,8 @@ void decode_frame(decoder_info_t* decoder_info)
 	{
 		decoder_info->frame_info.ref_array[r] = getbits(stream, 4);
 	}
+
+	decoder_info->frame_info.frame_skip = 1;
 
 	decoder_info->bit_count.frame_header[decoder_info->frame_info.frame_type] += (stream->bitcnt - bit_start);
 	decoder_info->bit_count.frame_type[decoder_info->frame_info.frame_type] += 1;

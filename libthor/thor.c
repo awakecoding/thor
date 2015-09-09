@@ -260,6 +260,9 @@ int thor_encode(thor_encoder_t* ctx, uint8_t* pSrc[3], int srcStep[3], uint8_t* 
 	flush_all_bits(stream);
 	status = stream->bytepos;
 
+	if (info->frame_info.frame_skip)
+		status = 0; /* unchanged frame */
+
 	return status;
 }
 
@@ -350,6 +353,7 @@ void thor_encoder_free(thor_encoder_t* ctx)
 
 int thor_decode(thor_decoder_t* ctx, uint8_t* pSrc, uint32_t srcSize, uint8_t* pDst[3], int dstStep[3])
 {
+	int status = 1;
 	yuv_frame_t frame;
 	stream_t* stream = &ctx->stream;
 	decoder_info_t* info = &ctx->info;
@@ -379,6 +383,9 @@ int thor_decode(thor_decoder_t* ctx, uint8_t* pSrc, uint32_t srcSize, uint8_t* p
 	decode_frame(info);
 
 	ctx->frame_num++;
+
+	if (info->frame_info.frame_skip)
+		status = 0; /* unchanged frame */
 
 	return 1;
 }

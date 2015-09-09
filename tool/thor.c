@@ -357,18 +357,26 @@ int main_dec(int argc, char** argv)
 
 		thor_read_frame_header(hdrbuf, &fhdr);
 
-		status = fread(buffer, 1, fhdr.size, input);
-
-		if (status != fhdr.size)
+		if (fhdr.size)
 		{
-			fprintf(stderr, "incomplete frame data: actual: %d, expected: %d\n", status, fhdr.size);
-			break;
-		}
+			status = fread(buffer, 1, fhdr.size, input);
 
-		beg = thor_get_tick_count();
-		thor_decode(dec, buffer, fhdr.size, pDst, dstStep);
-		end = thor_get_tick_count();
-		diff = end - beg;
+			if (status != fhdr.size)
+			{
+				fprintf(stderr, "incomplete frame data: actual: %d, expected: %d\n", status, fhdr.size);
+				break;
+			}
+
+			beg = thor_get_tick_count();
+			thor_decode(dec, buffer, fhdr.size, pDst, dstStep);
+			end = thor_get_tick_count();
+			diff = end - beg;
+		}
+		else
+		{
+			/* unchanged frame */
+			diff = 0;
+		}
 
 		fprintf(stderr, "thor_decode[%03d]: %d ms\n", frameIndex, diff);
 

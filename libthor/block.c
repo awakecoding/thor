@@ -308,8 +308,10 @@ void decode_copy_deblock_data(decoder_info_t *decoder_info, block_info_dec_t *bl
 	}
 }
 
-void decode_block(decoder_info_t *decoder_info,int size,int ypos,int xpos)
+void decode_block(decoder_info_t* decoder_info, int size, int ypos, int xpos)
 {
+	int i, j;
+	int tb_split;
 	int width = decoder_info->width;
 	int height = decoder_info->height;
 	int xposY = xpos;
@@ -378,24 +380,27 @@ void decode_block(decoder_info_t *decoder_info,int size,int ypos,int xpos)
 	block_info.block_pos.bwidth = bwidth;
 	block_info.block_pos.bheight = bheight;
 
-	read_block(decoder_info,stream,&block_info,frame_type);
+	read_block(decoder_info, stream, &block_info, frame_type);
 	mode = block_info.pred_data.mode;
+
+	if (mode != MODE_SKIP)
+		decoder_info->frame_info.frame_skip = 0;
 
 	if (mode == MODE_SKIP)
 	{
-		if (block_info.pred_data.dir==2)
+		if (block_info.pred_data.dir == 2)
 		{
 			uint8_t *ref0_y,*ref0_u,*ref0_v;
 			uint8_t *ref1_y,*ref1_u,*ref1_v;
 
 			int r0 = decoder_info->frame_info.ref_array[block_info.pred_data.ref_idx0];
-			yuv_frame_t *ref0 = decoder_info->ref[r0];
+			yuv_frame_t* ref0 = decoder_info->ref[r0];
 			ref0_y = ref0->y + ref_posY;
 			ref0_u = ref0->u + ref_posC;
 			ref0_v = ref0->v + ref_posC;
 
 			int r1 = decoder_info->frame_info.ref_array[block_info.pred_data.ref_idx1];
-			yuv_frame_t *ref1 = decoder_info->ref[r1];
+			yuv_frame_t* ref1 = decoder_info->ref[r1];
 			ref1_y = ref1->y + ref_posY;
 			ref1_u = ref1->u + ref_posC;
 			ref1_v = ref1->v + ref_posC;
@@ -411,19 +416,23 @@ void decode_block(decoder_info_t *decoder_info,int size,int ypos,int xpos)
 			get_inter_prediction_chroma(pblock1_u, ref1_u, bwidth/2, bheight/2, ref->stride_c, sizeC, &mv, sign1);
 			get_inter_prediction_chroma(pblock1_v, ref1_v, bwidth/2, bheight/2, ref->stride_c, sizeC, &mv, sign1);
 
-			int i,j;
-			for (i=0;i<bheight;i++){
-				for (j=0;j<bwidth;j++){
+			for (i=0;i<bheight;i++)
+			{
+				for (j=0;j<bwidth;j++)
+				{
 					rec_y[i*rec->stride_y+j] = (uint8_t)(((int)pblock0_y[i*sizeY+j] + (int)pblock1_y[i*sizeY+j])>>1);
 				}
 			}
 
-			for (i=0;i<bheight/2;i++){
-				for (j=0;j<bwidth/2;j++){
+			for (i=0;i<bheight/2;i++)
+			{
+				for (j=0;j<bwidth/2;j++)
+				{
 					rec_u[i*rec->stride_c+j] = (uint8_t)(((int)pblock0_u[i*sizeC+j] + (int)pblock1_u[i*sizeC+j])>>1);
 					rec_v[i*rec->stride_c+j] = (uint8_t)(((int)pblock0_v[i*sizeC+j] + (int)pblock1_v[i*sizeC+j])>>1);
 				}
 			}
+
 			decode_copy_deblock_data(decoder_info,&block_info);
 		}
 		else
@@ -440,16 +449,20 @@ void decode_block(decoder_info_t *decoder_info,int size,int ypos,int xpos)
 			get_inter_prediction_chroma(pblock_u, ref_u, bwidth/2, bheight/2, ref->stride_c, sizeC, &mv, sign);
 			get_inter_prediction_chroma(pblock_v, ref_v, bwidth/2, bheight/2, ref->stride_c, sizeC, &mv, sign);
 
-			int j;
-			for (j=0;j<bheight;j++){
+			for (j=0;j<bheight;j++)
+			{
 				memcpy(&rec_y[j*rec->stride_y],&pblock_y[j*sizeY],bwidth*sizeof(uint8_t));
 			}
-			for (j=0;j<bheight/2;j++){
+
+			for (j=0;j<bheight/2;j++)
+			{
 				memcpy(&rec_u[j*rec->stride_c],&pblock_u[j*sizeC],(bwidth/2)*sizeof(uint8_t));
 				memcpy(&rec_v[j*rec->stride_c],&pblock_v[j*sizeC],(bwidth/2)*sizeof(uint8_t));
 			}
+
 			decode_copy_deblock_data(decoder_info,&block_info);
 		}
+
 		return;
 	}
 	else if (mode == MODE_MERGE)
@@ -460,13 +473,13 @@ void decode_block(decoder_info_t *decoder_info,int size,int ypos,int xpos)
 			uint8_t *ref1_y,*ref1_u,*ref1_v;
 
 			int r0 = decoder_info->frame_info.ref_array[block_info.pred_data.ref_idx0];
-			yuv_frame_t *ref0 = decoder_info->ref[r0];
+			yuv_frame_t* ref0 = decoder_info->ref[r0];
 			ref0_y = ref0->y + ref_posY;
 			ref0_u = ref0->u + ref_posC;
 			ref0_v = ref0->v + ref_posC;
 
 			int r1 = decoder_info->frame_info.ref_array[block_info.pred_data.ref_idx1];
-			yuv_frame_t *ref1 = decoder_info->ref[r1];
+			yuv_frame_t* ref1 = decoder_info->ref[r1];
 			ref1_y = ref1->y + ref_posY;
 			ref1_u = ref1->u + ref_posC;
 			ref1_v = ref1->v + ref_posC;
@@ -483,14 +496,18 @@ void decode_block(decoder_info_t *decoder_info,int size,int ypos,int xpos)
 			get_inter_prediction_chroma(pblock1_u, ref1_u, bwidth/2, bheight/2, ref->stride_c, sizeC, &mv, sign1);
 			get_inter_prediction_chroma(pblock1_v, ref1_v, bwidth/2, bheight/2, ref->stride_c, sizeC, &mv, sign1);
 
-			int i,j;
-			for (i=0;i<sizeY;i++){
-				for (j=0;j<sizeY;j++){
+			for (i=0;i<sizeY;i++)
+			{
+				for (j=0;j<sizeY;j++)
+				{
 					pblock_y[i*sizeY+j] = (uint8_t)(((int)pblock0_y[i*sizeY+j] + (int)pblock1_y[i*sizeY+j])>>1);
 				}
 			}
-			for (i=0;i<sizeC;i++){
-				for (j=0;j<sizeC;j++){
+
+			for (i=0;i<sizeC;i++)
+			{
+				for (j=0;j<sizeC;j++)
+				{
 					pblock_u[i*sizeC+j] = (uint8_t)(((int)pblock0_u[i*sizeC+j] + (int)pblock1_u[i*sizeC+j])>>1);
 					pblock_v[i*sizeC+j] = (uint8_t)(((int)pblock0_v[i*sizeC+j] + (int)pblock1_v[i*sizeC+j])>>1);
 				}
@@ -592,14 +609,19 @@ void decode_block(decoder_info_t *decoder_info,int size,int ypos,int xpos)
 			get_inter_prediction_chroma(pblock1_u + offsetpC, ref1_u + offsetrC, psizeC, psizeC, ref->stride_c, pstrideC, &mv, sign1);
 			get_inter_prediction_chroma(pblock1_v + offsetpC, ref1_v + offsetrC, psizeC, psizeC, ref->stride_c, pstrideC, &mv, sign1);
 		}
-		int i,j;
-		for (i=0;i<sizeY;i++){
-			for (j=0;j<sizeY;j++){
+
+		for (i=0;i<sizeY;i++)
+		{
+			for (j=0;j<sizeY;j++)
+			{
 				pblock_y[i*pstrideY+j] = (uint8_t)(((int)pblock0_y[i*pstrideY+j] + (int)pblock1_y[i*pstrideY+j])>>1);
 			}
 		}
-		for (i=0;i<sizeC;i++){
-			for (j=0;j<sizeC;j++){
+
+		for (i=0;i<sizeC;i++)
+		{
+			for (j=0;j<sizeC;j++)
+			{
 				pblock_u[i*pstrideC+j] = (uint8_t)(((int)pblock0_u[i*pstrideC+j] + (int)pblock1_u[i*pstrideC+j])>>1);
 				pblock_v[i*pstrideC+j] = (uint8_t)(((int)pblock0_v[i*pstrideC+j] + (int)pblock1_v[i*pstrideC+j])>>1);
 			}
@@ -607,13 +629,13 @@ void decode_block(decoder_info_t *decoder_info,int size,int ypos,int xpos)
 	}
 
 	/* Dequantize, invere tranform and reconstruct */
-	int tb_split = block_info.tb_split;
-	decode_and_reconstruct_block(rec_y,rec->stride_y,sizeY,qpY,pblock_y,coeff_y,tb_split);
-	decode_and_reconstruct_block(rec_u,rec->stride_c,sizeC,qpC,pblock_u,coeff_u,tb_split&&size>8);
-	decode_and_reconstruct_block(rec_v,rec->stride_c,sizeC,qpC,pblock_v,coeff_v,tb_split&&size>8);
+	tb_split = block_info.tb_split;
+	decode_and_reconstruct_block(rec_y, rec->stride_y, sizeY, qpY, pblock_y, coeff_y, tb_split);
+	decode_and_reconstruct_block(rec_u, rec->stride_c, sizeC, qpC, pblock_u, coeff_u, tb_split&&size>8);
+	decode_and_reconstruct_block(rec_v, rec->stride_c, sizeC, qpC, pblock_v, coeff_v, tb_split&&size>8);
 
 	/* Copy deblock data to frame array */
-	decode_copy_deblock_data(decoder_info,&block_info);
+	decode_copy_deblock_data(decoder_info, &block_info);
 }
 
 #if NEW_BLOCK_STRUCTURE
@@ -708,10 +730,10 @@ int decode_super_mode(decoder_info_t *decoder_info, int size, int decode_rectang
 	return split_flag;
 }
 #else
-int decode_super_mode(decoder_info_t *decoder_info, int size, int decode_rectangular_size)
+int decode_super_mode(decoder_info_t* decoder_info, int size, int decode_rectangular_size)
 {
-	stream_t *stream = decoder_info->stream;
-	block_context_t *block_context = decoder_info->block_context;
+	stream_t* stream = decoder_info->stream;
+	block_context_t* block_context = decoder_info->block_context;
 
 	frame_type_t frame_type = decoder_info->frame_info.frame_type;
 	int split_flag = 0;
@@ -741,7 +763,8 @@ int decode_super_mode(decoder_info_t *decoder_info, int size, int decode_rectang
 
 	code = get_vlc0_limit(maxbit,stream);
 
-	if (block_context->index==2 || block_context->index>3){
+	if (block_context->index==2 || block_context->index>3)
+	{
 		if (size>MIN_BLOCK_SIZE && code<4)
 			code = (code+1)%4;
 	}
@@ -774,35 +797,45 @@ int decode_super_mode(decoder_info_t *decoder_info, int size, int decode_rectang
 #endif
 
 	if (code==0)
+	{
 		mode = MODE_SKIP;
-	else if (code==1){
+	}
+	else if (code==1)
+	{
 		mode = MODE_INTER;
 		decoder_info->ref_idx = 0;
 	}
-	else if(code==2){
+	else if(code==2)
+	{
 		mode = MODE_MERGE;
 	}
 	else if(code==3)
+	{
 		mode = MODE_INTRA;
-	else if (code <= num_ref+2){
+	}
+	else if (code <= num_ref+2)
+	{
 		mode = MODE_INTER;
 		decoder_info->ref_idx = code-3;
 	}
 	else
+	{
 		mode = MODE_BIPRED;
+	}
+
 	decoder_info->mode = mode;
 
 	return split_flag;
 }
 #endif
 
-void process_block_dec(decoder_info_t *decoder_info,int size,int yposY,int xposY)
+void process_block_dec(decoder_info_t* decoder_info, int size, int yposY, int xposY)
 {
+	int split_flag = 0;
 	int width = decoder_info->width;
 	int height = decoder_info->height;
-	stream_t *stream = decoder_info->stream;
+	stream_t* stream = decoder_info->stream;
 	frame_type_t frame_type = decoder_info->frame_info.frame_type;
-	int split_flag = 0;
 
 	if (yposY >= height || xposY >= width)
 		return;
@@ -819,31 +852,37 @@ void process_block_dec(decoder_info_t *decoder_info,int size,int yposY,int xposY
 	decoder_info->block_context = &block_context;
 
 #if NEW_BLOCK_STRUCTURE
-	if (size==MAX_BLOCK_SIZE){
+	if (size==MAX_BLOCK_SIZE)
+	{
 		if (frame_type==I_FRAME || decode_rectangular_size==1)
 			decoder_info->depth = getbits(stream,2);
 	}
 	split_flag = (MAX_BLOCK_SIZE>>decoder_info->depth) < size;
-	if (frame_type==I_FRAME){ //TODO: Create read_super_mode() function
+	if (frame_type==I_FRAME)
+	{ //TODO: Create read_super_mode() function
 		mode = MODE_INTRA;
 	}
-	else{
-		if (decode_rectangular_size){
+	else
+	{
+		if (decode_rectangular_size)
+		{
 			if (split_flag==0) mode = MODE_SKIP;
 		}
-		else{
+		else
+		{
 			split_flag = decode_super_mode(decoder_info,size,decode_rectangular_size);
 			mode = decoder_info->mode;
 		}
 	} //if (!I_FRAME)
 	decoder_info->mode = mode;
 #else
-	split_flag = decode_super_mode(decoder_info,size,decode_rectangular_size);
+	split_flag = decode_super_mode(decoder_info, size, decode_rectangular_size);
 	mode = decoder_info->mode;
 #endif
 
 	/* Read delta_qp and set block-level qp */
-	if (size==MAX_BLOCK_SIZE && mode != MODE_SKIP && decoder_info->max_delta_qp > 0){
+	if (size==MAX_BLOCK_SIZE && mode != MODE_SKIP && decoder_info->max_delta_qp > 0)
+	{
 		/* Read delta_qp */
 		int delta_qp = read_delta_qp(stream);
 		decoder_info->frame_info.qpb = decoder_info->frame_info.qp + delta_qp;
@@ -851,15 +890,17 @@ void process_block_dec(decoder_info_t *decoder_info,int size,int yposY,int xposY
 
 	decoder_info->bit_count.super_mode[decoder_info->frame_info.frame_type] += (stream->bitcnt - bit_start);
 
-	if (split_flag){
+	if (split_flag)
+	{
 		int new_size = size/2;
-		process_block_dec(decoder_info,new_size,yposY+0*new_size,xposY+0*new_size);
-		process_block_dec(decoder_info,new_size,yposY+1*new_size,xposY+0*new_size);
-		process_block_dec(decoder_info,new_size,yposY+0*new_size,xposY+1*new_size);
-		process_block_dec(decoder_info,new_size,yposY+1*new_size,xposY+1*new_size);
+		process_block_dec(decoder_info, new_size, yposY+0*new_size, xposY+0*new_size);
+		process_block_dec(decoder_info, new_size, yposY+1*new_size, xposY+0*new_size);
+		process_block_dec(decoder_info, new_size, yposY+0*new_size, xposY+1*new_size);
+		process_block_dec(decoder_info, new_size, yposY+1*new_size, xposY+1*new_size);
 	}
-	else if (decode_this_size || decode_rectangular_size){
-		decode_block(decoder_info,size,yposY,xposY);
+	else if (decode_this_size || decode_rectangular_size)
+	{
+		decode_block(decoder_info, size, yposY, xposY);
 	}
 }
 
@@ -2052,8 +2093,10 @@ int encode_block(encoder_info_t* encoder_info, stream_t* stream, block_info_t* b
 			cbp.u = encode_and_reconstruct_block(encoder_info, org_u,sizeC, sizeC, qpC, pblock_u, coeffq_u, rec_u, frame_type, 1, tb_split&&(size>8), encoder_info->params->rdoq);
 			cbp.v = encode_and_reconstruct_block(encoder_info, org_v,sizeC, sizeC, qpC, pblock_v, coeffq_v, rec_v, frame_type, 1, tb_split&&(size>8), encoder_info->params->rdoq);
 		}
+
+		encoder_info->frame_info.frame_skip = 0;
 	}
-	else if (mode==MODE_SKIP)
+	else if (mode == MODE_SKIP)
 	{
 		cbp.y = cbp.u = cbp.v = 0;
 	}
@@ -2067,10 +2110,13 @@ int encode_block(encoder_info_t* encoder_info, stream_t* stream, block_info_t* b
 			int bit0,bit1;
 			bit0 = quote_mv_bits(block_info->mvb_skip[0].y0 - pred_data->mv_arr0[0].y, block_info->mvb_skip[0].x0 - pred_data->mv_arr0[0].x);
 			bit1 = quote_mv_bits(block_info->mvb_skip[1].y0 - pred_data->mv_arr0[0].y, block_info->mvb_skip[1].x0 - pred_data->mv_arr0[0].x);
-			if (mode==MODE_BIPRED){
+
+			if (mode==MODE_BIPRED)
+			{
 				bit0 += quote_mv_bits(block_info->mvb_skip[0].y0 - pred_data->mv_arr1[0].y, block_info->mvb_skip[0].x0 - pred_data->mv_arr1[0].x);
 				bit1 += quote_mv_bits(block_info->mvb_skip[1].y0 - pred_data->mv_arr1[0].y, block_info->mvb_skip[1].x0 - pred_data->mv_arr1[0].x);
 			}
+
 			min_idx = bit1 < bit0;
 		}
 		write_data.mvp.x = block_info->mvb_skip[max(0,min_idx)].x0;
@@ -2081,7 +2127,8 @@ int encode_block(encoder_info_t* encoder_info, stream_t* stream, block_info_t* b
 
 	nbits = write_block(stream,&write_data);
 
-	if (tb_split){
+	if (tb_split)
+	{
 		cbp.y = cbp.u = cbp.v = 1; //TODO: Do properly with respect to deblocking filter
 	}
 
@@ -2579,6 +2626,7 @@ int mode_decision_rdo(encoder_info_t* encoder_info, block_info_t* block_info)
 							ref = encoder_info->ref[r];
 							int sign = ref->frame_num > rec->frame_num;
 							sad = (uint32_t)search_inter_prediction_params(org8,ref,&block_info->block_pos,&mvp,mvcand,mv_all[part],0,sqrt(lambda),encoder_info->params->encoder_speed,sign);
+
 							if (sad < min_sad)
 							{
 								min_sad = sad;
@@ -2600,9 +2648,11 @@ int mode_decision_rdo(encoder_info_t* encoder_info, block_info_t* block_info)
 				max_tb_param = 0; //TODO: Support tb-split
 				for (tb_param=min_tb_param; tb_param<=max_tb_param; tb_param++)
 				{
-					nbits = encode_block(encoder_info,stream,block_info,&pred_data,mode,tb_param);
-					cost = cost_calc(org_block,rec_block,size,size,size,nbits,lambda);
-					if (cost < min_cost){
+					nbits = encode_block(encoder_info, stream, block_info, &pred_data, mode, tb_param);
+					cost = cost_calc(org_block, rec_block, size, size, size, nbits, lambda);
+
+					if (cost < min_cost)
+					{
 						min_cost = cost;
 						best_mode = MODE_BIPRED;
 						best_tb_param = tb_param;
@@ -3031,6 +3081,11 @@ int search_early_skip_candidates(encoder_info_t* encoder_info, block_info_t* blo
 
 int process_block(encoder_info_t* encoder_info, int size, int ypos, int xpos, int qp)
 {
+	block_info_t block_info;
+	ALIGN(16) yuv_block_t org_block;
+	ALIGN(16) yuv_block_t rec_block;
+	block_context_t block_context;
+	stream_pos_t stream_pos_ref;
 	int height = encoder_info->height;
 	int width = encoder_info->width;
 	uint32_t cost,cost_small;
@@ -3048,7 +3103,9 @@ int process_block(encoder_info_t* encoder_info, int size, int ypos, int xpos, in
 
 #if NEW_BLOCK_STRUCTURE
 	int depth = log2i(MAX_BLOCK_SIZE) - log2i(size);
-	if (size==MAX_BLOCK_SIZE){
+
+	if (size==MAX_BLOCK_SIZE)
+	{
 		if (frame_type==I_FRAME || encode_rectangular_size==1)
 			putbits(2,encoder_info->depth,stream);
 		else if (encoder_info->depth>0)
@@ -3068,14 +3125,9 @@ int process_block(encoder_info_t* encoder_info, int size, int ypos, int xpos, in
 	cost = 1<<28;
 
 	/* Store bitstream state before doing anything at this block size */
-	stream_pos_t stream_pos_ref;
-	read_stream_pos(&stream_pos_ref,stream);
+	read_stream_pos(&stream_pos_ref, stream);
 
 	/* Initialize some block-level parameters */
-	block_info_t block_info;
-	ALIGN(16) yuv_block_t org_block;
-	ALIGN(16) yuv_block_t rec_block;
-	block_context_t block_context;
 	find_block_contexts(ypos, xpos, height, width, size, encoder_info->deblock_data, &block_context, encoder_info->params->use_block_contexts);
 
 	if (ypos < height && xpos < width)

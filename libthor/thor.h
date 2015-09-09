@@ -377,6 +377,7 @@ typedef struct
 	int frame_num;
 	int display_frame_num;
 	int decode_order_frame_num;
+	int frame_skip;
 } frame_info_t;
 
 typedef struct
