@@ -42,17 +42,19 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define NTAPY 8
 #define OFFY (NTAPY/2)
 #define OFFYM1 (OFFY-1)
-static const int16_t filter_coeffsY[4][8] = {
-    { 0,  0,  0, 64,  0,  0, 0,  0},
-    {-1,  4,-10, 58, 17, -5, 1,  0},
-    {-1,  4,-11, 40, 40,-11, 4, -1},
-    { 0,  1, -5, 17, 58,-10, 4, -1}
+static const int16_t filter_coeffsY[4][8] =
+{
+	{ 0,  0,  0, 64,  0,  0, 0,  0},
+	{-1,  4,-10, 58, 17, -5, 1,  0},
+	{-1,  4,-11, 40, 40,-11, 4, -1},
+	{ 0,  1, -5, 17, 58,-10, 4, -1}
 };
 #else
 #define NTAPY 6
 #define OFFY (NTAPY/2)
 #define OFFYM1 (OFFY-1)
-static const int16_t filter_coeffsY[4][8] = {
+static const int16_t filter_coeffsY[4][8] =
+{
 	{ 0,  0,128,  0,  0,  0},
 	{ 3,-15,111, 37,-10,  2},
 	{ 3,-17, 78, 78,-17,  3},
@@ -60,7 +62,8 @@ static const int16_t filter_coeffsY[4][8] = {
 };
 #endif
 
-static const int8_t filter_coeffsC[8][4] = {
+static const int8_t filter_coeffsC[8][4] =
+{
 	{ 0, 64,  0,  0},
 	{-2, 58,  10,-2},
 	{-4, 54, 16, -2},
@@ -71,7 +74,7 @@ static const int8_t filter_coeffsC[8][4] = {
 	{-2, 10, 58, -2}
 };
 
-void get_inter_prediction_chroma(uint8_t *pblock, uint8_t *ref, int width, int height, int stride, int pstride, mv_t *mv, int sign)
+void get_inter_prediction_chroma(uint8_t* pblock, uint8_t* ref, int width, int height, int stride, int pstride, mv_t* mv, int sign)
 {
 	int i,j;
 	int m,i_off,j_off;
@@ -93,10 +96,13 @@ void get_inter_prediction_chroma(uint8_t *pblock, uint8_t *ref, int width, int h
 		}
 
 		j_off = 0 + hor_int;
-		for(i=0;i<height;i++){
+
+		for (i=0;i<height;i++)
+		{
 			i_off = i + ver_int;
 			memcpy(pblock + i*pstride,ref + i_off*stride + j_off, width*sizeof(uint8_t));
 		}
+
 		return;
 	}
 
@@ -108,8 +114,10 @@ void get_inter_prediction_chroma(uint8_t *pblock, uint8_t *ref, int width, int h
 	else
 	{
 		/* Horizontal filtering */
-		for(i=-1;i<height+2;i++){
-			for (j=0;j<width;j++){
+		for (i=-1;i<height+2;i++)
+		{
+			for (j=0;j<width;j++)
+			{
 				int sum = 0;
 				i_off = i + ver_int;
 				j_off = j + hor_int;
@@ -119,8 +127,10 @@ void get_inter_prediction_chroma(uint8_t *pblock, uint8_t *ref, int width, int h
 		}
 
 		/* Vertical filtering */
-		for(i=0;i<height;i++){
-			for (j=0;j<width;j++){
+		for(i=0;i<height;i++)
+		{
+			for (j=0;j<width;j++)
+			{
 				int sum = 0;
 				for (m=0;m<4;m++) sum += filter_coeffsC[ver_frac][m] * tmp[i+m][j];
 				pblock[i*pstride+j] = clip255((sum + 2048)>>12);
@@ -164,8 +174,10 @@ void get_inter_prediction_luma(uint8_t* pblock, uint8_t* ref, int width, int hei
 
 #if HEVC_INTERPOLATION
 	/* Vertical filtering */
-	for(i=-OFFYM1;i<width+OFFY;i++){
-		for (j=0;j<height;j++){
+	for(i=-OFFYM1;i<width+OFFY;i++)
+	{
+		for (j=0;j<height;j++)
+		{
 			int sum = 0;
 			i_off = i + hor_int;
 			j_off = j + ver_int;
@@ -174,8 +186,10 @@ void get_inter_prediction_luma(uint8_t* pblock, uint8_t* ref, int width, int hei
 		}
 	}
 	/* Horizontal filtering */
-	for(i=0;i<width;i++){
-		for (j=0;j<height;j++){
+	for(i=0;i<width;i++)
+	{
+		for (j=0;j<height;j++)
+		{
 			int sum = 0;
 			for (m=0;m<NTAPY;m++) sum += filter_coeffsY[hor_frac][m] * tmp[j][i+m];
 			pblock[j*pstride+i] = clip255((sum + 2048)>>12);
@@ -238,7 +252,7 @@ void get_inter_prediction_luma(uint8_t* pblock, uint8_t* ref, int width, int hei
 	}
 }
 
-mv_t get_mv_pred(int ypos,int xpos,int width,int height,int size,int ref_idx,deblock_data_t *deblock_data) //TODO: Remove ref_idx as argument if not needed
+mv_t get_mv_pred(int ypos, int xpos, int width, int height, int size, int ref_idx, deblock_data_t* deblock_data) //TODO: Remove ref_idx as argument if not needed
 {
 	mv_t mvp;
 	mvr_t zerovec;
@@ -518,7 +532,8 @@ int get_mv_merge(int yposY, int xposY, int width, int height, int size, deblock_
 	num_skip_vec = 1;
 #if ENABLE_SKIP_BIPRED
 #else
-	for (i=0;i<MAX_NUM_SKIP;i++){
+	for (i=0;i<MAX_NUM_SKIP;i++)
+	{
 		tmb_skip[i].dir = 0;
 		tmb_skip[i].x1 =  tmb_skip[i].x0;
 		tmb_skip[i].y1 =  tmb_skip[i].y0;
@@ -530,13 +545,16 @@ int get_mv_merge(int yposY, int xposY, int width, int height, int size, deblock_
 	for (i=1;i<MAX_NUM_SKIP;i++)
 	{
 		duplicate = 0;
+
 		for (idx=0; idx<num_skip_vec; idx++)
 		{
 			if (tmb_skip[i].x0 == mvb_skip[idx].x0 && tmb_skip[i].y0 == mvb_skip[idx].y0 && tmb_skip[i].ref_idx0 == mvb_skip[idx].ref_idx0 &&
 			    tmb_skip[i].x1 == mvb_skip[idx].x1 && tmb_skip[i].y1 == mvb_skip[idx].y1 && tmb_skip[i].ref_idx1 == mvb_skip[idx].ref_idx1 &&
 			    (tmb_skip[i].dir == mvb_skip[idx].dir || tmb_skip[i].dir == -1)) duplicate = 1; //TODO: proper handling fo dir for intra
 		}
-		if (duplicate==0){
+
+		if (duplicate==0)
+		{
 			mvb_skip[num_skip_vec++] = tmb_skip[i];
 		}
 	}
@@ -579,7 +597,6 @@ int get_mv_skip(int yposY, int xposY, int width, int height, int size, deblock_d
 	int upright_index = block_index - block_stride + block_size;
 	int upleft_index = block_index - block_stride - 1;
 	int downleft_index = block_index + block_stride*block_size - 1;
-
 
 	/* Special case for rectangular skip blocks at frame boundaries */
 	if (yposY+size > height){
@@ -686,7 +703,8 @@ int get_mv_skip(int yposY, int xposY, int width, int height, int size, deblock_d
 	num_skip_vec = 1;
 #if ENABLE_SKIP_BIPRED
 #else
-	for (i=0;i<MAX_NUM_SKIP;i++){
+	for (i=0;i<MAX_NUM_SKIP;i++)
+	{
 		tmb_skip[i].dir = 0;
 		tmb_skip[i].x1 =  tmb_skip[i].x0;
 		tmb_skip[i].y1 =  tmb_skip[i].y0;
@@ -698,13 +716,16 @@ int get_mv_skip(int yposY, int xposY, int width, int height, int size, deblock_d
 	for (i=1;i<MAX_NUM_SKIP;i++)
 	{
 		duplicate = 0;
+
 		for (idx=0; idx<num_skip_vec; idx++)
 		{
 			if (tmb_skip[i].x0 == mvb_skip[idx].x0 && tmb_skip[i].y0 == mvb_skip[idx].y0 && tmb_skip[i].ref_idx0 == mvb_skip[idx].ref_idx0 &&
 			    tmb_skip[i].x1 == mvb_skip[idx].x1 && tmb_skip[i].y1 == mvb_skip[idx].y1 && tmb_skip[i].ref_idx1 == mvb_skip[idx].ref_idx1 &&
 			    (tmb_skip[i].dir == mvb_skip[idx].dir || tmb_skip[i].dir == -1)) duplicate = 1; //TODO: proper handling fo dir for intra
 		}
-		if (duplicate==0){
+
+		if (duplicate==0)
+		{
 			mvb_skip[num_skip_vec++] = tmb_skip[i];
 		}
 	}

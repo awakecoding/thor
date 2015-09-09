@@ -113,9 +113,9 @@ typedef struct
 
 typedef struct
 {
-	uint8_t *y;
-	uint8_t *u;
-	uint8_t *v;
+	uint8_t* y;
+	uint8_t* u;
+	uint8_t* v;
 	int width;
 	int height;
 	int stride_y;
@@ -125,34 +125,38 @@ typedef struct
 	int frame_num;
 } yuv_frame_t;
 
-typedef enum {     // Order matters: log2(size)-2
+typedef enum
+{     // Order matters: log2(size)-2
 	TR_4x4 = 0,
 	TR_8x8 = 1,
 	TR_16x16 = 2,
 	TR_32x32 = 3,
-	TR_SIZES
+	TR_SIZES = 4
 } trsizes;
 
-typedef enum {
-	I_FRAME,
-	P_FRAME,
-	B_FRAME
+typedef enum
+{
+	I_FRAME = 0,
+	P_FRAME = 1,
+	B_FRAME = 2
 } frame_type_t;
 
-typedef enum {
+typedef enum
+{
 	MODE_SKIP = 0,
-	MODE_INTRA,
-	MODE_INTER,
-	MODE_BIPRED,
-	MODE_MERGE,
-	MAX_NUM_MODES
+	MODE_INTRA = 1,
+	MODE_INTER = 2,
+	MODE_BIPRED = 3,
+	MODE_MERGE = 4,
+	MAX_NUM_MODES = 5
 } block_mode_t;
 
-typedef enum {
+typedef enum
+{
 	PART_NONE = 0,
-	PART_HOR,
-	PART_VER,
-	PART_QUAD
+	PART_HOR = 1,
+	PART_VER = 2,
+	PART_QUAD = 3
 } part_t;
 
 typedef struct
@@ -196,18 +200,19 @@ typedef struct
 	part_t pb_part;
 } deblock_data_t;
 
-typedef enum {
+typedef enum
+{
 	MODE_DC = 0,
-	MODE_PLANAR,
-	MODE_HOR,
-	MODE_VER,
-	MODE_UPLEFT,
-	MODE_UPRIGHT,
-	MODE_UPUPRIGHT,
-	MODE_UPUPLEFT,
-	MODE_UPLEFTLEFT,
-	MODE_DOWNLEFTLEFT,
-	MAX_NUM_INTRA_MODES
+	MODE_PLANAR = 1,
+	MODE_HOR = 2,
+	MODE_VER = 3,
+	MODE_UPLEFT = 4,
+	MODE_UPRIGHT = 5,
+	MODE_UPUPRIGHT = 6,
+	MODE_UPUPLEFT = 7,
+	MODE_UPLEFTLEFT = 8,
+	MODE_DOWNLEFTLEFT = 9,
+	MAX_NUM_INTRA_MODES = 10
 } intra_mode_t;
 
 typedef struct

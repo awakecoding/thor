@@ -48,14 +48,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 int YPOS,XPOS;
 
-int zigzag16[16] = {
+int zigzag16[16] =
+{
 	0, 1, 5, 6,
 	2, 4, 7, 12,
 	3, 8, 11, 13,
 	9, 10, 14, 15
 };
 
-int zigzag64[64] = {
+int zigzag64[64] =
+{
 	0,  1,  5,  6, 14, 15, 27, 28,
 	2,  4,  7, 13, 16, 26, 29, 42,
 	3,  8, 12, 17, 25, 30, 41, 43,
@@ -66,7 +68,8 @@ int zigzag64[64] = {
 	35, 36, 48, 49, 57, 58, 62, 63
 };
 
-int zigzag256[256] = {
+int zigzag256[256] =
+{
 	0,  1,  5,  6, 14, 15, 27, 28, 44, 45, 65, 66, 90, 91,119,120,
 	2,  4,  7, 13, 16, 26, 29, 43, 46, 64, 67, 89, 92,118,121,150,
 	3,  8, 12, 17, 25, 30, 42, 47, 63, 68, 88, 93,117,122,149,151,
@@ -85,14 +88,16 @@ int zigzag256[256] = {
 	135,136,164,165,189,190,210,211,227,228,240,241,249,250,254,255
 };
 
-int chroma_qp[52] = {
+int chroma_qp[52] =
+{
 	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 	17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 29,
 	30, 31, 32, 33, 33, 34, 34, 35, 35, 36, 36, 37, 37, 38,
 	39, 40, 41, 42, 43, 44, 45
 };
 
-int super_table[8][20] = {
+int super_table[8][20] =
+{
 	{-1,-1, -1,-1,-1,-1,-1,-1,-1,-1,  1, 0, 5, 2, 6, 3, 7, 4, 8,-1},
 	{-1, 0, -1,-1,-1,-1,-1,-1,-1,-1,  2, 1, 6, 3, 7, 5, 8, 4, 9,-1},
 	{-1, 0, -1,-1,-1,-1,-1,-1,-1,-1,  2, 1, 6, 3, 7, 5, 8, 4, 9,-1},
@@ -628,7 +633,7 @@ void decode_block(decoder_info_t* decoder_info, int size, int ypos, int xpos)
 		}
 	}
 
-	/* Dequantize, invere tranform and reconstruct */
+	/* Dequantize, invert transform and reconstruct */
 	tb_split = block_info.tb_split;
 	decode_and_reconstruct_block(rec_y, rec->stride_y, sizeY, qpY, pblock_y, coeff_y, tb_split);
 	decode_and_reconstruct_block(rec_u, rec->stride_c, sizeC, qpC, pblock_u, coeff_u, tb_split&&size>8);
@@ -906,7 +911,7 @@ void process_block_dec(decoder_info_t* decoder_info, int size, int yposY, int xp
 
 /* encode_block */
 
-int quantize(int16_t *coeff, int16_t *coeffq, int qp, int size, int frame_type, int chroma_flag, int rdoq)
+int quantize(int16_t* coeff, int16_t* coeffq, int qp, int size, int frame_type, int chroma_flag, int rdoq)
 {
 	int tr_log2size = log2i(size);
 	int qsize = min(MAX_QUANT_SIZE,size); //Only quantize 16x16 low frequency coefficients
@@ -928,8 +933,10 @@ int quantize(int16_t *coeff, int16_t *coeffq, int qp, int size, int frame_type, 
 	memset(scoeffq,0,qsize*qsize*sizeof(int));
 
 	/* Zigzag scan of 8x8 low frequency coefficients */
-	for(i=0;i<qsize;i++){
-		for (j=0;j<qsize;j++){
+	for(i=0;i<qsize;i++)
+	{
+		for (j=0;j<qsize;j++)
+		{
 			scoeff[zigzagptr[i*qsize+j]] = coeff[i*size+j];
 		}
 	}
@@ -939,11 +946,14 @@ int quantize(int16_t *coeff, int16_t *coeffq, int qp, int size, int frame_type, 
 	offset = offset<<(shift2-8);
 	level = 0;
 	pos = qsize*qsize-1;
-	while (level==0 && pos>=0){
+
+	while (level==0 && pos>=0)
+	{
 		c = scoeff[pos];
 		level = abs((abs(c)*scale + offset))>>shift2;
 		pos--;
 	}
+
 	last_pos = level ? pos+1 : pos;
 
 	/* Forward scan up to last_pos */
@@ -1010,17 +1020,20 @@ int quantize(int16_t *coeff, int16_t *coeffq, int qp, int size, int frame_type, 
 		}
 	}
 
-	for(i=0;i<qsize;i++){
-		for (j=0;j<qsize;j++){
+	for(i=0;i<qsize;i++)
+	{
+		for (j=0;j<qsize;j++)
+		{
 			coeffq[i*size+j] = scoeffq[zigzagptr[i*qsize+j]];
 		}
 	}
 
-	if (rdoq==0)
+	if (rdoq == 0)
 		return (cbp != 0);
 
 	/* RDOQ */
 	int nbit = 0;
+
 	if (cbp)
 	{
 		int N = qsize*qsize;
@@ -1180,10 +1193,13 @@ int quantize(int16_t *coeff, int16_t *coeffq, int qp, int size, int frame_type, 
 					err = (rec-org)*(rec-org);
 					cost0 += (err + (int)(lambda * (double)bit + 0.5));
 					cost1 = cost0;
-					for (pos1=pos+1;pos1<N;pos1++){
+
+					for (pos1=pos+1;pos1<N;pos1++)
+					{
 						err = scoeff[pos1]*scoeff[pos1];
 						cost1 += err;
 					}
+
 					/* Bit usage for EOB */
 					bit = 0;
 					if (pos < N-1)
@@ -1246,11 +1262,15 @@ int quantize(int16_t *coeff, int16_t *coeffq, int qp, int size, int frame_type, 
 
 		/* Evaluate cbp = 0 */
 		cost1 = 0;
-		for (pos1=0;pos1<N;pos1++){
+
+		for (pos1=0;pos1<N;pos1++)
+		{
 			err = scoeff[pos1]*scoeff[pos1];
 			cost1 += err;
 		}
-		if (cost1 < min_cost){
+
+		if (cost1 < min_cost)
+		{
 			min_pos = -1;
 			min_cost = cost1;
 		}
@@ -1264,32 +1284,43 @@ int quantize(int16_t *coeff, int16_t *coeffq, int qp, int size, int frame_type, 
 			err = (scoeff[0]-rec)*(scoeff[0]-rec);
 			bit = 1;
 			cost1 += (err + (int)(lambda * (double)bit + 0.5));
-			for (pos1=1;pos1<N;pos1++){
+
+			for (pos1=1;pos1<N;pos1++)
+			{
 				err = scoeff[pos1]*scoeff[pos1];
 				cost1 += err;
 			}
-			if (cost1 < min_cost){
+
+			if (cost1 < min_cost)
+			{
 				min_pos = 0;
 				scoeffq[0] = sign;
 			}
 		}
 
 		/* Re-evaluate CBP */
-		for (pos=min_pos+1;pos<N;pos++){
+		for (pos=min_pos+1;pos<N;pos++)
+		{
 			scoeffq[pos] = 0;
 		}
+
 		int flag=0;
-		for (pos=0;pos<N;pos++){
+
+		for (pos=0;pos<N;pos++)
+		{
 			if (scoeffq[pos] != 0)
 				flag = 1;
 		}
+
 		if (flag==0)
 			cbp = 0;
 	} //if (cbp)
 
 	/* Inverse zigzag scan */
-	for(i=0;i<qsize;i++){
-		for (j=0;j<qsize;j++){
+	for(i=0;i<qsize;i++)
+	{
+		for (j=0;j<qsize;j++)
+		{
 			coeffq[i*size+j] = scoeffq[zigzagptr[i*qsize+j]];
 		}
 	}
@@ -1672,7 +1703,7 @@ int search_inter_prediction_params(uint8_t* org_y,yuv_frame_t* ref,block_pos_t* 
 	return sad;
 }
 
-int encode_and_reconstruct_block(encoder_info_t *encoder_info, uint8_t *orig, int orig_stride, int size, int qp, uint8_t *pblock, int16_t *coeffq, uint8_t *rec, int frame_type, int chroma_flag,int tb_split,int rdoq)
+int encode_and_reconstruct_block(encoder_info_t* encoder_info, uint8_t* orig, int orig_stride, int size, int qp, uint8_t* pblock, int16_t* coeffq, uint8_t* rec, int frame_type, int chroma_flag, int tb_split, int rdoq)
 {
 	int cbp, cbpbit;
 	ALIGN(16) int16_t block[2*MAX_TR_SIZE*MAX_TR_SIZE];
@@ -1687,16 +1718,20 @@ int encode_and_reconstruct_block(encoder_info_t *encoder_info, uint8_t *orig, in
 	if (tb_split)
 	{
 		int size2 = size/2;
+		int i, j, k, index = 0;
+
 		cbp = 0;
-		int i,j,k,index=0;
-		for (i=0;i<size;i+=size2)
+
+		for (i = 0; i < size; i += size2)
 		{
-			for (j=0;j<size;j+=size2)
+			for (j = 0; j < size; j += size2)
 			{
 				/* Copy from full size to compact block of quarter size */
-				for (k=0;k<size2;k++){
+				for (k=0;k<size2;k++)
+				{
 					memcpy(&block2[k*size2],&block[(i+k)*size+j],size2*sizeof(int16_t));
 				}
+
 				transform(block2, coeff, size2, encoder_info->params->encoder_speed > 1);
 				cbpbit = quantize(coeff, coeffq+index, qp, size2, frame_type, chroma_flag, rdoq);
 
@@ -1711,13 +1746,16 @@ int encode_and_reconstruct_block(encoder_info_t *encoder_info, uint8_t *orig, in
 				}
 
 				/* Copy from compact block of quarter size to full size */
-				for (k=0;k<size2;k++){
+				for (k=0;k<size2;k++)
+				{
 					memcpy(&rblock[(i+k)*size+j],&rblock2[k*size2],size2*sizeof(int16_t));
 				}
+
 				cbp = (cbp<<1) + cbpbit;
 				index += size2 * size2;
 			}
 		}
+
 		reconstruct_block(rblock, pblock, rec, size, size);
 	}
 	else
@@ -1907,13 +1945,18 @@ int encode_block(encoder_info_t* encoder_info, stream_t* stream, block_info_t* b
 			get_inter_prediction_chroma(pblock1_u, ref1_u, bwidth/2, bheight/2, ref->stride_c, sizeC, &mv, sign1);
 			get_inter_prediction_chroma(pblock1_v, ref1_v, bwidth/2, bheight/2, ref->stride_c, sizeC, &mv, sign1);
 
-			for (i=0;i<bheight;i++){
-				for (j=0;j<bwidth;j++){
+			for (i=0;i<bheight;i++)
+			{
+				for (j=0;j<bwidth;j++)
+				{
 					rec_y[i*sizeY+j] = (uint8_t)(((int)pblock0_y[i*sizeY+j] + (int)pblock1_y[i*sizeY+j])>>1);
 				}
 			}
-			for (i=0;i<bheight/2;i++){
-				for (j=0;j<bwidth/2;j++){
+
+			for (i=0;i<bheight/2;i++)
+			{
+				for (j=0;j<bwidth/2;j++)
+				{
 					rec_u[i*sizeC+j] = (uint8_t)(((int)pblock0_u[i*sizeC+j] + (int)pblock1_u[i*sizeC+j])>>1);
 					rec_v[i*sizeC+j] = (uint8_t)(((int)pblock0_v[i*sizeC+j] + (int)pblock1_v[i*sizeC+j])>>1);
 				}
@@ -1961,13 +2004,18 @@ int encode_block(encoder_info_t* encoder_info, stream_t* stream, block_info_t* b
 			get_inter_prediction_chroma(pblock1_u,ref1_u,sizeC,sizeC,ref->stride_c,sizeC,&mv,sign1);
 			get_inter_prediction_chroma(pblock1_v,ref1_v,sizeC,sizeC,ref->stride_c,sizeC,&mv,sign1);
 
-			for (i=0;i<sizeY;i++){
-				for (j=0;j<sizeY;j++){
+			for (i=0;i<sizeY;i++)
+			{
+				for (j=0;j<sizeY;j++)
+				{
 					pblock_y[i*sizeY+j] = (uint8_t)(((int)pblock0_y[i*sizeY+j] + (int)pblock1_y[i*sizeY+j])>>1);
 				}
 			}
-			for (i=0;i<sizeC;i++){
-				for (j=0;j<sizeC;j++){
+
+			for (i=0;i<sizeC;i++)
+			{
+				for (j=0;j<sizeC;j++)
+				{
 					pblock_u[i*sizeC+j] = (uint8_t)(((int)pblock0_u[i*sizeC+j] + (int)pblock1_u[i*sizeC+j])>>1);
 					pblock_v[i*sizeC+j] = (uint8_t)(((int)pblock0_v[i*sizeC+j] + (int)pblock1_v[i*sizeC+j])>>1);
 				}
@@ -2064,13 +2112,18 @@ int encode_block(encoder_info_t* encoder_info, stream_t* stream, block_info_t* b
 			get_inter_prediction_chroma(pblock1_v + offsetpC, ref1_v + offsetrC, psizeC, psizeC, rstrideC, pstrideC, &mv,sign1);
 		}
 
-		for (i=0;i<sizeY;i++){
-			for (j=0;j<sizeY;j++){
+		for (i=0;i<sizeY;i++)
+		{
+			for (j=0;j<sizeY;j++)
+			{
 				pblock_y[i*pstrideY+j] = (uint8_t)(((int)pblock0_y[i*pstrideY+j] + (int)pblock1_y[i*pstrideY+j])>>1);
 			}
 		}
-		for (i=0;i<sizeC;i++){
-			for (j=0;j<sizeC;j++){
+
+		for (i=0;i<sizeC;i++)
+		{
+			for (j=0;j<sizeC;j++)
+			{
 				pblock_u[i*pstrideC+j] = (uint8_t)(((int)pblock0_u[i*pstrideC+j] + (int)pblock1_u[i*pstrideC+j])>>1);
 				pblock_v[i*pstrideC+j] = (uint8_t)(((int)pblock0_v[i*pstrideC+j] + (int)pblock1_v[i*pstrideC+j])>>1);
 			}
@@ -2145,15 +2198,15 @@ void copy_block_to_frame(yuv_frame_t* frame, yuv_block_t* block, block_pos_t* bl
 	int xpos = block_pos->xpos;
 	int bwidth = block_pos->bwidth;
 	int bheight = block_pos->bheight;
-	int i,pos;
+	int i, pos;
 
-	for (i=0;i<bheight;i++)
+	for (i = 0; i < bheight; i++)
 	{
 		pos = (ypos+i) * frame->stride_y + xpos;
 		memcpy(&frame->y[pos],&block->y[i*size],bwidth*sizeof(uint8_t));
 	}
 
-	for (i=0;i<bheight/2;i++)
+	for (i = 0; i < bheight/2; i++)
 	{
 		pos = (ypos/2+i) * frame->stride_c + xpos/2;
 		memcpy(&frame->u[pos],&block->u[i*size/2],bwidth/2*sizeof(uint8_t));
@@ -2170,13 +2223,13 @@ void copy_frame_to_block(yuv_block_t* block, yuv_frame_t* frame, block_pos_t* bl
 	int bheight = block_pos->bheight;
 	int i,pos;
 
-	for (i=0;i<bheight;i++)
+	for (i = 0; i < bheight; i++)
 	{
 		pos = (ypos+i) * frame->stride_y + xpos;
 		memcpy(&block->y[i*size],&frame->y[pos],bwidth*sizeof(uint8_t));
 	}
 
-	for (i=0;i<bheight/2;i++)
+	for (i = 0; i < bheight/2; i++)
 	{
 		pos = (ypos/2+i) * frame->stride_c + xpos/2;
 		memcpy(&block->u[i*size/2],&frame->u[pos],bwidth/2*sizeof(uint8_t));
@@ -2336,9 +2389,9 @@ void encode_copy_deblock_data(encoder_info_t* encoder_info, block_info_t* block_
 	uint8_t tb_split = block_info->tb_param > 0;
 	part_t pb_part = block_info->pred_data.mode == MODE_INTER ? block_info->pred_data.PBpart : PART_NONE; //TODO: Set PBpart properly for SKIP and BIPRED
 
-	for (m=0;m<bheight/MIN_PB_SIZE;m++)
+	for (m = 0; m < bheight/MIN_PB_SIZE; m++)
 	{
-		for (n=0;n<bwidth/MIN_PB_SIZE;n++)
+		for (n = 0; n < bwidth/MIN_PB_SIZE; n++)
 		{
 			block_index = (block_posy+m)*block_stride + block_posx+n;
 			m0 = div > 0 ? m/div : 0;
@@ -2377,7 +2430,6 @@ int mode_decision_rdo(encoder_info_t* encoder_info, block_info_t* block_info)
 	frame_info_t* frame_info = &encoder_info->frame_info;
 	frame_type_t frame_type = frame_info->frame_type;
 	double lambda = frame_info->lambda;
-
 	int nbits,part,tb_param;
 	int min_tb_param,max_tb_param;
 	mv_t mvp,zerovec;
@@ -2390,11 +2442,8 @@ int mode_decision_rdo(encoder_info_t* encoder_info, block_info_t* block_info)
 	block_mode_t mode;
 	intra_mode_t intra_mode;
 	pred_data_t pred_data;
-
-#if 2
 	int do_inter = 1;
 	int do_intra = 1;
-#endif
 	int rectangular_flag = block_info->block_pos.bwidth != size || block_info->block_pos.bheight != size; //Only skip evaluation if this is true
 
 	/* Initialize parameters that are determined using RDO */
@@ -2503,7 +2552,6 @@ int mode_decision_rdo(encoder_info_t* encoder_info, block_info_t* block_info)
 			mode = MODE_INTER;
 			/* Find candidate vectors to be used in ME */
 			int ref_idx;
-
 			int min_idx,max_idx;
 			min_idx = 0;
 			max_idx = frame_info->num_ref - 1;
@@ -2520,7 +2568,9 @@ int mode_decision_rdo(encoder_info_t* encoder_info, block_info_t* block_info)
 				int idx;
 				int max_mvp_cand = min(2,block_info->num_skip_vec);
 				mvcand[6+1].x = mvcand[6+1].y = 1<<14;
-				for (idx=0;idx<max_mvp_cand;idx++){
+
+				for (idx=0;idx<max_mvp_cand;idx++)
+				{
 					mvcand[6+idx].x = block_info->mvb_skip[idx].x0;
 					mvcand[6+idx].y = block_info->mvb_skip[idx].y0;
 				}
@@ -2528,7 +2578,8 @@ int mode_decision_rdo(encoder_info_t* encoder_info, block_info_t* block_info)
 				int sign = ref->frame_num > rec->frame_num;
 
 				/* Loop over all PU partitions to do ME */
-				for (part=0;part<block_info->max_num_pb_part;part++){
+				for (part=0;part<block_info->max_num_pb_part;part++)
+				{
 					sad = (uint32_t)search_inter_prediction_params(org_block->y,ref,&block_info->block_pos,&mvp,mvcand,mv_all[part],part,sqrt(lambda),encoder_info->params->encoder_speed,sign);
 					sad_inter = min(sad_inter,sad);
 				}
@@ -2555,11 +2606,13 @@ int mode_decision_rdo(encoder_info_t* encoder_info, block_info_t* block_info)
 #else
 						max_tb_param = part>0 ? 0 : block_info->max_num_tb_part-1;  //Can't have TU-split and PU-split at the same time
 #endif
-						for (tb_param=min_tb_param; tb_param<=max_tb_param; tb_param++)
+						for (tb_param = min_tb_param; tb_param <= max_tb_param; tb_param++)
 						{
 							nbits = encode_block(encoder_info,stream,block_info,&pred_data,mode,tb_param);
 							cost = cost_calc(org_block,rec_block,size,size,size,nbits,lambda);
-							if (cost < min_cost){
+
+							if (cost < min_cost)
+							{
 								min_cost = cost;
 								best_mode = MODE_INTER;
 								best_tb_param = tb_param;
@@ -2630,11 +2683,14 @@ int mode_decision_rdo(encoder_info_t* encoder_info, block_info_t* block_info)
 							if (sad < min_sad)
 							{
 								min_sad = sad;
-								if (list){
+
+								if (list)
+								{
 									pred_data.ref_idx1 = ref_idx;
 									memcpy(pred_data.mv_arr1,mv_all[part],4*sizeof(mv_t));
 								}
-								else{
+								else
+								{
 									pred_data.ref_idx0 = ref_idx;
 									memcpy(pred_data.mv_arr0,mv_all[part],4*sizeof(mv_t));
 								}
@@ -2733,11 +2789,12 @@ int mode_decision_rdo(encoder_info_t* encoder_info, block_info_t* block_info)
 
 	/* Store prediction data derived through RDO */
 	block_info->pred_data.mode = best_mode;
+
 	if (best_mode == MODE_SKIP)
 	{
 		block_info->pred_data.skip_idx = best_skip_idx;
 
-		for (i=0;i<4;i++)
+		for (i = 0; i < 4; i++)
 		{
 			block_info->pred_data.mv_arr0[i].x = block_info->mvb_skip[best_skip_idx].x0;
 			block_info->pred_data.mv_arr0[i].y = block_info->mvb_skip[best_skip_idx].y0;
@@ -2754,7 +2811,7 @@ int mode_decision_rdo(encoder_info_t* encoder_info, block_info_t* block_info)
 		block_info->pred_data.PBpart = PART_NONE;
 		block_info->pred_data.skip_idx = best_skip_idx;
 
-		for (i=0;i<4;i++)
+		for (i = 0; i < 4; i++)
 		{
 			block_info->pred_data.mv_arr0[i].x = block_info->mvb_merge[best_skip_idx].x0;
 			block_info->pred_data.mv_arr0[i].y = block_info->mvb_merge[best_skip_idx].y0;
@@ -2780,7 +2837,7 @@ int mode_decision_rdo(encoder_info_t* encoder_info, block_info_t* block_info)
 	{
 		block_info->pred_data.intra_mode = intra_mode;
 
-		for (i=0;i<4;i++)
+		for (i = 0; i < 4; i++)
 		{
 			block_info->pred_data.mv_arr0[i] = zerovec;
 			block_info->pred_data.mv_arr1[i] = zerovec;
@@ -2797,16 +2854,17 @@ int mode_decision_rdo(encoder_info_t* encoder_info, block_info_t* block_info)
 		memcpy(block_info->pred_data.mv_arr1,pred_data.mv_arr1,4*sizeof(mv_t)); //Used for writing to bitstream
 		block_info->pred_data.ref_idx0 = pred_data.ref_idx0;
 		block_info->pred_data.ref_idx1 = pred_data.ref_idx1;
-		best_ref_idx = 0;                                                       //TODO: remove if ref_idx is removed as input parameter to get_mv_pred
+		best_ref_idx = 0; //TODO: remove if ref_idx is removed as input parameter to get_mv_pred
 		block_info->mvp = get_mv_pred(ypos,xpos,width,height,size,best_ref_idx,encoder_info->deblock_data);
 		block_info->pred_data.dir = 2;
 	}
+
 	block_info->tb_param = best_tb_param;
 
 	return min_cost;
 }
 
-int check_early_skip_transform_coeff(int16_t *coeff, int qp, int size, double relative_threshold)
+int check_early_skip_transform_coeff(int16_t* coeff, int qp, int size, double relative_threshold)
 {
 	int i, j;
 	int tr_log2size = log2i(size);
@@ -2844,14 +2902,16 @@ int check_early_skip_8x8_block(encoder_info_t* encoder_info, uint8_t* orig, int 
 
 	if (size == 8)
 	{
+		int i, j;
 		int16_t tmp[4*4];
-		int i,j;
 
 		/* Instead of 8x8 transform, do a 2x2 average followed by 4x4 transform */
-		for (i=0;i<8;i+=2)
+		for (i = 0; i < 8; i+=2)
 		{
-			for (j=0;j<8;j+=2){
-				tmp[(i/2)*4+(j/2)] = (block[(i+0)*size+(j+0)] + block[(i+0)*size+(j+1)] + block[(i+1)*size+(j+0)] + block[(i+1)*size+(j+1)] + 2)>>2;
+			for (j = 0; j < 8; j+=2)
+			{
+				tmp[(i/2)*4+(j/2)] = (block[(i+0)*size+(j+0)] + block[(i+0)*size+(j+1)] +
+						block[(i+1)*size+(j+0)] + block[(i+1)*size+(j+1)] + 2)>>2;
 			}
 		}
 

@@ -54,7 +54,7 @@ static const unsigned int msk[33] =
 	0xffffffff
 };
 
-int fillbfr(stream_t *str)
+int fillbfr(stream_t* str)
 {
 	while (str->incnt <= 24 && (str->rdptr < str->rdbfr + str->capacity))
 	{
@@ -65,7 +65,7 @@ int fillbfr(stream_t *str)
 	return 0;
 }
 
-unsigned int getbits(stream_t *str, int n)
+unsigned int getbits(stream_t* str, int n)
 {
 	if (str->incnt < n)
 	{
@@ -88,7 +88,7 @@ unsigned int getbits(stream_t *str, int n)
 	return ((str->inbfr >> str->incnt) & msk[n]);
 }
 
-unsigned int getbits1(stream_t *str)
+unsigned int getbits1(stream_t* str)
 {
 	if (str->incnt < 1)
 	{
@@ -99,7 +99,7 @@ unsigned int getbits1(stream_t *str)
 	return ((str->inbfr >> str->incnt) & 1);
 }
 
-unsigned int showbits(stream_t *str, int n)
+unsigned int showbits(stream_t* str, int n)
 {
 	if (str->incnt < n)
 	{
@@ -115,7 +115,7 @@ unsigned int showbits(stream_t *str, int n)
 	return ((str->inbfr >> (str->incnt-n)) & msk[n]);
 }
 
-int flushbits(stream_t *str, int n)
+int flushbits(stream_t* str, int n)
 {
 	str->incnt -= n;
 	str->bitcnt += n;
@@ -124,7 +124,7 @@ int flushbits(stream_t *str, int n)
 
 /* putbits */
 
-void flush_all_bits(stream_t *str)
+void flush_all_bits(stream_t* str)
 {
 	int i;
 	int bytes = 4 - str->bitrest/8;
@@ -135,7 +135,7 @@ void flush_all_bits(stream_t *str)
 	}
 }
 
-void flush_bitbuf(stream_t *str)
+void flush_bitbuf(stream_t* str)
 {
 	if ((str->bytepos+4) > str->bytesize)
 	{
@@ -149,7 +149,7 @@ void flush_bitbuf(stream_t *str)
 	str->bitrest = 32;
 }
 
-void putbits(unsigned int n, unsigned int val, stream_t *str)
+void putbits(unsigned int n, unsigned int val, stream_t* str)
 {
 	unsigned int rest;
 
@@ -168,20 +168,20 @@ void putbits(unsigned int n, unsigned int val, stream_t *str)
 	}
 }
 
-int get_bit_pos(stream_t *str)
+int get_bit_pos(stream_t* str)
 {
 	int bitpos = 8*str->bytepos + (32 - str->bitrest);
 	return bitpos;
 }
 
-void write_stream_pos(stream_t *stream, stream_pos_t *stream_pos)
+void write_stream_pos(stream_t* stream, stream_pos_t* stream_pos)
 {
 	stream->bitrest = stream_pos->bitrest;
 	stream->bytepos = stream_pos->bytepos;
 	stream->bitbuf = stream_pos->bitbuf;
 }
 
-void read_stream_pos(stream_pos_t *stream_pos, stream_t *stream)
+void read_stream_pos(stream_pos_t* stream_pos, stream_t* stream)
 {
 	stream_pos->bitrest = stream->bitrest;
 	stream_pos->bytepos = stream->bytepos;
@@ -195,7 +195,7 @@ extern int zigzag64[64];
 extern int zigzag256[256];
 extern int super_table[8][20];
 
-void read_mv(stream_t *stream,mv_t *mv,mv_t *mvp)
+void read_mv(stream_t* stream,mv_t *mv,mv_t *mvp)
 {
 	mv_t mvd;
 	int code;
@@ -249,7 +249,7 @@ int find_index(int code, int maxrun, int type)
 	return index;
 }
 
-void read_coeff(stream_t *stream,int16_t *coeff,int size,int type)
+void read_coeff(stream_t* stream,int16_t *coeff,int size,int type)
 {
 	int16_t scoeff[MAX_QUANT_SIZE*MAX_QUANT_SIZE];
 	int i,j,levelFlag,sign,level,pos,index,run,tmp,vlc,maxrun,code,vlc_adaptive;
@@ -358,7 +358,7 @@ void read_coeff(stream_t *stream,int16_t *coeff,int size,int type)
 	}
 }
 
-int read_delta_qp(stream_t *stream){
+int read_delta_qp(stream_t* stream){
 	int abs_delta_qp,sign_delta_qp,delta_qp;
 	sign_delta_qp = 0;
 	abs_delta_qp = get_vlc(0,stream);
@@ -368,7 +368,7 @@ int read_delta_qp(stream_t *stream){
 	return delta_qp;
 }
 
-int read_block(decoder_info_t *decoder_info,stream_t *stream,block_info_dec_t *block_info, frame_type_t frame_type)
+int read_block(decoder_info_t *decoder_info,stream_t* stream,block_info_dec_t *block_info, frame_type_t frame_type)
 {
 	int i, idx;
 	cbp_t cbp;
@@ -977,7 +977,7 @@ int read_block(decoder_info_t *decoder_info,stream_t *stream,block_info_dec_t *b
 			extern int super_table[8][20];
 			extern int YPOS,XPOS;
 
-			void write_mv(stream_t *stream,mv_t *mv,mv_t *mvp)
+			void write_mv(stream_t* stream,mv_t *mv,mv_t *mvp)
 			{
 				uint16_t  mvabs,mvsign;
 				mv_t mvd;
@@ -1037,7 +1037,7 @@ int read_block(decoder_info_t *decoder_info,stream_t *stream,block_info_dec_t *b
 				return cn;
 			}
 
-			void write_coeff(stream_t *stream,int16_t *coeff,int size,int type)
+			void write_coeff(stream_t* stream,int16_t *coeff,int size,int type)
 			{
 				int16_t scoeff[MAX_QUANT_SIZE*MAX_QUANT_SIZE];
 				int i,j,len,pos,c;
@@ -1182,7 +1182,7 @@ int read_block(decoder_info_t *decoder_info,stream_t *stream,block_info_dec_t *b
 				}
 			}
 
-			int write_delta_qp(stream_t *stream, int delta_qp){
+			int write_delta_qp(stream_t* stream, int delta_qp){
 				int len;
 				int abs_delta_qp = abs(delta_qp);
 				int sign_delta_qp = delta_qp < 0 ? 1 : 0;
@@ -1195,7 +1195,7 @@ int read_block(decoder_info_t *decoder_info,stream_t *stream,block_info_dec_t *b
 			}
 
 #if NEW_BLOCK_STRUCTURE
-			void write_super_mode(stream_t *stream,write_data_t *write_data){
+			void write_super_mode(stream_t* stream,write_data_t *write_data){
 
 				int size = write_data->size;
 				block_mode_t mode = write_data->mode;
@@ -1243,7 +1243,7 @@ int read_block(decoder_info_t *decoder_info,stream_t *stream,block_info_dec_t *b
 				}
 			}
 #else
-			void write_super_mode(stream_t *stream,write_data_t *write_data){
+			void write_super_mode(stream_t* stream,write_data_t *write_data){
 
 				int size = write_data->size;
 				block_mode_t mode = write_data->mode;
@@ -1320,7 +1320,7 @@ int read_block(decoder_info_t *decoder_info,stream_t *stream,block_info_dec_t *b
 			}
 #endif
 
-			int write_block(stream_t *stream,write_data_t *write_data){
+			int write_block(stream_t* stream,write_data_t *write_data){
 
 				int start_bits,end_bits;
 				int size = write_data->size;
