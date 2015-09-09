@@ -2048,9 +2048,9 @@ int encode_block(encoder_info_t* encoder_info, stream_t* stream, block_info_t* b
 		else
 		{
 			/* Create residual, transform, quantize, and reconstruct */
-			cbp.y = encode_and_reconstruct_block (encoder_info, org_y,sizeY,sizeY,qpY,pblock_y,coeffq_y,rec_y,frame_type,0,tb_split,encoder_info->params->rdoq);
-			cbp.u = encode_and_reconstruct_block (encoder_info, org_u,sizeC,sizeC,qpC,pblock_u,coeffq_u,rec_u,frame_type,1,tb_split&&(size>8),encoder_info->params->rdoq);
-			cbp.v = encode_and_reconstruct_block (encoder_info, org_v,sizeC,sizeC,qpC,pblock_v,coeffq_v,rec_v,frame_type,1,tb_split&&(size>8),encoder_info->params->rdoq);
+			cbp.y = encode_and_reconstruct_block(encoder_info, org_y,sizeY, sizeY, qpY, pblock_y, coeffq_y, rec_y, frame_type, 0, tb_split, encoder_info->params->rdoq);
+			cbp.u = encode_and_reconstruct_block(encoder_info, org_u,sizeC, sizeC, qpC, pblock_u, coeffq_u, rec_u, frame_type, 1, tb_split&&(size>8), encoder_info->params->rdoq);
+			cbp.v = encode_and_reconstruct_block(encoder_info, org_v,sizeC, sizeC, qpC, pblock_v, coeffq_v, rec_v, frame_type, 1, tb_split&&(size>8), encoder_info->params->rdoq);
 		}
 	}
 	else if (mode==MODE_SKIP)
@@ -2100,11 +2100,14 @@ void copy_block_to_frame(yuv_frame_t* frame, yuv_block_t* block, block_pos_t* bl
 	int bheight = block_pos->bheight;
 	int i,pos;
 
-	for (i=0;i<bheight;i++){
+	for (i=0;i<bheight;i++)
+	{
 		pos = (ypos+i) * frame->stride_y + xpos;
 		memcpy(&frame->y[pos],&block->y[i*size],bwidth*sizeof(uint8_t));
 	}
-	for (i=0;i<bheight/2;i++){
+
+	for (i=0;i<bheight/2;i++)
+	{
 		pos = (ypos/2+i) * frame->stride_c + xpos/2;
 		memcpy(&frame->u[pos],&block->u[i*size/2],bwidth/2*sizeof(uint8_t));
 		memcpy(&frame->v[pos],&block->v[i*size/2],bwidth/2*sizeof(uint8_t));
@@ -2120,11 +2123,14 @@ void copy_frame_to_block(yuv_block_t* block, yuv_frame_t* frame, block_pos_t* bl
 	int bheight = block_pos->bheight;
 	int i,pos;
 
-	for (i=0;i<bheight;i++){
+	for (i=0;i<bheight;i++)
+	{
 		pos = (ypos+i) * frame->stride_y + xpos;
 		memcpy(&block->y[i*size],&frame->y[pos],bwidth*sizeof(uint8_t));
 	}
-	for (i=0;i<bheight/2;i++){
+
+	for (i=0;i<bheight/2;i++)
+	{
 		pos = (ypos/2+i) * frame->stride_c + xpos/2;
 		memcpy(&block->u[i*size/2],&frame->u[pos],bwidth/2*sizeof(uint8_t));
 		memcpy(&block->v[i*size/2],&frame->v[pos],bwidth/2*sizeof(uint8_t));
@@ -2373,8 +2379,8 @@ int mode_decision_rdo(encoder_info_t* encoder_info, block_info_t* block_info)
 	{
 		tb_param = 0;
 		mode = MODE_SKIP;
-		int num_skip_vec = block_info->num_skip_vec;
 		int skip_idx;
+		int num_skip_vec = block_info->num_skip_vec;
 		int bwidth = block_info->block_pos.bwidth;
 		int bheight = block_info->block_pos.bheight;
 
@@ -2439,14 +2445,13 @@ int mode_decision_rdo(encoder_info_t* encoder_info, block_info_t* block_info)
 				}
 			}
 
-#if 2
-			if (encoder_info->params->encoder_speed>1)
+			if (encoder_info->params->encoder_speed > 1)
 			{
-				sad_intra = search_intra_prediction_params(org_block->y,rec,&block_info->block_pos,encoder_info->width,encoder_info->height,encoder_info->frame_info.num_intra_modes,&intra_mode);
+				sad_intra = search_intra_prediction_params(org_block->y, rec, &block_info->block_pos,
+						encoder_info->width, encoder_info->height, encoder_info->frame_info.num_intra_modes, &intra_mode);
 				nbits = 2;
 				sad_intra += (int)(sqrt(lambda)*(double)nbits + 0.5);
 			}
-#endif
 
 			mode = MODE_INTER;
 			/* Find candidate vectors to be used in ME */
@@ -2483,7 +2488,6 @@ int mode_decision_rdo(encoder_info_t* encoder_info, block_info_t* block_info)
 
 				/* Loop over all PU partitions to do RDO */
 
-#if 2
 				if (encoder_info->params->encoder_speed>1)
 				{
 					if (sad_intra < sad_inter)
@@ -2491,9 +2495,11 @@ int mode_decision_rdo(encoder_info_t* encoder_info, block_info_t* block_info)
 					else
 						do_intra = 0;
 				}
-				if (do_inter){
-#endif
-					for (part=0;part<block_info->max_num_pb_part;part++){
+
+				if (do_inter)
+				{
+					for (part = 0; part < block_info->max_num_pb_part; part++)
+					{
 						pred_data.PBpart = part;
 						memcpy(pred_data.mv_arr0,mv_all[part],4*sizeof(mv_t));
 						min_tb_param = encoder_info->params->encoder_speed==0 ? -1 : 0; //tb_split == -1 means force residual to zero.
@@ -2516,17 +2522,12 @@ int mode_decision_rdo(encoder_info_t* encoder_info, block_info_t* block_info)
 							}
 						}
 					} //for part=
-#if 2
 				}
-#endif
 			} //for ref_idx=
 
 			/* Start bipred ME */
-#if 2
-			if (frame_info->num_ref>1 && encoder_info->params->enable_bipred && do_inter){ //TODO: Should work with only one reference also
-#else
-				if (frame_info->num_ref>1 && encoder_info->settings->enable_bipred){ //TODO: Should work with only one reference also
-#endif
+			if (frame_info->num_ref>1 && encoder_info->params->enable_bipred && do_inter)
+			{ //TODO: Should work with only one reference also
 				int min_sad,sad;
 				int r,i,ref_posY;
 				mv_t mv;
@@ -2612,54 +2613,60 @@ int mode_decision_rdo(encoder_info_t* encoder_info, block_info_t* block_info)
 
 		/* Evaluate intra mode */
 		mode = MODE_INTRA;
-#if 2
-		if (do_intra && encoder_info->params->intra_rdo){
-#else
-			if (encoder_info->settings->intra_rdo){
-#endif
+
+		if (do_intra && encoder_info->params->intra_rdo)
+		{
 			ALIGN(16) uint8_t pblock[MAX_BLOCK_SIZE*MAX_BLOCK_SIZE];
 			uint32_t min_intra_cost = MAX_UINT32;
 			intra_mode_t best_intra_mode = MODE_DC;
-			int upright_available = get_upright_available(ypos,xpos,size,width);
-			for (intra_mode=MODE_DC;intra_mode<encoder_info->frame_info.num_intra_modes;intra_mode++)
+			int upright_available = get_upright_available(ypos, xpos, size, width);
+
+			for (intra_mode = MODE_DC; intra_mode < encoder_info->frame_info.num_intra_modes; intra_mode++)
 			{
 				pred_data.intra_mode = intra_mode;
 				min_tb_param = 0;
 				max_tb_param = block_info->max_num_tb_part-1;
-				for (tb_param=0; tb_param<=max_tb_param; tb_param++){
+
+				for (tb_param = 0; tb_param <= max_tb_param; tb_param++)
+				{
 #if LIMIT_INTRA_MODES
-					if (intra_mode==MODE_PLANAR || intra_mode==MODE_UPRIGHT)
+					if ((intra_mode == MODE_PLANAR) || (intra_mode == MODE_UPRIGHT))
 						continue;
 #endif
-					nbits = encode_block(encoder_info,stream,block_info,&pred_data,mode,tb_param);
-					cost = cost_calc(org_block,rec_block,size,size,size,nbits,lambda);
-					if (cost < min_intra_cost){
+					nbits = encode_block(encoder_info, stream, block_info, &pred_data, mode, tb_param);
+					cost = cost_calc(org_block, rec_block, size, size, size, nbits, lambda);
+
+					if (cost < min_intra_cost)
+					{
 						min_intra_cost = cost;
 						best_intra_mode = intra_mode;
 					}
 				}
 			}
+
 			intra_mode = best_intra_mode;
-			get_intra_prediction(rec->y,ypos,xpos,rec->stride_y,size,width,pblock,intra_mode,upright_available);
-			sad_intra = sad_calc(org_block->y,pblock,size,size,size,size);
+			get_intra_prediction(rec->y, ypos, xpos, rec->stride_y, size, width, pblock, intra_mode, upright_available);
+			sad_intra = sad_calc(org_block->y, pblock, size, size, size, size);
 		}
 		else
 		{
 			sad_intra = search_intra_prediction_params(org_block->y,rec,&block_info->block_pos,encoder_info->width,encoder_info->height,encoder_info->frame_info.num_intra_modes,&intra_mode);
 		}
+
 		nbits = 2;
 		sad_intra += (int)(sqrt(lambda)*(double)nbits + 0.5);
 		pred_data.intra_mode = intra_mode;
 
 		min_tb_param = 0;
-		max_tb_param = block_info->max_num_tb_part-1;
-#if 2
-		if (do_intra){
-#endif
-			for (tb_param=min_tb_param; tb_param<=max_tb_param; tb_param++)
+		max_tb_param = block_info->max_num_tb_part - 1;
+
+		if (do_intra)
+		{
+			for (tb_param = min_tb_param; tb_param <= max_tb_param; tb_param++)
 			{
-				nbits = encode_block(encoder_info,stream,block_info,&pred_data,mode,tb_param);
-				cost = cost_calc(org_block,rec_block,size,size,size,nbits,lambda);
+				nbits = encode_block(encoder_info, stream, block_info, &pred_data, mode, tb_param);
+				cost = cost_calc(org_block, rec_block, size, size, size, nbits, lambda);
+
 				if (cost < min_cost)
 				{
 					min_cost = cost;
@@ -2667,9 +2674,7 @@ int mode_decision_rdo(encoder_info_t* encoder_info, block_info_t* block_info)
 					best_tb_param = tb_param;
 				}
 			}
-#if 2
 		}
-#endif
 	} //if !rectangular_flag
 
 
@@ -2681,12 +2686,15 @@ int mode_decision_rdo(encoder_info_t* encoder_info, block_info_t* block_info)
 	if (best_mode == MODE_SKIP)
 	{
 		block_info->pred_data.skip_idx = best_skip_idx;
-		for (i=0;i<4;i++){
+
+		for (i=0;i<4;i++)
+		{
 			block_info->pred_data.mv_arr0[i].x = block_info->mvb_skip[best_skip_idx].x0;
 			block_info->pred_data.mv_arr0[i].y = block_info->mvb_skip[best_skip_idx].y0;
 			block_info->pred_data.mv_arr1[i].x = block_info->mvb_skip[best_skip_idx].x1;
 			block_info->pred_data.mv_arr1[i].y = block_info->mvb_skip[best_skip_idx].y1;
 		}
+
 		block_info->pred_data.ref_idx0 = block_info->mvb_skip[best_skip_idx].ref_idx0;
 		block_info->pred_data.ref_idx1 = block_info->mvb_skip[best_skip_idx].ref_idx1;
 		block_info->pred_data.dir = best_skip_dir;
@@ -2695,12 +2703,15 @@ int mode_decision_rdo(encoder_info_t* encoder_info, block_info_t* block_info)
 	{
 		block_info->pred_data.PBpart = PART_NONE;
 		block_info->pred_data.skip_idx = best_skip_idx;
-		for (i=0;i<4;i++){
+
+		for (i=0;i<4;i++)
+		{
 			block_info->pred_data.mv_arr0[i].x = block_info->mvb_merge[best_skip_idx].x0;
 			block_info->pred_data.mv_arr0[i].y = block_info->mvb_merge[best_skip_idx].y0;
 			block_info->pred_data.mv_arr1[i].x = block_info->mvb_merge[best_skip_idx].x1;
 			block_info->pred_data.mv_arr1[i].y = block_info->mvb_merge[best_skip_idx].y1;
 		}
+
 		block_info->pred_data.ref_idx0 = block_info->mvb_merge[best_skip_idx].ref_idx0;
 		block_info->pred_data.ref_idx1 = block_info->mvb_merge[best_skip_idx].ref_idx1;
 		block_info->pred_data.dir = best_skip_dir;
@@ -2718,10 +2729,13 @@ int mode_decision_rdo(encoder_info_t* encoder_info, block_info_t* block_info)
 	else if (best_mode == MODE_INTRA)
 	{
 		block_info->pred_data.intra_mode = intra_mode;
-		for (i=0;i<4;i++){
+
+		for (i=0;i<4;i++)
+		{
 			block_info->pred_data.mv_arr0[i] = zerovec;
 			block_info->pred_data.mv_arr1[i] = zerovec;
 		}
+
 		block_info->pred_data.ref_idx0 = 0; //Note: This is necessary for derivation of mvp, mv_cand and mv_skip
 		block_info->pred_data.ref_idx1 = 0; //Note: This is necessary for derivation of mvp, mv_cand and mv_skip
 		block_info->pred_data.dir = -1;
@@ -2757,13 +2771,16 @@ int check_early_skip_transform_coeff(int16_t *coeff, int qp, int size, double re
 	double threshold = relative_threshold * first_quantizer_level;
 
 	/* Compare each coefficient with threshold */
-	for (i = 0; i < qsize; i++){
-		for (j = 0; j < qsize; j++){
+	for (i = 0; i < qsize; i++)
+	{
+		for (j = 0; j < qsize; j++)
+		{
 			c = (int)coeff[i*cstride+j];
 			if ((double)abs(c) > threshold)
 				flag = 1;
 		}
 	}
+
 	return (flag != 0);
 }
 
@@ -2775,22 +2792,25 @@ int check_early_skip_8x8_block(encoder_info_t* encoder_info, uint8_t* orig, int 
 
 	get_residual(block, pblock, orig, size, orig_stride);
 
-	if (size==8)
+	if (size == 8)
 	{
 		int16_t tmp[4*4];
 		int i,j;
+
 		/* Instead of 8x8 transform, do a 2x2 average followed by 4x4 transform */
-		for (i=0;i<8;i+=2){
+		for (i=0;i<8;i+=2)
+		{
 			for (j=0;j<8;j+=2){
 				tmp[(i/2)*4+(j/2)] = (block[(i+0)*size+(j+0)] + block[(i+0)*size+(j+1)] + block[(i+1)*size+(j+0)] + block[(i+1)*size+(j+1)] + 2)>>2;
 			}
 		}
+
 		transform(tmp, coeff, size/2, encoder_info->params->encoder_speed > 1);
-		cbp = check_early_skip_transform_coeff(coeff, qp, size/2, 0.5*early_skip_threshold);
+		cbp = check_early_skip_transform_coeff(coeff, qp, size / 2, 0.5 * early_skip_threshold);
 	}
 	else
 	{
-		transform (block, coeff, size, encoder_info->params->encoder_speed > 1);
+		transform(block, coeff, size, encoder_info->params->encoder_speed > 1);
 		cbp = check_early_skip_transform_coeff(coeff, qp, size, early_skip_threshold);
 	}
 
@@ -2800,6 +2820,7 @@ int check_early_skip_8x8_block(encoder_info_t* encoder_info, uint8_t* orig, int 
 int check_early_skip_block(encoder_info_t* encoder_info, block_info_t* block_info, pred_data_t* pred_data)
 {
 	int i, j;
+	int k, l;
 	int size = block_info->block_pos.size;
 	int ypos = block_info->block_pos.ypos;
 	int xpos = block_info->block_pos.xpos;
@@ -2813,39 +2834,36 @@ int check_early_skip_block(encoder_info_t* encoder_info, block_info_t* block_inf
 	mv_t mv = pred_data->mv_arr0[0];
 	int ref_idx = pred_data->ref_idx0;
 	int r = encoder_info->frame_info.ref_array[ref_idx];
-	yuv_frame_t *ref = encoder_info->ref[r];
-	yuv_block_t *org_block = block_info->org_block; //Compact (size x size) block of original pixels
+	yuv_frame_t* ref = encoder_info->org[r]; /* use original, not reconstructed reference data */
+	yuv_block_t* org_block = block_info->org_block; //Compact (size x size) block of original pixels
 
 	float early_skip_threshold = encoder_info->params->early_skip_thr;
 
-#if 5
-	if (encoder_info->params->encoder_speed > 1 && size == MAX_BLOCK_SIZE)
-		early_skip_threshold = 1.3*early_skip_threshold;
-#endif
+	if ((encoder_info->params->encoder_speed > 1) && (size == MAX_BLOCK_SIZE))
+		early_skip_threshold = 1.3 * early_skip_threshold;
 
-	if (pred_data->dir==2)
+	if (pred_data->dir == 2)
 	{
 		/* Loop over 8x8 (4x4) sub-blocks */
-		for (i=0;i<size;i+=size0)
+		for (i = 0; i < size; i += size0)
 		{
-			for (j=0;j<size;j+=size0)
+			for (j = 0; j < size; j += size0)
 			{
-				int k,l;
 				ref_idx = pred_data->ref_idx0;
 				r = encoder_info->frame_info.ref_array[ref_idx];
 				yuv_frame_t *ref0 = encoder_info->ref[r];
 				/* Pointer to colocated sub-block in reference frame */
-				uint8_t *ref0_y = ref0->y + ref->offset_y + (ypos + i)*ref->stride_y + (xpos + j);
-				uint8_t *ref0_u = ref0->u + ref->offset_c + (ypos + i)/2*ref->stride_c + (xpos + j)/2;
-				uint8_t *ref0_v = ref0->v + ref->offset_c + (ypos + i)/2*ref->stride_c + (xpos + j)/2;
+				uint8_t* ref0_y = ref0->y + ref->offset_y + (ypos + i)*ref->stride_y + (xpos + j);
+				uint8_t* ref0_u = ref0->u + ref->offset_c + (ypos + i)/2*ref->stride_c + (xpos + j)/2;
+				uint8_t* ref0_v = ref0->v + ref->offset_c + (ypos + i)/2*ref->stride_c + (xpos + j)/2;
 
 				ref_idx = pred_data->ref_idx1;
 				r = encoder_info->frame_info.ref_array[ref_idx];
 				yuv_frame_t *ref1 = encoder_info->ref[r];
 				/* Pointer to colocated sub-block in reference frame */
-				uint8_t *ref1_y = ref1->y + ref->offset_y + (ypos + i)*ref->stride_y + (xpos + j);
-				uint8_t *ref1_u = ref1->u + ref->offset_c + (ypos + i)/2*ref->stride_c + (xpos + j)/2;
-				uint8_t *ref1_v = ref1->v + ref->offset_c + (ypos + i)/2*ref->stride_c + (xpos + j)/2;
+				uint8_t* ref1_y = ref1->y + ref->offset_y + (ypos + i)*ref->stride_y + (xpos + j);
+				uint8_t* ref1_u = ref1->u + ref->offset_c + (ypos + i)/2*ref->stride_c + (xpos + j)/2;
+				uint8_t* ref1_v = ref1->v + ref->offset_c + (ypos + i)/2*ref->stride_c + (xpos + j)/2;
 
 				int sign0 = ref0->frame_num > encoder_info->frame_info.frame_num;
 				int sign1 = ref1->frame_num > encoder_info->frame_info.frame_num;
@@ -2859,11 +2877,15 @@ int check_early_skip_block(encoder_info_t* encoder_info, block_info_t* block_inf
 				get_inter_prediction_luma(pblock0,ref0_y,size0,size0,ref->stride_y,size0,&mv,sign0);
 				mv = pred_data->mv_arr1[0];
 				get_inter_prediction_luma(pblock1,ref1_y,size0,size0,ref->stride_y,size0,&mv,sign1);
-				for (k=0;k<size0;k++){
-					for (l=0;l<size0;l++){
+
+				for (k = 0; k < size0; k++)
+				{
+					for (l = 0; l < size0; l++)
+					{
 						pblock[k*size0+l] = (uint8_t)(((int)pblock0[k*size0+l] + (int)pblock1[k*size0+l])>>1);
 					}
 				}
+
 				significant_flag = significant_flag || check_early_skip_8x8_block(encoder_info, org_block->y + block_offset_y,size,size0,qpY,pblock,early_skip_threshold);
 
 				/* U */
@@ -2871,11 +2893,15 @@ int check_early_skip_block(encoder_info_t* encoder_info, block_info_t* block_inf
 				get_inter_prediction_chroma(pblock0,ref0_u,size0/2,size0/2,ref->stride_c,size0/2,&mv,sign0);
 				mv = pred_data->mv_arr1[0];
 				get_inter_prediction_chroma(pblock1,ref1_u,size0/2,size0/2,ref->stride_c,size0/2,&mv,sign1);
-				for (k=0;k<size0/2;k++){
-					for (l=0;l<size0/2;l++){
+
+				for (k = 0; k < size0 / 2; k++)
+				{
+					for (l = 0; l < size0 / 2; l++)
+					{
 						pblock[k*size0/2+l] = (uint8_t)(((int)pblock0[k*size0/2+l] + (int)pblock1[k*size0/2+l])>>1);
 					}
 				}
+
 				significant_flag = significant_flag || check_early_skip_8x8_block(encoder_info, org_block->u + block_offset_c,size/2,size0/2,qpC,pblock,early_skip_threshold);
 
 				/* V */
@@ -2883,42 +2909,47 @@ int check_early_skip_block(encoder_info_t* encoder_info, block_info_t* block_inf
 				get_inter_prediction_chroma(pblock0,ref0_v,size0/2,size0/2,ref->stride_c,size0/2,&mv,sign0);
 				mv = pred_data->mv_arr1[0];
 				get_inter_prediction_chroma(pblock1,ref1_v,size0/2,size0/2,ref->stride_c,size0/2,&mv,sign1);
-				for (k=0;k<size0/2;k++){
-					for (l=0;l<size0/2;l++){
+
+				for (k = 0; k < size0 / 2; k++)
+				{
+					for (l = 0; l < size0 / 2; l++)
+					{
 						pblock[k*size0/2+l] = (uint8_t)(((int)pblock0[k*size0/2+l] + (int)pblock1[k*size0/2+l])>>1);
 					}
 				}
+
 				significant_flag = significant_flag || check_early_skip_8x8_block(encoder_info, org_block->v + block_offset_c,size/2,size0/2,qpC,pblock,early_skip_threshold);
-			} //for j
-		} //for i
+			}
+		}
 	}
 	else
 	{
 		int sign = ref->frame_num > encoder_info->frame_info.frame_num;
+
 		/* Loop over 8x8 (4x4) sub-blocks */
-		for (i=0;i<size;i+=size0)
+		for (i = 0; i < size; i += size0)
 		{
-			for (j=0;j<size;j+=size0)
+			for (j = 0; j < size; j += size0)
 			{
 				/* Pointer to colocated sub-block in reference frame */
-				uint8_t *ref_y = ref->y + ref->offset_y + (ypos + i)*ref->stride_y + (xpos + j);
-				uint8_t *ref_u = ref->u + ref->offset_c + (ypos + i)/2*ref->stride_c + (xpos + j)/2;
-				uint8_t *ref_v = ref->v + ref->offset_c + (ypos + i)/2*ref->stride_c + (xpos + j)/2;
+				uint8_t* ref_y = ref->y + ref->offset_y + (ypos + i)*ref->stride_y + (xpos + j);
+				uint8_t* ref_u = ref->u + ref->offset_c + (ypos + i)/2*ref->stride_c + (xpos + j)/2;
+				uint8_t* ref_v = ref->v + ref->offset_c + (ypos + i)/2*ref->stride_c + (xpos + j)/2;
 
 				/* Offset for 8x8 (4x4) sub-block within compact block of original pixels */
 				int block_offset_y = size*i + j;
 				int block_offset_c = (size/2)*(i/2) + j/2;
 
 				/* Y */
-				get_inter_prediction_luma  (pblock,ref_y,size0,size0,ref->stride_y,size0,&mv,sign);
+				get_inter_prediction_luma  (pblock, ref_y, size0, size0, ref->stride_y, size0, &mv, sign);
 				significant_flag = significant_flag || check_early_skip_8x8_block(encoder_info, org_block->y + block_offset_y,size,size0,qpY,pblock,early_skip_threshold);
 
 				/* U */
-				get_inter_prediction_chroma(pblock,ref_u,size0/2,size0/2,ref->stride_c,size0/2,&mv,sign);
+				get_inter_prediction_chroma(pblock, ref_u, size0 / 2 , size0 / 2, ref->stride_c, size0 / 2, &mv, sign);
 				significant_flag = significant_flag || check_early_skip_8x8_block(encoder_info, org_block->u + block_offset_c,size/2,size0/2,qpC,pblock,early_skip_threshold);
 
 				/* V */
-				get_inter_prediction_chroma(pblock,ref_v,size0/2,size0/2,ref->stride_c,size0/2,&mv,sign);
+				get_inter_prediction_chroma(pblock, ref_v, size0 / 2, size0 / 2, ref->stride_c, size0 / 2, &mv, sign);
 				significant_flag = significant_flag || check_early_skip_8x8_block(encoder_info, org_block->v + block_offset_c,size/2,size0/2,qpC,pblock,early_skip_threshold);
 			}
 		}
@@ -2930,7 +2961,7 @@ int check_early_skip_block(encoder_info_t* encoder_info, block_info_t* block_inf
 int search_early_skip_candidates(encoder_info_t* encoder_info, block_info_t* block_info)
 {
 	int i;
-	uint32_t cost,min_cost;
+	uint32_t cost;
 	int skip_idx,nbit,tmp_early_skip_flag;
 	int best_skip_idx = 0;
 	int early_skip_flag = 0;
@@ -2938,16 +2969,14 @@ int search_early_skip_candidates(encoder_info_t* encoder_info, block_info_t* blo
 	int size = block_info->block_pos.size;
 	int num_skip_vec = block_info->num_skip_vec;
 	int best_skip_dir = 0;
-
-	min_cost = MAX_UINT32;
-
-	yuv_block_t *org_block = block_info->org_block;
-	yuv_block_t *rec_block = block_info->rec_block;
-	double lambda = encoder_info->frame_info.lambda;
+	uint32_t min_cost = MAX_UINT32;
 	pred_data_t tmp_pred_data;
+	yuv_block_t* org_block = block_info->org_block;
+	yuv_block_t* rec_block = block_info->rec_block;
+	double lambda = encoder_info->frame_info.lambda;
 
 	/* Loop over all skip vector candidates */
-	for (skip_idx=0; skip_idx<num_skip_vec; skip_idx++)
+	for (skip_idx = 0; skip_idx < num_skip_vec; skip_idx++)
 	{
 		/* Early skip check for this vector */
 		tmp_pred_data.skip_idx = skip_idx;
@@ -2959,15 +2988,17 @@ int search_early_skip_candidates(encoder_info_t* encoder_info, block_info_t* blo
 		tmp_pred_data.ref_idx1 = block_info->mvb_skip[skip_idx].ref_idx1;
 		tmp_pred_data.dir = block_info->mvb_skip[skip_idx].dir;
 
-		tmp_early_skip_flag = check_early_skip_block(encoder_info,block_info,&tmp_pred_data);
+		tmp_early_skip_flag = check_early_skip_block(encoder_info, block_info, &tmp_pred_data);
 
 		if (tmp_early_skip_flag)
 		{
 			/* Calculate RD cost for this skip vector */
 			early_skip_flag = 1;
-			nbit = encode_block(encoder_info,encoder_info->stream,block_info,&tmp_pred_data,MODE_SKIP,tb_split);
-			cost = cost_calc(org_block,rec_block,size,size,size,nbit,lambda);
-			if (cost < min_cost){
+			nbit = encode_block(encoder_info, encoder_info->stream, block_info, &tmp_pred_data, MODE_SKIP, tb_split);
+			cost = cost_calc(org_block, rec_block, size, size, size, nbit, lambda);
+
+			if (cost < min_cost)
+			{
 				min_cost = cost;
 				best_skip_idx = skip_idx;
 				best_skip_dir = tmp_pred_data.dir;
@@ -2980,20 +3011,19 @@ int search_early_skip_candidates(encoder_info_t* encoder_info, block_info_t* blo
 		/* Store relevant parameters to block_info */
 		block_info->pred_data.skip_idx = best_skip_idx;
 		block_info->pred_data.mode = MODE_SKIP;
+
+		for (i = 0; i < 4; i++)
 		{
-			block_info->pred_data.skip_idx = best_skip_idx;
-			block_info->pred_data.mode = MODE_SKIP;
-			for (i=0;i<4;i++){
-				block_info->pred_data.mv_arr0[i].x = block_info->mvb_skip[best_skip_idx].x0;
-				block_info->pred_data.mv_arr0[i].y = block_info->mvb_skip[best_skip_idx].y0;
-				block_info->pred_data.mv_arr1[i].x = block_info->mvb_skip[best_skip_idx].x1;
-				block_info->pred_data.mv_arr1[i].y = block_info->mvb_skip[best_skip_idx].y1;
-			}
-			block_info->pred_data.ref_idx0 = block_info->mvb_skip[best_skip_idx].ref_idx0;
-			block_info->pred_data.ref_idx1 = block_info->mvb_skip[best_skip_idx].ref_idx1;
-			block_info->pred_data.dir = best_skip_dir;
-			block_info->tb_param = 0;
+			block_info->pred_data.mv_arr0[i].x = block_info->mvb_skip[best_skip_idx].x0;
+			block_info->pred_data.mv_arr0[i].y = block_info->mvb_skip[best_skip_idx].y0;
+			block_info->pred_data.mv_arr1[i].x = block_info->mvb_skip[best_skip_idx].x1;
+			block_info->pred_data.mv_arr1[i].y = block_info->mvb_skip[best_skip_idx].y1;
 		}
+
+		block_info->pred_data.ref_idx0 = block_info->mvb_skip[best_skip_idx].ref_idx0;
+		block_info->pred_data.ref_idx1 = block_info->mvb_skip[best_skip_idx].ref_idx1;
+		block_info->pred_data.dir = best_skip_dir;
+		block_info->tb_param = 0;
 	}
 
 	return early_skip_flag;
@@ -3078,7 +3108,7 @@ int process_block(encoder_info_t* encoder_info, int size, int ypos, int xpos, in
 		YPOS = ypos;
 		XPOS = xpos;
 
-		if (encoder_info->frame_info.frame_type != I_FRAME && encoder_info->params->early_skip_thr > 0.0)
+		if ((encoder_info->frame_info.frame_type != I_FRAME) && (encoder_info->params->early_skip_thr > 0.0))
 		{
 			/* Search through all skip candidates for early skip */
 			block_info.final_encode = 2;
@@ -3086,15 +3116,15 @@ int process_block(encoder_info_t* encoder_info, int size, int ypos, int xpos, in
 			early_skip_flag = search_early_skip_candidates(encoder_info, &block_info);
 
 			/* Revind stream to start position of this block size */
-			write_stream_pos(stream,&stream_pos_ref);
+			write_stream_pos(stream, &stream_pos_ref);
+
 			if (early_skip_flag)
 			{
 				/* Encode block with final choice of skip_idx */
 				tb_split = 0;
 				block_info.final_encode = 3;
 
-				nbit = encode_block(encoder_info,stream,&block_info, &block_info.pred_data, MODE_SKIP, tb_split);
-
+				nbit = encode_block(encoder_info, stream, &block_info, &block_info.pred_data, MODE_SKIP, tb_split);
 				cost = cost_calc(&org_block, &rec_block, size, size, size, nbit, lambda);
 
 				/* Copy reconstructed data from smaller compact block to frame array */

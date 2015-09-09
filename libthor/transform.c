@@ -472,7 +472,7 @@ void transform_1d_even_l0(const int16_t *coeff, const int16_t *tr_matrix, int si
 	}
 }
 
-void inverse_transform(const int16_t * coeff, int16_t *block, int size)
+void inverse_transform(const int16_t* coeff, int16_t* block, int size)
 {
 	if (size < 32)
 	{
@@ -493,21 +493,9 @@ void inverse_transform(const int16_t * coeff, int16_t *block, int size)
 		/* 1st dimension */
 		for (i=0;i<MAX_QUANT_SIZE;i++)
 		{
-#if 1
 			/* Partial factorization */
 			transform_1d_even_l0(coeff, tr_matrix, size, i, out);
-#else
-			/* Matrix multiplication */
-			int k;
-			for (j=0;j<size;j++)
-			{
-				out[j] = 0;
-				for (k=0;k<MAX_QUANT_SIZE;k++)
-				{
-					out[j] += tr_matrix[k*size+j] * coeff[k*size+i];
-				}
-			}
-#endif
+
 			for (j=0;j<size;j++)
 			{
 				tmp[i*size+j] = clip((out[j] + add_1) >> shift_1, -32768, 32767);
@@ -517,21 +505,9 @@ void inverse_transform(const int16_t * coeff, int16_t *block, int size)
 		/* 2nd dimension */
 		for (i=0;i<size;i++)
 		{
-#if 1
 			/* Partial factorization */
 			transform_1d_even_l0(tmp, tr_matrix, size, i, out);
-#else
-			/* Matrix multiplication */
-			int k;
-			for (j=0;j<size;j++)
-			{
-				out[j] = 0;
-				for (k=0;k<MAX_QUANT_SIZE;k++)
-				{
-					out[j] += tr_matrix[k*size+j] * tmp[k*size+i];
-				}
-			}
-#endif
+
 			for (j=0;j<size;j++)
 			{
 				block[i*size + j] = clip((out[j] + add_2) >> shift_2, -32768, 32767);

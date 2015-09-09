@@ -29,13 +29,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "thor.h"
 
-void deblock_frame_y(yuv_frame_t  *rec, deblock_data_t *deblock_data, int width, int height, uint8_t qp);
-void deblock_frame_uv(yuv_frame_t  *rec, deblock_data_t *deblock_data, int width, int height, uint8_t qp);
-void create_yuv_frame(yuv_frame_t  *frame, int width, int height, int pad_ver_y, int pad_hor_y, int pad_ver_uv, int pad_hor_uv);
-void close_yuv_frame(yuv_frame_t  *frame);
-void create_reference_frame(yuv_frame_t  *ref,yuv_frame_t  *rec);
+void deblock_frame_y(yuv_frame_t* rec, deblock_data_t* deblock_data, int width, int height, uint8_t qp);
+void deblock_frame_uv(yuv_frame_t* rec, deblock_data_t* deblock_data, int width, int height, uint8_t qp);
+void create_yuv_frame(yuv_frame_t* frame, int width, int height, int pad_ver_y, int pad_hor_y, int pad_ver_uv, int pad_hor_uv);
+void close_yuv_frame(yuv_frame_t* frame);
+void create_reference_frame(yuv_frame_t* ref, yuv_frame_t* rec);
 
-void encode_frame(encoder_info_t *encoder_info);
-void decode_frame(decoder_info_t *encoder_info);
+void encode_frame(encoder_info_t* encoder_info);
+void decode_frame(decoder_info_t* encoder_info);
 
 #endif /* THOR_FRAME_H */

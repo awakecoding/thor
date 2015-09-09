@@ -275,6 +275,7 @@ void thor_encoder_set_sequence_header(thor_encoder_t* ctx, thor_sequence_header_
 {
 	int i;
 	yuv_frame_t* ref = ctx->ref;
+	yuv_frame_t* org = ctx->org;
 	encoder_info_t* info = &ctx->info;
 
 	memcpy(&ctx->hdr, hdr, sizeof(thor_sequence_header_t));
@@ -288,6 +289,9 @@ void thor_encoder_set_sequence_header(thor_encoder_t* ctx, thor_sequence_header_
 	{
 		create_yuv_frame(&ref[i], ctx->width, ctx->height, PADDING_Y, PADDING_Y, PADDING_Y / 2, PADDING_Y / 2);
 		info->ref[i] = &ref[i];
+
+		create_yuv_frame(&org[i], ctx->width, ctx->height, PADDING_Y, PADDING_Y, PADDING_Y / 2, PADDING_Y / 2);
+		info->org[i] = &org[i];
 	}
 
 	info->deblock_data = (deblock_data_t*) malloc((ctx->height / MIN_PB_SIZE) * (ctx->width / MIN_PB_SIZE) * sizeof(deblock_data_t));
@@ -323,6 +327,7 @@ void thor_encoder_free(thor_encoder_t* ctx)
 {
 	int i;
 	yuv_frame_t* ref = ctx->ref;
+	yuv_frame_t* org = ctx->org;
 	encoder_info_t* info = &ctx->info;
 
 	if (!ctx)
@@ -333,6 +338,7 @@ void thor_encoder_free(thor_encoder_t* ctx)
 	for (i = 0; i < MAX_REF_FRAMES; i++)
 	{
 		close_yuv_frame(&ref[i]);
+		close_yuv_frame(&org[i]);
 	}
 
 	free(info->deblock_data);

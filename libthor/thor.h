@@ -348,8 +348,8 @@ typedef struct
 typedef struct
 {
 	block_pos_t block_pos;
-	yuv_block_t *rec_block;
-	yuv_block_t *org_block;
+	yuv_block_t* rec_block;
+	yuv_block_t* org_block;
 	pred_data_t pred_data;
 	int num_skip_vec;
 	mvb_t mvb_skip[MAX_NUM_SKIP];
@@ -361,7 +361,7 @@ typedef struct
 	int max_num_tb_part;
 	cbp_t cbp;
 	int delta_qp;
-	block_context_t *block_context;
+	block_context_t* block_context;
 	int final_encode;
 } block_info_t;
 
@@ -387,6 +387,7 @@ typedef struct
 	yuv_frame_t* orig;
 	yuv_frame_t* rec;
 	yuv_frame_t* ref[MAX_REF_FRAMES];
+	yuv_frame_t* org[MAX_REF_FRAMES];
 	stream_t* stream;
 	deblock_data_t* deblock_data;
 	int width;
@@ -402,9 +403,9 @@ typedef struct
 	mvr_t mvr_skip[MAX_NUM_SKIP];
 	int tb_split;
 	cbp_t cbp;
-	int16_t *coeffq_y;
-	int16_t *coeffq_u;
-	int16_t *coeffq_v;
+	int16_t* coeffq_y;
+	int16_t* coeffq_u;
+	int16_t* coeffq_v;
 	int delta_qp;
 } block_info_dec_t;
 
@@ -429,7 +430,7 @@ typedef struct
 	int ref_idx;
 	int super_mode;
 	int use_block_contexts;
-	block_context_t *block_context;
+	block_context_t* block_context;
 	int bipred;
 	int depth;
 } decoder_info_t;
@@ -446,6 +447,7 @@ struct thor_encoder_s
 	yuv_frame_t rec;
 	thor_sequence_header_t hdr;
 	yuv_frame_t ref[MAX_REF_FRAMES];
+	yuv_frame_t org[MAX_REF_FRAMES];
 	thor_encoder_settings_t* settings;
 };
 

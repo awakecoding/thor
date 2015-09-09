@@ -293,7 +293,7 @@ thor_encoder_settings_t* thor_encoder_settings_new(int argc, char** argv)
 	add_param_to_list(&list, "-lambda_coeffI",       "1.0", ARG_FLOAT,    &params->lambda_coeffI);
 	add_param_to_list(&list, "-lambda_coeffP",       "1.0", ARG_FLOAT,    &params->lambda_coeffP);
 	add_param_to_list(&list, "-lambda_coeffB",       "1.0", ARG_FLOAT,    &params->lambda_coeffB);
-	add_param_to_list(&list, "-early_skip_thr",      "0.0", ARG_FLOAT,    &params->early_skip_thr);
+	add_param_to_list(&list, "-early_skip_thr",      "1.0", ARG_FLOAT,    &params->early_skip_thr);
 	add_param_to_list(&list, "-enable_tb_split",       "0", ARG_INTEGER,  &params->enable_tb_split);
 	add_param_to_list(&list, "-enable_pb_split",       "0", ARG_INTEGER,  &params->enable_pb_split);
 	add_param_to_list(&list, "-max_num_ref",           "1", ARG_INTEGER,  &params->max_num_ref);
