@@ -63,6 +63,8 @@ struct thor_encoder_settings_s
 	int snrcalc;
 	int use_block_contexts;
 	int enable_bipred;
+	int inter_mode;
+	int merge_mode;
 };
 
 struct thor_decoder_settings_s

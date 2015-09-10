@@ -2429,6 +2429,7 @@ int mode_decision_rdo(encoder_info_t* encoder_info, block_info_t* block_info)
 	yuv_block_t* rec_block = block_info->rec_block;
 	frame_info_t* frame_info = &encoder_info->frame_info;
 	frame_type_t frame_type = frame_info->frame_type;
+	thor_encoder_settings_t* settings = encoder_info->params;
 	double lambda = frame_info->lambda;
 	int nbits,part,tb_param;
 	int min_tb_param,max_tb_param;
@@ -2510,126 +2511,136 @@ int mode_decision_rdo(encoder_info_t* encoder_info, block_info_t* block_info)
 	{ //Only evaluate intra or inter mode if the block is square
 		if (frame_type != I_FRAME)
 		{
-			tb_param = 0;
-			mode = MODE_MERGE;
-			int merge_idx;
-			int num_merge_vec = block_info->num_merge_vec;
-
-			for (merge_idx = 0; merge_idx < num_merge_vec; merge_idx++)
-			{
-				pred_data.skip_idx = merge_idx;
-				pred_data.mv_arr0[0].x = block_info->mvb_merge[merge_idx].x0;
-				pred_data.mv_arr0[0].y = block_info->mvb_merge[merge_idx].y0;
-				pred_data.ref_idx0 = block_info->mvb_merge[merge_idx].ref_idx0;
-				pred_data.mv_arr1[0].x = block_info->mvb_merge[merge_idx].x1;
-				pred_data.mv_arr1[0].y = block_info->mvb_merge[merge_idx].y1;
-				pred_data.ref_idx1 = block_info->mvb_merge[merge_idx].ref_idx1;
-				pred_data.dir = block_info->mvb_merge[merge_idx].dir;
-
-				nbits = encode_block(encoder_info, stream, block_info, &pred_data, mode, tb_param);
-				cost = cost_calc(org_block, rec_block, size, size, size, nbits, lambda);
-
-				if (cost < min_cost)
-				{
-					min_cost = cost;
-					best_mode = MODE_MERGE;
-					best_tb_param = tb_param;
-					best_skip_idx = merge_idx;
-					best_skip_dir = pred_data.dir;
-				}
-			}
-
-			if (encoder_info->params->encoder_speed > 1)
-			{
-				sad_intra = search_intra_prediction_params(org_block->y, rec, &block_info->block_pos,
-						encoder_info->width, encoder_info->height, encoder_info->frame_info.num_intra_modes, &intra_mode);
-				nbits = 2;
-				sad_intra += (int)(sqrt(lambda)*(double)nbits + 0.5);
-			}
-
-			mode = MODE_INTER;
-			/* Find candidate vectors to be used in ME */
 			int ref_idx;
-			int min_idx,max_idx;
-			min_idx = 0;
-			max_idx = frame_info->num_ref - 1;
+			int min_idx;
+			int max_idx;
 
-			for (ref_idx = min_idx; ref_idx <= max_idx; ref_idx++)
+			tb_param = 0;
+
+			if (settings->merge_mode)
 			{
-				int r = encoder_info->frame_info.ref_array[ref_idx];
-				ref = encoder_info->ref[r];
-				pred_data.ref_idx0 = ref_idx;
-				get_mv_cand(ypos,xpos,width,height,size,ref_idx,encoder_info->deblock_data,mvcand);
-				mvp = get_mv_pred(ypos,xpos,width,height,size,ref_idx,encoder_info->deblock_data);
-				block_info->mvp = mvp;
-#if TWO_MVP
-				int idx;
-				int max_mvp_cand = min(2,block_info->num_skip_vec);
-				mvcand[6+1].x = mvcand[6+1].y = 1<<14;
+				mode = MODE_MERGE;
+				int merge_idx;
+				int num_merge_vec = block_info->num_merge_vec;
 
-				for (idx=0;idx<max_mvp_cand;idx++)
+				for (merge_idx = 0; merge_idx < num_merge_vec; merge_idx++)
 				{
-					mvcand[6+idx].x = block_info->mvb_skip[idx].x0;
-					mvcand[6+idx].y = block_info->mvb_skip[idx].y0;
-				}
-#endif
-				int sign = ref->frame_num > rec->frame_num;
+					pred_data.skip_idx = merge_idx;
+					pred_data.mv_arr0[0].x = block_info->mvb_merge[merge_idx].x0;
+					pred_data.mv_arr0[0].y = block_info->mvb_merge[merge_idx].y0;
+					pred_data.ref_idx0 = block_info->mvb_merge[merge_idx].ref_idx0;
+					pred_data.mv_arr1[0].x = block_info->mvb_merge[merge_idx].x1;
+					pred_data.mv_arr1[0].y = block_info->mvb_merge[merge_idx].y1;
+					pred_data.ref_idx1 = block_info->mvb_merge[merge_idx].ref_idx1;
+					pred_data.dir = block_info->mvb_merge[merge_idx].dir;
 
-				/* Loop over all PU partitions to do ME */
-				for (part=0;part<block_info->max_num_pb_part;part++)
-				{
-					sad = (uint32_t)search_inter_prediction_params(org_block->y,ref,&block_info->block_pos,&mvp,mvcand,mv_all[part],part,sqrt(lambda),encoder_info->params->encoder_speed,sign);
-					sad_inter = min(sad_inter,sad);
-				}
+					nbits = encode_block(encoder_info, stream, block_info, &pred_data, mode, tb_param);
+					cost = cost_calc(org_block, rec_block, size, size, size, nbits, lambda);
 
-				/* Loop over all PU partitions to do RDO */
-
-				if (encoder_info->params->encoder_speed>1)
-				{
-					if (sad_intra < sad_inter)
-						do_inter = 0;
-					else
-						do_intra = 0;
-				}
-
-				if (do_inter)
-				{
-					for (part = 0; part < block_info->max_num_pb_part; part++)
+					if (cost < min_cost)
 					{
-						pred_data.PBpart = part;
-						memcpy(pred_data.mv_arr0,mv_all[part],4*sizeof(mv_t));
-						min_tb_param = encoder_info->params->encoder_speed==0 ? -1 : 0; //tb_split == -1 means force residual to zero.
-#if NEW_BLOCK_STRUCTURE
-						max_tb_param = block_info->max_num_tb_part-1;
-#else
-						max_tb_param = part>0 ? 0 : block_info->max_num_tb_part-1;  //Can't have TU-split and PU-split at the same time
-#endif
-						for (tb_param = min_tb_param; tb_param <= max_tb_param; tb_param++)
-						{
-							nbits = encode_block(encoder_info,stream,block_info,&pred_data,mode,tb_param);
-							cost = cost_calc(org_block,rec_block,size,size,size,nbits,lambda);
-
-							if (cost < min_cost)
-							{
-								min_cost = cost;
-								best_mode = MODE_INTER;
-								best_tb_param = tb_param;
-								best_pb_part = part;
-								best_ref_idx = ref_idx;
-								memcpy(best_mv_arr,mv_all[part],4*sizeof(mv_t));
-							}
-						}
-					} //for part=
+						min_cost = cost;
+						best_mode = MODE_MERGE;
+						best_tb_param = tb_param;
+						best_skip_idx = merge_idx;
+						best_skip_dir = pred_data.dir;
+					}
 				}
-			} //for ref_idx=
+			}
+
+			if (settings->inter_mode)
+			{
+				if (encoder_info->params->encoder_speed > 1)
+				{
+					sad_intra = search_intra_prediction_params(org_block->y, rec, &block_info->block_pos,
+							encoder_info->width, encoder_info->height, encoder_info->frame_info.num_intra_modes, &intra_mode);
+					nbits = 2;
+					sad_intra += (int)(sqrt(lambda)*(double)nbits + 0.5);
+				}
+
+				mode = MODE_INTER;
+
+				/* Find candidate vectors to be used in ME */
+				min_idx = 0;
+				max_idx = frame_info->num_ref - 1;
+
+				for (ref_idx = min_idx; ref_idx <= max_idx; ref_idx++)
+				{
+					int r = encoder_info->frame_info.ref_array[ref_idx];
+					ref = encoder_info->ref[r];
+					pred_data.ref_idx0 = ref_idx;
+					get_mv_cand(ypos,xpos,width,height,size,ref_idx,encoder_info->deblock_data,mvcand);
+					mvp = get_mv_pred(ypos,xpos,width,height,size,ref_idx,encoder_info->deblock_data);
+					block_info->mvp = mvp;
+#if TWO_MVP
+					int idx;
+					int max_mvp_cand = min(2,block_info->num_skip_vec);
+					mvcand[6+1].x = mvcand[6+1].y = 1<<14;
+
+					for (idx=0;idx<max_mvp_cand;idx++)
+					{
+						mvcand[6+idx].x = block_info->mvb_skip[idx].x0;
+						mvcand[6+idx].y = block_info->mvb_skip[idx].y0;
+					}
+#endif
+					int sign = ref->frame_num > rec->frame_num;
+
+					/* Loop over all PU partitions to do ME */
+					for (part=0;part<block_info->max_num_pb_part;part++)
+					{
+						sad = (uint32_t)search_inter_prediction_params(org_block->y,ref,&block_info->block_pos,&mvp,mvcand,mv_all[part],part,sqrt(lambda),encoder_info->params->encoder_speed,sign);
+						sad_inter = min(sad_inter,sad);
+					}
+
+					/* Loop over all PU partitions to do RDO */
+
+					if (encoder_info->params->encoder_speed > 1)
+					{
+						if (sad_intra < sad_inter)
+							do_inter = 0;
+						else
+							do_intra = 0;
+					}
+
+					if (do_inter)
+					{
+						for (part = 0; part < block_info->max_num_pb_part; part++)
+						{
+							pred_data.PBpart = part;
+							memcpy(pred_data.mv_arr0,mv_all[part],4*sizeof(mv_t));
+							min_tb_param = encoder_info->params->encoder_speed==0 ? -1 : 0; //tb_split == -1 means force residual to zero.
+#if NEW_BLOCK_STRUCTURE
+							max_tb_param = block_info->max_num_tb_part-1;
+#else
+							max_tb_param = part>0 ? 0 : block_info->max_num_tb_part-1;  //Can't have TU-split and PU-split at the same time
+#endif
+							for (tb_param = min_tb_param; tb_param <= max_tb_param; tb_param++)
+							{
+								nbits = encode_block(encoder_info,stream,block_info,&pred_data,mode,tb_param);
+								cost = cost_calc(org_block,rec_block,size,size,size,nbits,lambda);
+
+								if (cost < min_cost)
+								{
+									min_cost = cost;
+									best_mode = MODE_INTER;
+									best_tb_param = tb_param;
+									best_pb_part = part;
+									best_ref_idx = ref_idx;
+									memcpy(best_mv_arr,mv_all[part],4*sizeof(mv_t));
+								}
+							}
+						} //for part=
+					}
+				} //for ref_idx=
+			}
 
 			/* Start bipred ME */
-			if (frame_info->num_ref>1 && encoder_info->params->enable_bipred && do_inter)
+			if (settings->enable_bipred && frame_info->num_ref > 1 && do_inter)
 			{ //TODO: Should work with only one reference also
 				int min_sad,sad;
 				int r,i,ref_posY;
 				mv_t mv;
-				uint8_t *ref_y;
+				uint8_t* ref_y;
 				ALIGN(16) uint8_t pblock_y[MAX_BLOCK_SIZE*MAX_BLOCK_SIZE];
 				ALIGN(16) uint8_t org8[MAX_BLOCK_SIZE*MAX_BLOCK_SIZE];
 
@@ -2665,7 +2676,7 @@ int mode_decision_rdo(encoder_info_t* encoder_info, block_info_t* block_info)
 						int sign = ref->frame_num > rec->frame_num;
 						get_inter_prediction_luma  (pblock_y, ref_y, size, size, ref->stride_y, size, &mv, sign);
 
-						/* Modify the target block based on that predition */
+						/* Modify the target block based on that prediction */
 						for (i=0;i<size*size;i++){
 							org8[i] = (uint8_t)clip255(2*(int16_t)org_block->y[i] - (int16_t)pblock_y[i]);
 						}

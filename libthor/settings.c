@@ -270,7 +270,7 @@ thor_encoder_settings_t* thor_encoder_settings_new(int argc, char** argv)
 	int i;
 	param_list list;
 	int default_argc;
-	thor_encoder_settings_t *params;
+	thor_encoder_settings_t* params;
 	char* default_argv[MAX_PARAMS*2];
 
 	params = (thor_encoder_settings_t*) malloc(sizeof(thor_encoder_settings_t));
@@ -314,6 +314,8 @@ thor_encoder_settings_t* thor_encoder_settings_new(int argc, char** argv)
 	add_param_to_list(&list, "-snrcalc",               "1", ARG_INTEGER,  &params->snrcalc);
 	add_param_to_list(&list, "-use_block_contexts",    "0", ARG_INTEGER,  &params->use_block_contexts);
 	add_param_to_list(&list, "-enable_bipred",         "0", ARG_INTEGER,  &params->enable_bipred);
+	add_param_to_list(&list, "-inter_mode",            "1", ARG_INTEGER,  &params->inter_mode);
+	add_param_to_list(&list, "-merge_mode",            "1", ARG_INTEGER,  &params->merge_mode);
 
 	/* Generate "argv" and "argc" for default parameters */
 	default_argc = 1;
