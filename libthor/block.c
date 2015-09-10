@@ -2513,12 +2513,10 @@ int mode_decision_rdo(encoder_info_t* encoder_info, block_info_t* block_info)
 			tb_param = 0;
 			mode = MODE_MERGE;
 			int merge_idx;
-#if 1//NO_SUBBLOCK_SKIP
 			int num_merge_vec = block_info->num_merge_vec;
-			for (merge_idx=0;merge_idx<num_merge_vec;merge_idx++) {
-#else
-				for (merge_idx=best_skip_idx;merge_idx<=best_skip_idx;merge_idx++) {
-#endif
+
+			for (merge_idx = 0; merge_idx < num_merge_vec; merge_idx++)
+			{
 				pred_data.skip_idx = merge_idx;
 				pred_data.mv_arr0[0].x = block_info->mvb_merge[merge_idx].x0;
 				pred_data.mv_arr0[0].y = block_info->mvb_merge[merge_idx].y0;
