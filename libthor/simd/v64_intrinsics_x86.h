@@ -39,6 +39,30 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 typedef __m128i v64;
 
+#if defined(_WIN32) && !defined(_M_X64)
+
+/* defined missing intrinsics with MSVC in 32-bit */
+
+__forceinline __int64 _mm_cvtsi128_si64(__m128i a) {
+	union { __m128i b; int64_t c[2]; } u;
+	u.b = a;
+	return u.c[0];
+}
+
+__forceinline __m128i _mm_cvtsi64_si128(__int64 a) {
+	union { __m128i b; int64_t c[2]; } u;
+	u.c[0] = a; u.c[1] = 0;
+	return u.b;
+}
+
+__forceinline __m128i _mm_set_epi64x(__int64 i1, __int64 i2) {
+	union { __m128i b; int64_t c[2]; } u;
+	u.c[0] = i1; u.c[0] = i2;
+	return u.b;
+}
+
+#endif
+
 SIMD_INLINE uint32_t v64_low_u32(v64 a) {
   return (uint32_t)_mm_cvtsi128_si32(a);
 }
