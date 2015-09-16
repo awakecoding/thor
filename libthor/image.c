@@ -366,7 +366,7 @@ int thor_image_y4m_read_fp(thor_image_t* img, FILE* fp)
 	uint32_t frameSize;
 	uint32_t fileSize;
 
-	len = fread(buf, 1, sizeof(buf), fp);
+	len = (int) fread(buf, 1, sizeof(buf), fp);
 	buf[255] = '\0';
 
 	if (strncmp(buf, "YUV4MPEG2 ", 10) != 0)
@@ -530,14 +530,14 @@ int thor_image_read(thor_image_t* img, const char* filename)
 	{
 		img->fp = fp;
 		frameSize = img->scanline * img->height;
-		img->frameCount = fileSize / frameSize;
+		img->frameCount = (int) (fileSize / frameSize);
 		return 1;
 	}
 	else if (img->type == THOR_IMAGE_YUV)
 	{
 		img->fp = fp;
 		frameSize = (img->width * img->height) + ((img->width * img->height) / 2);
-		img->frameCount = fileSize / frameSize;
+		img->frameCount = (int) (fileSize / frameSize);
 		return 1;
 	}
 

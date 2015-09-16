@@ -29,7 +29,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <thor/image.h>
 #include <thor/settings.h>
 
-#ifndef _WIN32
+#ifdef _WIN32
+
+#include <windows.h>
+
+#else
 
 #include <time.h>
 #include <sys/time.h>
@@ -359,7 +363,7 @@ int main_dec(int argc, char** argv)
 
 		if (fhdr.size)
 		{
-			status = fread(buffer, 1, fhdr.size, input);
+			status = (int) fread(buffer, 1, fhdr.size, input);
 
 			if (status != fhdr.size)
 			{
