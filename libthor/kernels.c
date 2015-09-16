@@ -30,8 +30,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "thor.h"
 
 static void get_inter_prediction_luma_edge(int width, int height, int xoff, int yoff,
-					   uint8_t *RESTRICT qp, int qstride,
-					   const uint8_t *RESTRICT ip, int istride)
+					   uint8_t* RESTRICT qp, int qstride,
+					   const uint8_t* RESTRICT ip, int istride)
 {
 	static const ALIGN(16) int16_t coeffs[4][6][4] = {
 		{ {   3,   3,   3,   3 },
@@ -600,7 +600,7 @@ enum {
 };
 
 /* Check whether coeffs are DC only, 4x4, 8x8 or larger. */
-int check_nz_area(const int16_t *coeff, int size)
+int check_nz_area(const int16_t* coeff, int size)
 {
 	uint64_t *c64 = (uint64_t *)coeff;
 	int other3, rest;
@@ -636,7 +636,7 @@ int check_nz_area(const int16_t *coeff, int size)
 
 
 /* 4x4 transform, both dimensions */
-static void transform4(const int16_t *src, int16_t *dst)
+static void transform4(const int16_t* src, int16_t* dst)
 {
 	v128 t;
 	v128 add1 = v128_dup_32(2);
@@ -704,7 +704,7 @@ static void transform4(const int16_t *src, int16_t *dst)
 }
 
 
-static void inverse_transform4(const int16_t *coeff, int16_t *block)
+static void inverse_transform4(const int16_t* coeff, int16_t* block)
 {
 	v128 round1 = v128_dup_32(64);
 	v128 round2 = v128_dup_32(2048);
@@ -765,7 +765,7 @@ static void inverse_transform4(const int16_t *coeff, int16_t *block)
 	v64_store_aligned(block + 12, v64_pack_s32_s16(v128_high_v64(x3), v128_high_v64(x1)));
 }
 
-static void inverse_transform8_4x4(const int16_t *coeff, int16_t *block)
+static void inverse_transform8_4x4(const int16_t* coeff, int16_t* block)
 {
 	v128 t0, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11, t12;
 	v128 round =  v128_dup_32(64);
@@ -891,7 +891,7 @@ static void inverse_transform8_4x4(const int16_t *coeff, int16_t *block)
 }
 
 /* Inverse transform, take advantage of symmetries to minimise operations */
-static void inverse_transform8(const int16_t *coeff, int16_t *block)
+static void inverse_transform8(const int16_t* coeff, int16_t* block)
 {
 	v128 t0, t1, t2, t3, t4 ,t5, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16;
 	v128 round = v128_dup_32(64);
@@ -1105,7 +1105,7 @@ static void inverse_transform8(const int16_t *coeff, int16_t *block)
 	v128_store_aligned(block + 56, v128_ziphi_64(t3, t5));
 }
 
-static void inverse_transform16(const int16_t *src, int16_t *dst, int shift)
+static void inverse_transform16(const int16_t* src, int16_t* dst, int shift)
 {
 	int j;
 	v64 c9 = v64_dup_16(9);
@@ -1324,7 +1324,7 @@ static void inverse_transform16(const int16_t *src, int16_t *dst, int shift)
 }
 
 /* 16x16 inverse transform assuming everything but top left 4x4 is 0 */
-static void inverse_transform16_4x4(const int16_t *coeff, int16_t *block)
+static void inverse_transform16_4x4(const int16_t* coeff, int16_t* block)
 {
 	static const ALIGN(16) int16_t c[] = {
 		64,  89,  64,  89,  64,  89,  64,  89,
@@ -1486,7 +1486,7 @@ static void inverse_transform16_4x4(const int16_t *coeff, int16_t *block)
 	}
 }
 
-static void transform8(const int16_t *src, int16_t *dst, int shift)
+static void transform8(const int16_t* src, int16_t* dst, int shift)
 {
 	int j;
 
@@ -1569,7 +1569,7 @@ static void transform8(const int16_t *src, int16_t *dst, int shift)
 }
 
 /* 16x16 transform, one dimension, partial butterfly */
-static void transform16(const int16_t *src, int16_t *dst, int shift)
+static void transform16(const int16_t* src, int16_t* dst, int shift)
 {
 	int j;
 	const v128 shuffle1 = v128_from_64(0x0100030205040706LL, 0x09080b0a0d0c0f0eLL);
@@ -1719,7 +1719,7 @@ static void transform16(const int16_t *src, int16_t *dst, int shift)
 	}
 }
 
-static void transform32(const int16_t *src, int16_t *dst, int shift, int it)
+static void transform32(const int16_t* src, int16_t* dst, int shift, int it)
 {
 	extern const int16_t g4mat_hevc[32][32];
 	int j, k;
@@ -1777,7 +1777,7 @@ static void transform32(const int16_t *src, int16_t *dst, int shift, int it)
 }
 
 
-static void transform64(const int16_t *src, int16_t *dst, int shift, int it)
+static void transform64(const int16_t* src, int16_t* dst, int shift, int it)
 {
 	extern const int16_t g5mat_hevc[64][64];
 	int j, k, l;
@@ -1842,7 +1842,7 @@ static void transform64(const int16_t *src, int16_t *dst, int shift, int it)
 	}
 }
 
-void transform_simd(const int16_t *block, int16_t *coeff, int size, int fast)
+void transform_simd(const int16_t* block, int16_t* coeff, int size, int fast)
 {
 	int i, j;
 
@@ -1951,7 +1951,7 @@ void transform_simd(const int16_t *block, int16_t *coeff, int size, int fast)
 	}
 }
 
-void inverse_transform_simd(const int16_t *coeff, int16_t *block, int size)
+void inverse_transform_simd(const int16_t* coeff, int16_t* block, int size)
 {
 	if (size == 4)
 	{
@@ -1987,7 +1987,7 @@ void inverse_transform_simd(const int16_t *coeff, int16_t *block, int size)
 	}
 }
 
-int sad_calc_simd(uint8_t *a, uint8_t *b, int astride, int bstride, int width, int height)
+int sad_calc_simd(uint8_t* a, uint8_t* b, int astride, int bstride, int width, int height)
 {
 	int i, j;
 
@@ -2024,7 +2024,7 @@ int sad_calc_simd(uint8_t *a, uint8_t *b, int astride, int bstride, int width, i
 	}
 }
 
-int ssd_calc_simd(uint8_t *a, uint8_t *b, int astride, int bstride, int size)
+int ssd_calc_simd(uint8_t* a, uint8_t* b, int astride, int bstride, int size)
 {
 	int i, j;
 

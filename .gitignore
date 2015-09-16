@@ -5,6 +5,9 @@ CMakeFiles/
 CMakeScripts/
 cmake_install.cmake
 install_manifest.txt
+CTestTestfile.cmake
+DartConfiguration.tcl
+Testing/
 
 *.sln
 *.suo

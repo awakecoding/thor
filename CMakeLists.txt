@@ -12,6 +12,18 @@ set(THOR_VERSION_REVISION "0")
 set(THOR_API_VERSION "${FREERDP_VERSION_MAJOR}.${FREERDP_VERSION_MINOR}")
 set(THOR_VERSION "${FREERDP_API_VERSION}.${FREERDP_VERSION_REVISION}")
 
+if(UNIX)
+	check_c_compiler_flag(-Wno-unused-result Wno-unused-result)
+	if(Wno-unused-result)
+		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-result")
+	endif()
+
+	check_c_compiler_flag(-Wno-unused-but-set-variable Wno-unused-but-set-variable)
+	if(Wno-unused-but-set-variable)
+		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-but-set-variable")
+	endif()
+endif()
+
 if(MSVC)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D_CRT_SECURE_NO_WARNINGS")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DWIN32_LEAN_AND_MEAN")
@@ -30,6 +42,10 @@ include_directories(include)
 add_subdirectory(include)
 add_subdirectory(libthor)
 add_subdirectory(tool)
+
+include(CTest)
+enable_testing()
+add_subdirectory(test)
 
 export(PACKAGE thor)
 

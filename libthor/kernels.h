@@ -36,10 +36,10 @@ void get_inter_prediction_luma_simd(int width, int height, int xoff, int yoff,
 				    uint8_t* RESTRICT qp, int qstride, const uint8_t* RESTRICT ip, int istride);
 void get_inter_prediction_chroma_simd(int width, int height, int xoff, int yoff,
 				      uint8_t* RESTRICT qp, int qstride, const uint8_t* RESTRICT ip, int istride);
-void transform_simd(const int16_t *block, int16_t *coeff, int size, int fast);
+void transform_simd(const int16_t* block, int16_t* coeff, int size, int fast);
 void inverse_transform_simd(const int16_t* coeff, int16_t* block, int size);
 
-int sad_calc_simd(uint8_t *a, uint8_t *b, int astride, int bstride, int width, int height);
-int ssd_calc_simd(uint8_t *a, uint8_t *b, int astride, int bstride, int size);
+int sad_calc_simd(uint8_t* a, uint8_t* b, int astride, int bstride, int width, int height);
+int ssd_calc_simd(uint8_t* a, uint8_t* b, int astride, int bstride, int size);
 
 #endif /* THOR_KERNELS_H */
