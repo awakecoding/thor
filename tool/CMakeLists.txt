@@ -1,5 +1,5 @@
 
-add_executable(thor-tool thor.c)
+add_executable(thor-tool tool.c)
 
 target_link_libraries(thor-tool thor)
 

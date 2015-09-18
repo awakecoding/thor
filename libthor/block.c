@@ -1856,6 +1856,12 @@ int encode_block(encoder_info_t* encoder_info, stream_t* stream, block_info_t* b
 		ref_u = ref->u + ref_posC;
 		ref_v = ref->v + ref_posC;
 	}
+	else
+	{
+		ref = NULL;
+		ref_posY = ref_posC = 0;
+		ref_y = ref_u = ref_v = NULL;
+	}
 
 	write_data.mode = mode;
 	write_data.size = size;
@@ -2959,7 +2965,7 @@ int check_early_skip_block(encoder_info_t* encoder_info, block_info_t* block_inf
 	float early_skip_threshold = encoder_info->params->early_skip_thr;
 
 	if ((encoder_info->params->encoder_speed > 1) && (size == MAX_BLOCK_SIZE))
-		early_skip_threshold = 1.3 * early_skip_threshold;
+		early_skip_threshold = 1.3f * early_skip_threshold;
 
 	if (pred_data->dir == 2)
 	{

@@ -232,6 +232,7 @@ void deblock_frame_y(yuv_frame_t* rec, deblock_data_t* deblock_data, int width, 
 
 				if (do_filter)
 				{
+#pragma ivdep
 					for (l=n;l<n+MIN_PB_SIZE;l++)
 					{
 						p2 = (int)recY[(i-3)*stride + j + l];
@@ -332,6 +333,7 @@ void deblock_frame_uv(yuv_frame_t* rec, deblock_data_t* deblock_data, int width,
 
 				if (do_filter)
 				{
+#pragma ivdep
 					for (l=0;l<MIN_BLOCK_SIZE/2;l++)
 					{
 						p1 = (int)recC[(i2-2)*stride + j2 + l];
@@ -449,6 +451,7 @@ void create_reference_frame(yuv_frame_t* ref, yuv_frame_t* rec)
 	}
 	for (i = height/2; i < height/2+PADDING_Y/2; i++)
 	{
+#pragma ivdep
 		for (j = -PADDING_Y/2; j < width/2+PADDING_Y/2; j++)
 		{
 			ref_u[i*ref->stride_c+j] = ref_u[(height/2-1)*ref->stride_c+j];
