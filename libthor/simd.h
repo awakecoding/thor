@@ -79,6 +79,12 @@ typedef unsigned long long intptr_t;
 #define ALIGN(c)
 #endif
 
+#if defined(__INTEL_COMPILER)
+#define PRAGMA_IVDEP __pragma(ivdep)
+#else
+#define PRAGMA_IVDEP
+#endif
+
 #ifdef _WIN32
 
 #ifndef __SSE2__
