@@ -922,32 +922,57 @@ int quantize(int16_t* coeff, int16_t* coeffq, int qp, int size, int frame_type, 
 	int shift2 = 21 - tr_log2size + qp/6;
 	int* zigzagptr = zigzag64;
 
-	if (qsize==4)
-		zigzagptr = zigzag16;
-	else if (qsize==8)
-		zigzagptr = zigzag64;
-	else if (qsize==16)
-		zigzagptr = zigzag256;
-
-	/* Initialize 1D array of quantized coefficients to zero */
-	memset(scoeffq,0,qsize*qsize*sizeof(int));
-
-	/* Zigzag scan of 8x8 low frequency coefficients */
-	for(i=0;i<qsize;i++)
+	if (qsize == 4)
 	{
-		for (j=0;j<qsize;j++)
+		zigzagptr = zigzag16;
+		memset(scoeffq, 0, 4 * 4 * sizeof(int));
+
+		for (i = 0; i < 4; i++)
 		{
-			scoeff[zigzagptr[i*qsize+j]] = coeff[i*size+j];
+			for (j = 0; j < 4; j++)
+			{
+				scoeff[zigzagptr[i * 4 + j]] = coeff[i * size + j];
+			}
 		}
+	}
+	else if (qsize == 8)
+	{
+		zigzagptr = zigzag64;
+		memset(scoeffq, 0, 8 * 8 * sizeof(int));
+
+		for (i = 0; i < 8; i++)
+		{
+			for (j = 0; j < 8; j++)
+			{
+				scoeff[zigzagptr[i * 8 + j]] = coeff[i * size + j];
+			}
+		}
+	}
+	else if (qsize == 16)
+	{
+		zigzagptr = zigzag256;
+		memset(scoeffq, 0, 16 * 16 * sizeof(int));
+
+		for (i = 0; i < 16; i++)
+		{
+			for (j = 0; j < 16; j++)
+			{
+				scoeff[zigzagptr[i * 16 + j]] = coeff[i * size + j];
+			}
+		}
+	}
+	else
+	{
+		return -1;
 	}
 
 	/* Find last_pos */
-	offset = frame_type==I_FRAME ? 38 : -26; //Scaled by 256 relative to quantization step size
+	offset = (frame_type == I_FRAME) ? 38 : -26; //Scaled by 256 relative to quantization step size
 	offset = offset<<(shift2-8);
 	level = 0;
 	pos = qsize*qsize-1;
 
-	while (level==0 && pos>=0)
+	while ((level == 0) && (pos >= 0))
 	{
 		c = scoeff[pos];
 		level = abs((abs(c)*scale + offset))>>shift2;
@@ -959,72 +984,137 @@ int quantize(int16_t* coeff, int16_t* coeffq, int qp, int size, int frame_type, 
 	/* Forward scan up to last_pos */
 	cbp = 0;
 
-	offset0 = frame_type==I_FRAME ? 102 : 51; //Scaled by 256 relative to quantization step size
-	offset1 = frame_type==I_FRAME ? 115 : 90; //Scaled by 256 relative to quantization step size
+	offset0 = (frame_type == I_FRAME) ? 102 : 51; //Scaled by 256 relative to quantization step size
+	offset1 = (frame_type == I_FRAME) ? 115 : 90; //Scaled by 256 relative to quantization step size
 
-	for (pos=0;pos<=last_pos;pos++)
+	if (chroma_flag)
 	{
-		c = scoeff[pos];
-		sign = c < 0 ? -1 : 1;
-		abs_coeff = scale*abs(c);
-		level0 = (abs_coeff + 0)>>shift2;
-		offset = ((level0==0 || chroma_flag) ? offset0 : offset1);
-		offset = offset<<(shift2-8);
-		level = (abs_coeff + offset)>>shift2;
-		scoeffq[pos] = sign * level;
-		cbp = cbp || (level != 0);
+		for (pos = 0; pos <= last_pos; pos++)
+		{
+			c = scoeff[pos];
+			sign = (c < 0) ? -1 : 1;
+			abs_coeff = scale * (sign * c);
+			offset = offset0 << (shift2 - 8);
+			level = (abs_coeff + offset) >> shift2;
+			scoeffq[pos] = sign * level;
+			cbp = cbp || (level != 0);
+		}
+	}
+	else
+	{
+		for (pos = 0; pos <= last_pos; pos++)
+		{
+			c = scoeff[pos];
+			sign = (c < 0) ? -1 : 1;
+			abs_coeff = scale * (sign * c);
+			level0 = (abs_coeff + 0) >> shift2;
+			offset = ((level0 == 0) ? offset0 : offset1);
+			offset = offset << (shift2 - 8);
+			level = (abs_coeff + offset) >> shift2;
+			scoeffq[pos] = sign * level;
+			cbp = cbp || (level != 0);
+		}
 	}
 
 	/* RDOQ light - adapted to coefficient encoding */
 	if (cbp)
 	{
 		int pos;
-		int N = chroma_flag ? last_pos+1 : qsize*qsize;
-		int K1,K2,K3,K4;
+		int K1, K2, K3, K4;
+		int N = chroma_flag ? last_pos + 1 : qsize * qsize;
+		int threshold = (73*gdequant_table[qp%6]<<(qp/6))>>(4+tr_log2size);
 
-		for (pos=2;pos<N;pos++)
+		/* peel pos = 2, 3 cases */
+
+		for (pos = 2; ((pos < N) && (pos < 4)); pos++)
 		{
-			int flag = 1;
-			if (pos>2)
+			if (pos == 2)
 			{
-				if (scoeffq[pos-3] > 1) flag = 0;
+				if ((chroma_flag == 0) || (last_pos >= 6))
+					continue;
 			}
-			if (pos>3)
+			else if (pos == 3)
 			{
-				if (scoeffq[pos-4] > 1 && scoeffq[pos-3] > 0) flag = 0;
+				if (scoeffq[pos - 3] > 1)
+					continue;
 			}
-			if (pos==2 && (chroma_flag==0 || last_pos >= 6))
-			{
-				flag = 0;
-			}
-			if (flag && scoeffq[pos-2]==0 && scoeffq[pos-1]==0 && abs(scoeffq[pos])>1)
+
+			if ((scoeffq[pos - 2] == 0) && (scoeffq[pos - 1] == 0) && (abs(scoeffq[pos]) > 1))
 			{
 				K1 = abs(scoeff[pos]);
-				K2 = abs(scoeff[pos-1]);
-				K3 = abs(scoeff[pos-2]);
-				K4 = max(K2,K3);
-				int threshold = (73*gdequant_table[qp%6]<<(qp/6))>>(4+tr_log2size);
+				K2 = abs(scoeff[pos - 1]);
+				K3 = abs(scoeff[pos - 2]);
+				K4 = max(K2, K3);
 
-				if (K1+K4 < threshold)
+				if ((K1 + K4) < threshold)
 				{
 					scoeffq[pos] = scoeff[pos] < 0 ? -1 : 1;
 				}
 				else
 				{
 					if (K2 > K3)
-						scoeffq[pos-1] = scoeff[pos-1] < 0 ? -1 : 1;
+						scoeffq[pos - 1] = scoeff[pos - 1] < 0 ? -1 : 1;
 					else
-																															scoeffq[pos-2] = scoeff[pos-2] < 0 ? -1 : 1;
+						scoeffq[pos - 2] = scoeff[pos - 2] < 0 ? -1 : 1;
+				}
+			}
+		}
+
+		for (pos = 4; pos < N; pos++)
+		{
+			if ((scoeffq[pos - 3] > 1) || ((scoeffq[pos - 4] > 1) && (scoeffq[pos - 3] > 0)))
+				continue;
+
+			if ((scoeffq[pos - 2] == 0) && (scoeffq[pos - 1] == 0) && (abs(scoeffq[pos]) > 1))
+			{
+				K1 = abs(scoeff[pos]);
+				K2 = abs(scoeff[pos - 1]);
+				K3 = abs(scoeff[pos - 2]);
+				K4 = max(K2, K3);
+
+				if ((K1 + K4) < threshold)
+				{
+					scoeffq[pos] = scoeff[pos] < 0 ? -1 : 1;
+				}
+				else
+				{
+					if (K2 > K3)
+						scoeffq[pos - 1] = scoeff[pos - 1] < 0 ? -1 : 1;
+					else
+						scoeffq[pos - 2] = scoeff[pos - 2] < 0 ? -1 : 1;
 				}
 			}
 		}
 	}
 
-	for(i=0;i<qsize;i++)
+	if (qsize == 4)
 	{
-		for (j=0;j<qsize;j++)
+		for (i = 0; i < 4; i++)
 		{
-			coeffq[i*size+j] = scoeffq[zigzagptr[i*qsize+j]];
+			for (j = 0; j < 4; j++)
+			{
+				coeffq[i * size + j] = scoeffq[zigzagptr[i * 4 + j]];
+			}
+		}
+	}
+	else if (qsize == 8)
+	{
+		for (i = 0; i < 8; i++)
+		{
+			for (j = 0; j < 8; j++)
+			{
+				coeffq[i * size + j] = scoeffq[zigzagptr[i * 8 + j]];
+			}
+		}
+	}
+	else if (qsize == 16)
+	{
+		for (i = 0; i < 16; i++)
+		{
+			for (j = 0; j < 16; j++)
+			{
+				coeffq[i * size + j] = scoeffq[zigzagptr[i * 16 + j]];
+			}
 		}
 	}
 
