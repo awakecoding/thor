@@ -40,6 +40,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /* getbits */
 
+extern int16_t zigzag16[16];
+extern int16_t zigzag64[64];
+extern int16_t zigzag256[256];
+extern int super_table[8][20];
+extern int YPOS,XPOS;
+
 /* to mask the n least significant bits of an integer */
 static const unsigned int msk[33] =
 {
@@ -151,19 +157,17 @@ void flush_bitbuf(stream_t* str)
 
 void putbits(unsigned int n, unsigned int val, stream_t* str)
 {
-	unsigned int rest;
-
 	if (n <= str->bitrest)
 	{
-		str->bitbuf |= ((val & msk[n]) << (str->bitrest-n));
+		str->bitbuf |= ((val & msk[n]) << (str->bitrest - n));
 		str->bitrest -= n;
 	}
 	else
 	{
-		rest = n-str->bitrest;
-		str->bitbuf |= (val >> rest) & msk[n-rest];
+		unsigned int rest = n - str->bitrest;
+		str->bitbuf |= (val >> rest) & msk[n - rest];
 		flush_bitbuf(str);
-		str->bitbuf |= (val & msk[rest]) << (32-rest);
+		str->bitbuf |= (val & msk[rest]) << (32 - rest);
 		str->bitrest -= rest;
 	}
 }
@@ -190,11 +194,6 @@ void read_stream_pos(stream_pos_t* stream_pos, stream_t* stream)
 
 /* read_bits */
 
-extern int zigzag16[16];
-extern int zigzag64[64];
-extern int zigzag256[256];
-extern int super_table[8][20];
-
 void read_mv(stream_t* stream, mv_t* mv, mv_t* mvp)
 {
 	mv_t mvd;
@@ -208,8 +207,6 @@ void read_mv(stream_t* stream, mv_t* mv, mv_t* mvp)
 	mvd.y = code&1 ? -((code+1)/2) : code/2;
 	mv->y = mvp->y + mvd.y;
 }
-
-int YPOS,XPOS;
 
 int find_index(int code, int maxrun, int type)
 {
@@ -368,20 +365,20 @@ void read_coeff(stream_t* stream, int16_t* coeff, int size, int type)
 	} //while pos < N
 
 	/* Perform inverse zigzag scan */
-	int* zigzagptr = zigzag64;
+	int16_t* zigzagptr = zigzag64;
 
-	if (qsize==4)
+	if (qsize == 4)
 		zigzagptr = zigzag16;
-	else if (qsize==8)
+	else if (qsize == 8)
 		zigzagptr = zigzag64;
-	else if (qsize==16)
+	else if (qsize == 16)
 		zigzagptr = zigzag256;
 
-	for (i=0;i<qsize;i++)
+	for (i = 0; i < qsize; i++)
 	{
-		for (j=0;j<qsize;j++)
+		for (j = 0; j < qsize; j++)
 		{
-			coeff[i*size+j] = scoeff[zigzagptr[i*qsize+j]];
+			coeff[i * size + j] = scoeff[zigzagptr[i * qsize + j]];
 		}
 	}
 }
@@ -1139,12 +1136,6 @@ int read_block(decoder_info_t* decoder_info, stream_t* stream, block_info_dec_t*
 
 /* write_bits */
 
-extern int zigzag16[16];
-extern int zigzag64[64];
-extern int zigzag256[256];
-extern int super_table[8][20];
-extern int YPOS,XPOS;
-
 void write_mv(stream_t* stream, mv_t* mv, mv_t* mvp)
 {
 	mv_t mvd;
@@ -1219,35 +1210,68 @@ void write_coeff(stream_t* stream, int16_t* coeff, int size, int type)
 	int vlc_adaptive=0;
 	int N = qsize*qsize;
 	int level_mode;
+	int16_t* zigzagptr = zigzag64;
 
-	/* Zigzag scan */
-	int *zigzagptr = zigzag64;
-	if (qsize==4)
+	if (qsize == 4)
+	{
 		zigzagptr = zigzag16;
-	else if (qsize==8)
+
+		for (i = 0; i < 4; i++)
+		{
+			scoeff[zigzagptr[i * 4 + 0]] = coeff[i * size + 0];
+			scoeff[zigzagptr[i * 4 + 1]] = coeff[i * size + 1];
+			scoeff[zigzagptr[i * 4 + 2]] = coeff[i * size + 2];
+			scoeff[zigzagptr[i * 4 + 3]] = coeff[i * size + 3];
+		}
+	}
+	else if (qsize == 8)
+	{
 		zigzagptr = zigzag64;
-	else if (qsize==16)
+
+		for (i = 0; i < 8; i++)
+		{
+			scoeff[zigzagptr[i * 8 + 0]] = coeff[i * size + 0];
+			scoeff[zigzagptr[i * 8 + 1]] = coeff[i * size + 1];
+			scoeff[zigzagptr[i * 8 + 2]] = coeff[i * size + 2];
+			scoeff[zigzagptr[i * 8 + 3]] = coeff[i * size + 3];
+			scoeff[zigzagptr[i * 8 + 4]] = coeff[i * size + 4];
+			scoeff[zigzagptr[i * 8 + 5]] = coeff[i * size + 5];
+			scoeff[zigzagptr[i * 8 + 6]] = coeff[i * size + 6];
+			scoeff[zigzagptr[i * 8 + 7]] = coeff[i * size + 7];
+		}
+	}
+	else if (qsize == 16)
+	{
 		zigzagptr = zigzag256;
 
-	for(i=0;i<qsize;i++)
-	{
-		for (j=0;j<qsize;j++)
+		for (i = 0; i < 16; i++)
 		{
-			scoeff[zigzagptr[i*qsize+j]] = coeff[i*size+j];
+			for (j = 0; j < 16; j++)
+			{
+				scoeff[zigzagptr[i * 16 + j]] = coeff[i * size + j];
+			}
 		}
+	}
+	else
+	{
+		return; /* invalid quant size */
 	}
 
 	/* Find last_pos to determine when to send EOB */
-	pos = N-1;
-	while (scoeff[pos]==0 && pos>0) pos--;
-	if (pos==0 && scoeff[0]==0)
+	pos = N - 1;
+
+	while ((scoeff[pos] == 0) && (pos > 0))
+		pos--;
+	
+	if ((pos == 0) && (scoeff[0] == 0))
 		fatalerror("No coeffs even if cbp nonzero. Exiting.");
+	
 	last_pos = pos;
 
 	/* Use one bit to signal chroma/last_pos=1/level=1 */
 	pos = 0;
 
-	if (type==1)
+	if (type == 1)
 	{
 		if (last_pos==0 && abs(scoeff[0])==1)
 		{

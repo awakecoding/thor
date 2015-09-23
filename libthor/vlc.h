@@ -30,9 +30,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "thor.h"
 #include "bits.h"
 
-int get_vlc(int n,stream_t *str);
-int get_vlc0_limit(int maxbit,stream_t *str);
-int put_vlc(unsigned int n,unsigned int cn,stream_t *str);
-int quote_vlc(unsigned int n,unsigned int cn);
+int get_vlc(int n, stream_t* str);
+int get_vlc0_limit(int maxbit, stream_t* str);
+int put_vlc(unsigned int n, unsigned int cn, stream_t* str);
+int quote_vlc(unsigned int n, unsigned int cn);
 
 #endif /* THOR_VLC_H */

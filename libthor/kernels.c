@@ -274,7 +274,7 @@ static void get_inter_prediction_luma_inner(int width, int height, int xoff, int
 		v128 c = v128_load_aligned(coeffs2[xoff + yoff*4][0]);
 		const uint8_t* RESTRICT ip2 = ip;
 		v128 c1, c2, c3;
-		int16_t *ax = thor_alloc((width+8)*height*2, 16);
+		ALIGN(16) int16_t ax[(MAX_BLOCK_SIZE+8)*MAX_BLOCK_SIZE];
 
 		if (yoff == 1)
 		{
@@ -326,7 +326,6 @@ static void get_inter_prediction_luma_inner(int width, int height, int xoff, int
 				v64_store_aligned(qp + y*qstride + i, v128_low_v64(v128_pack_s16_u8(r0, r0)));
 			}
 		}
-		thor_free(ax);
 	}
 }
 

@@ -35,16 +35,16 @@ int get_up_available(int ypos, int xpos, int size, int width);
 int get_upright_available(int ypos, int xpos, int size, int width);
 int get_downleft_available(int ypos, int xpos, int size, int height);
 
-void dequantize (int16_t *coeff,int16_t *rcoeff,int quant,int size);
-void reconstruct_block(int16_t *block, uint8_t *pblock, uint8_t *rec, int size, int stride);
+void dequantize(int16_t* RESTRICT coeff, int16_t* RESTRICT rcoeff, int quant, int size);
+void reconstruct_block(int16_t* RESTRICT block, uint8_t* RESTRICT pblock, uint8_t* RESTRICT rec, int size, int stride);
 
-void find_block_contexts(int ypos, int xpos, int height, int width, int size, deblock_data_t *deblock_data, block_context_t *block_context, int enable);
+void find_block_contexts(int ypos, int xpos, int height, int width, int size, deblock_data_t* deblock_data, block_context_t* block_context, int enable);
 
-void clpf_block(uint8_t *rec,int x0, int x1, int y0, int y1,int stride);
+void clpf_block(uint8_t* rec, int x0, int x1, int y0, int y1, int stride);
 
-void process_block_dec(decoder_info_t *encoder_info,int size,int yposY,int xposY);
+void process_block_dec(decoder_info_t* encoder_info, int size, int yposY, int xposY);
 
-int process_block(encoder_info_t *encoder_info,int size,int yposY,int xposY, int qp);
-int detect_clpf(uint8_t *org, uint8_t *rec,int x0, int x1, int y0, int y1,int stride);
+int process_block(encoder_info_t* encoder_info, int size, int yposY, int xposY, int qp);
+int detect_clpf(uint8_t* org, uint8_t* rec, int x0, int x1, int y0, int y1, int stride);
 
 #endif /* THOR_BLOCK_H */

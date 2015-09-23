@@ -103,16 +103,6 @@ SIMD_INLINE unsigned int log2i(uint32_t x)
 	return y;
 }
 
-SIMD_INLINE void *thor_alloc(size_t size, uintptr_t align)
-{
-	return _aligned_malloc(size, align);
-}
-
-SIMD_INLINE void thor_free(void *p)
-{
-	_aligned_free(p);
-}
-
 #elif defined(__GNUC__) && !defined(__APPLE__)
 
 SIMD_INLINE unsigned int log2i(uint32_t x)
@@ -120,31 +110,11 @@ SIMD_INLINE unsigned int log2i(uint32_t x)
 	return 31 - __builtin_clz(x);
 }
 
-SIMD_INLINE void *thor_alloc(size_t size, uintptr_t align)
-{
-	return (void*)((((uintptr_t)__builtin_alloca(size + align)) + align - 1) & ~(align - 1));
-}
-SIMD_INLINE void thor_free(void *p) {}
-
 #else
 
 SIMD_INLINE unsigned int log2i(uint32_t x)
 {
 	return 31 - __builtin_clz(x);
-}
-
-/* Fallback to regular malloc */
-SIMD_INLINE void *thor_alloc(size_t size, uintptr_t align)
-{
-	void *m = malloc(size + sizeof(void*) + align);
-	void **r = (void**)((((uintptr_t)m) + sizeof(void*) + align - 1) & ~(align - 1));
-	r[-1] = m;
-	return r;
-}
-
-SIMD_INLINE void thor_free(void *p)
-{
-	free(((void**)p)[-1]);
 }
 
 #endif

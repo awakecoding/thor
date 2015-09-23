@@ -48,7 +48,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 int YPOS,XPOS;
 
-int zigzag16[16] =
+const int16_t zigzag16[16] =
 {
 	0, 1, 5, 6,
 	2, 4, 7, 12,
@@ -56,7 +56,7 @@ int zigzag16[16] =
 	9, 10, 14, 15
 };
 
-int zigzag64[64] =
+const int16_t zigzag64[64] =
 {
 	0,  1,  5,  6, 14, 15, 27, 28,
 	2,  4,  7, 13, 16, 26, 29, 42,
@@ -68,7 +68,7 @@ int zigzag64[64] =
 	35, 36, 48, 49, 57, 58, 62, 63
 };
 
-int zigzag256[256] =
+const int16_t zigzag256[256] =
 {
 	0,  1,  5,  6, 14, 15, 27, 28, 44, 45, 65, 66, 90, 91,119,120,
 	2,  4,  7, 13, 16, 26, 29, 43, 46, 64, 67, 89, 92,118,121,150,
@@ -88,7 +88,7 @@ int zigzag256[256] =
 	135,136,164,165,189,190,210,211,227,228,240,241,249,250,254,255
 };
 
-int chroma_qp[52] =
+const int chroma_qp[52] =
 {
 	0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
 	17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 29,
@@ -96,7 +96,7 @@ int chroma_qp[52] =
 	39, 40, 41, 42, 43, 44, 45
 };
 
-int super_table[8][20] =
+const int super_table[8][20] =
 {
 	{-1,-1, -1,-1,-1,-1,-1,-1,-1,-1,  1, 0, 5, 2, 6, 3, 7, 4, 8,-1},
 	{-1, 0, -1,-1,-1,-1,-1,-1,-1,-1,  2, 1, 6, 3, 7, 5, 8, 4, 9,-1},
@@ -147,7 +147,7 @@ int get_downleft_available(int ypos, int xpos, int size, int height)
 	return downleft_available;
 }
 
-void dequantize(int16_t *coeff, int16_t *rcoeff, int qp, int size)
+void dequantize(int16_t* RESTRICT coeff, int16_t* RESTRICT rcoeff, int qp, int size)
 {
 	int i, j, c;
 	int tr_log2size = log2i(size);
@@ -156,30 +156,99 @@ void dequantize(int16_t *coeff, int16_t *rcoeff, int qp, int size)
 	const int scale = gdequant_table[qp % 6];
 	const int add = 1<<(rshift-1);
 
-	for (i = 0; i < size ; i++)
+	if (size == 4)
 	{
-		for (j = 0; j < size; j++)
+		for (i = 0; i < 4; i++)
 		{
-			c = coeff[i*size+j];
-			rcoeff[i*size+j] = ((c * scale << lshift) + add) >> rshift;
+			for (j = 0; j < 4; j++)
+			{
+				c = coeff[i*4+j];
+				rcoeff[i*4+j] = ((c * scale << lshift) + add) >> rshift;
+			}
+		}
+	}
+	else if (size == 8)
+	{
+		for (i = 0; i < 8; i++)
+		{
+			for (j = 0; j < 8; j++)
+			{
+				c = coeff[i*8+j];
+				rcoeff[i*8+j] = ((c * scale << lshift) + add) >> rshift;
+			}
+		}
+	}
+	else if (size == 16)
+	{
+		for (i = 0; i < 16; i++)
+		{
+			for (j = 0; j < 16; j++)
+			{
+				c = coeff[i*16+j];
+				rcoeff[i*16+j] = ((c * scale << lshift) + add) >> rshift;
+			}
+		}
+	}
+	else
+	{
+		for (i = 0; i < size; i++)
+		{
+			for (j = 0; j < size; j++)
+			{
+				c = coeff[i*size+j];
+				rcoeff[i*size+j] = ((c * scale << lshift) + add) >> rshift;
+			}
 		}
 	}
 }
 
-void reconstruct_block(int16_t *block, uint8_t *pblock, uint8_t *rec, int size, int stride)
+void reconstruct_block(int16_t* RESTRICT block, uint8_t* RESTRICT pblock, uint8_t* RESTRICT rec, int size, int stride)
 {
-	int i,j;
+	int i, j;
 
-	for(i=0;i<size;i++)
+	if (size == 4)
 	{
-		for (j=0;j<size;j++)
+		for (i = 0; i < 4; i++)
 		{
-			rec[i*stride+j] = (uint8_t)clip255(block[i*size+j] + (int16_t)pblock[i*size+j]);
+			for (j = 0; j < 4; j++)
+			{
+				rec[i * stride + j] = (uint8_t)clip255(block[i * 4 + j] + (int16_t)pblock[i * 4 + j]);
+			}
+		}
+	}
+	else if (size == 8)
+	{
+		for (i = 0; i < 8; i++)
+		{
+			for (j = 0; j < 8; j++)
+			{
+				rec[i * stride + j] = (uint8_t)clip255(block[i * 8 + j] + (int16_t)pblock[i * 8 + j]);
+			}
+		}
+	}
+	else if (size == 16)
+	{
+		for (i = 0; i < 16; i++)
+		{
+			for (j = 0; j < 16; j++)
+			{
+				rec[i * stride + j] = (uint8_t)clip255(block[i * 16 + j] + (int16_t)pblock[i * 16 + j]);
+			}
+		}
+	}
+	else
+	{
+		for (i = 0; i < size; i++)
+		{
+			for (j = 0; j < size; j++)
+			{
+				rec[i * stride + j] = (uint8_t)clip255(block[i * size + j] + (int16_t)pblock[i * size + j]);
+			}
 		}
 	}
 }
 
-void find_block_contexts(int ypos, int xpos, int height, int width, int size, deblock_data_t *deblock_data, block_context_t *block_context, int enable)
+void find_block_contexts(int ypos, int xpos, int height, int width, int size, deblock_data_t* deblock_data, block_context_t* block_context, int enable)
 {
 	if (ypos >= MIN_BLOCK_SIZE && xpos >= MIN_BLOCK_SIZE && ypos+size < height && xpos+size < width && enable)
 	{
@@ -207,7 +276,7 @@ void find_block_contexts(int ypos, int xpos, int height, int width, int size, de
 	}
 }
 
-void clpf_block(uint8_t *rec,int x0, int x1, int y0, int y1,int stride)
+void clpf_block(uint8_t* rec, int x0, int x1, int y0, int y1, int stride)
 {
 	int y,x,A,B,C,D,X,Xprime,delta,sum,sign;
 	ALIGN(16) uint8_t tmp_block[MAX_BLOCK_SIZE*MAX_BLOCK_SIZE];
@@ -240,7 +309,7 @@ void clpf_block(uint8_t *rec,int x0, int x1, int y0, int y1,int stride)
 
 /* decode_block */
 
-void decode_and_reconstruct_block(uint8_t *rec, int stride, int size, int qp, uint8_t *pblock, int16_t *coeffq,int tb_split)
+void decode_and_reconstruct_block(uint8_t* rec, int stride, int size, int qp, uint8_t* pblock, int16_t* coeffq, int tb_split)
 {
 	ALIGN(16) int16_t rcoeff[2*MAX_TR_SIZE*MAX_TR_SIZE];
 	ALIGN(16) int16_t rblock[2*MAX_TR_SIZE*MAX_TR_SIZE];
@@ -255,7 +324,7 @@ void decode_and_reconstruct_block(uint8_t *rec, int stride, int size, int qp, ui
 			for (j=0;j<size;j+=size2)
 			{
 				index = 2*(i/size2) + (j/size2);
-				dequantize (coeffq+index*size2*size2,rcoeff,qp,size2);
+				dequantize(coeffq+index*size2*size2,rcoeff,qp,size2);
 				inverse_transform(rcoeff, rblock2, size2);
 				/* Copy from compact block of quarter size to full size */
 				for (k=0;k<size2;k++)
@@ -274,8 +343,8 @@ void decode_and_reconstruct_block(uint8_t *rec, int stride, int size, int qp, ui
 	reconstruct_block(rblock,pblock,rec,size,stride);
 }
 
-void decode_copy_deblock_data(decoder_info_t *decoder_info, block_info_dec_t *block_info){
-
+void decode_copy_deblock_data(decoder_info_t* decoder_info, block_info_dec_t* block_info)
+{
 	int size = block_info->block_pos.size;
 	int block_posy = block_info->block_pos.ypos/MIN_PB_SIZE;
 	int block_posx = block_info->block_pos.xpos/MIN_PB_SIZE;
@@ -911,47 +980,51 @@ void process_block_dec(decoder_info_t* decoder_info, int size, int yposY, int xp
 
 /* encode_block */
 
-int quantize(int16_t* coeff, int16_t* coeffq, int qp, int size, int frame_type, int chroma_flag, int rdoq)
+int quantize(int16_t* RESTRICT coeff, int16_t* RESTRICT coeffq, int qp, int size, int frame_type, int chroma_flag, int rdoq)
 {
 	int tr_log2size = log2i(size);
 	int qsize = min(MAX_QUANT_SIZE,size); //Only quantize 16x16 low frequency coefficients
 	int scale = gquant_table[qp%6];
-	int scoeff[MAX_QUANT_SIZE*MAX_QUANT_SIZE];
-	int scoeffq[MAX_QUANT_SIZE*MAX_QUANT_SIZE];
+	int16_t scoeff[MAX_QUANT_SIZE*MAX_QUANT_SIZE];
+	int16_t scoeffq[MAX_QUANT_SIZE*MAX_QUANT_SIZE];
 	int i,j,c,sign,offset,level,cbp,pos,last_pos,level0,abs_coeff,offset0,offset1;
 	int shift2 = 21 - tr_log2size + qp/6;
-	int* zigzagptr = zigzag64;
+	const int16_t* zigzagptr = zigzag64;
 
 	if (qsize == 4)
 	{
 		zigzagptr = zigzag16;
-		memset(scoeffq, 0, 4 * 4 * sizeof(int));
+		memset(scoeffq, 0, 4 * 4 * sizeof(int16_t));
 
 		for (i = 0; i < 4; i++)
 		{
-			for (j = 0; j < 4; j++)
-			{
-				scoeff[zigzagptr[i * 4 + j]] = coeff[i * size + j];
-			}
+			scoeff[zigzagptr[i * 4 + 0]] = coeff[i * size + 0];
+			scoeff[zigzagptr[i * 4 + 1]] = coeff[i * size + 1];
+			scoeff[zigzagptr[i * 4 + 2]] = coeff[i * size + 2];
+			scoeff[zigzagptr[i * 4 + 3]] = coeff[i * size + 3];
 		}
 	}
 	else if (qsize == 8)
 	{
 		zigzagptr = zigzag64;
-		memset(scoeffq, 0, 8 * 8 * sizeof(int));
+		memset(scoeffq, 0, 8 * 8 * sizeof(int16_t));
 
 		for (i = 0; i < 8; i++)
 		{
-			for (j = 0; j < 8; j++)
-			{
-				scoeff[zigzagptr[i * 8 + j]] = coeff[i * size + j];
-			}
+			scoeff[zigzagptr[i * 8 + 0]] = coeff[i * size + 0];
+			scoeff[zigzagptr[i * 8 + 1]] = coeff[i * size + 1];
+			scoeff[zigzagptr[i * 8 + 2]] = coeff[i * size + 2];
+			scoeff[zigzagptr[i * 8 + 3]] = coeff[i * size + 3];
+			scoeff[zigzagptr[i * 8 + 4]] = coeff[i * size + 4];
+			scoeff[zigzagptr[i * 8 + 5]] = coeff[i * size + 5];
+			scoeff[zigzagptr[i * 8 + 6]] = coeff[i * size + 6];
+			scoeff[zigzagptr[i * 8 + 7]] = coeff[i * size + 7];
 		}
 	}
 	else if (qsize == 16)
 	{
 		zigzagptr = zigzag256;
-		memset(scoeffq, 0, 16 * 16 * sizeof(int));
+		memset(scoeffq, 0, 16 * 16 * sizeof(int16_t));
 
 		for (i = 0; i < 16; i++)
 		{
@@ -968,14 +1041,14 @@ int quantize(int16_t* coeff, int16_t* coeffq, int qp, int size, int frame_type, 
 
 	/* Find last_pos */
 	offset = (frame_type == I_FRAME) ? 38 : -26; //Scaled by 256 relative to quantization step size
-	offset = offset<<(shift2-8);
+	offset = offset << (shift2 - 8);
 	level = 0;
 	pos = qsize*qsize-1;
 
 	while ((level == 0) && (pos >= 0))
 	{
 		c = scoeff[pos];
-		level = abs((abs(c)*scale + offset))>>shift2;
+		level = abs((abs(c)*scale + offset)) >> shift2;
 		pos--;
 	}
 
@@ -1407,31 +1480,66 @@ int quantize(int16_t* coeff, int16_t* coeffq, int qp, int size, int frame_type, 
 	} //if (cbp)
 
 	/* Inverse zigzag scan */
-	for(i=0;i<qsize;i++)
+	for (i = 0; i < qsize; i++)
 	{
-		for (j=0;j<qsize;j++)
+		for (j = 0; j < qsize; j++)
 		{
-			coeffq[i*size+j] = scoeffq[zigzagptr[i*qsize+j]];
+			coeffq[i * size + j] = scoeffq[zigzagptr[i * qsize + j]];
 		}
 	}
 
 	return (cbp != 0);
 }
 
-void get_residual(int16_t *block,uint8_t *pblock, uint8_t *orig, int size, int orig_stride)
+void get_residual(int16_t* RESTRICT block, uint8_t* RESTRICT pblock, uint8_t* RESTRICT orig, int size, int orig_stride)
 {
-	int i,j;
+	int i, j;
 
-	for(i=0;i<size;i++){
-		for (j=0;j<size;j++){
-			block[i*size+j] = (int16_t)orig[i*orig_stride+j] - (int16_t)pblock[i*size+j];
+	if (size == 4)
+	{
+		for (i = 0; i < 4; i++)
+		{
+			for (j = 0; j < 4; j++)
+			{
+				block[i*4+j] = (int16_t)orig[i*orig_stride+j] - (int16_t)pblock[i*4+j];
+			}
+		}
+	}
+	else if (size == 8)
+	{
+		for (i = 0; i < 8; i++)
+		{
+			for (j = 0; j < 8; j++)
+			{
+				block[i*8+j] = (int16_t)orig[i*orig_stride+j] - (int16_t)pblock[i*8+j];
+			}
+		}
+	}
+	else if (size == 16)
+	{
+		for (i = 0; i < 16; i++)
+		{
+			for (j = 0; j < 16; j++)
+			{
+				block[i*16+j] = (int16_t)orig[i*orig_stride+j] - (int16_t)pblock[i*16+j];
+			}
+		}
+	}
+	else
+	{
+		for (i = 0; i < size; i++)
+		{
+			for (j = 0; j < size; j++)
+			{
+				block[i*size+j] = (int16_t)orig[i*orig_stride+j] - (int16_t)pblock[i*size+j];
+			}
 		}
 	}
 }
 
-int sad_calc(uint8_t *a, uint8_t *b, int astride, int bstride, int width, int height)
+int sad_calc(uint8_t* a, uint8_t* b, int astride, int bstride, int width, int height)
 {
-	int i,j,sad = 0;
+	int i, j, sad = 0;
 
 	if (use_simd && width > 4)
 	{
@@ -1439,8 +1547,10 @@ int sad_calc(uint8_t *a, uint8_t *b, int astride, int bstride, int width, int he
 	}
 	else
 	{
-		for(i=0;i<height;i++){
-			for (j=0;j<width;j++){
+		for (i = 0; i < height; i++)
+		{
+			for (j = 0; j < width; j++)
+			{
 				sad += abs(a[i*astride+j] - b[i*bstride+j]);
 			}
 		}
@@ -1449,9 +1559,9 @@ int sad_calc(uint8_t *a, uint8_t *b, int astride, int bstride, int width, int he
 	return sad;
 }
 
-int ssd_calc(uint8_t *a, uint8_t *b, int astride, int bstride, int width,int height)
+int ssd_calc(uint8_t* a, uint8_t* b, int astride, int bstride, int width, int height)
 {
-	int i,j,ssd = 0;
+	int i, j, ssd = 0;
 
 	if (use_simd && width > 4 && width==height)
 	{
@@ -1460,8 +1570,10 @@ int ssd_calc(uint8_t *a, uint8_t *b, int astride, int bstride, int width,int hei
 	}
 	else
 	{
-		for(i=0;i<height;i++){
-			for (j=0;j<width;j++){
+		for(i=0;i<height;i++)
+		{
+			for (j=0;j<width;j++)
+			{
 				ssd += (a[i*astride+j] - b[i*bstride+j]) * (a[i*astride+j] - b[i*bstride+j]);
 			}
 		}
@@ -1484,10 +1596,11 @@ int quote_mv_bits(int mv_diff_y, int mv_diff_x)
 	mvsign = mv_diff_y < 0 ? 1 : 0;
 	code = 2*mvabs - mvsign;
 	bits += quote_vlc(10,code);
+
 	return bits;
 }
 
-int motion_estimate(uint8_t *orig, uint8_t *ref, int size, int stride_r, int width, int height, mv_t *mv, mv_t *mvp, mv_t *mvcand, double lambda,int encoder_speed, int sign)
+int motion_estimate(uint8_t* orig, uint8_t* ref, int size, int stride_r, int width, int height, mv_t* mv, mv_t* mvp, mv_t* mvcand, double lambda, int encoder_speed, int sign)
 {
 	int idx, k,l,sad,range,step;
 	uint32_t min_sad;
@@ -1793,7 +1906,8 @@ int search_inter_prediction_params(uint8_t* org_y,yuv_frame_t* ref,block_pos_t* 
 	return sad;
 }
 
-int encode_and_reconstruct_block(encoder_info_t* encoder_info, uint8_t* orig, int orig_stride, int size, int qp, uint8_t* pblock, int16_t* coeffq, uint8_t* rec, int frame_type, int chroma_flag, int tb_split, int rdoq)
+int encode_and_reconstruct_block(encoder_info_t* encoder_info, uint8_t* RESTRICT orig, int orig_stride, int size, int qp,
+	uint8_t* RESTRICT pblock, int16_t* RESTRICT coeffq, uint8_t* RESTRICT rec, int frame_type, int chroma_flag, int tb_split, int rdoq)
 {
 	int cbp, cbpbit;
 	ALIGN(16) int16_t block[2*MAX_TR_SIZE*MAX_TR_SIZE];

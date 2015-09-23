@@ -33,7 +33,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define QUANT_SHIFT		14
 #define QUANT_IQUANT_SHIFT	20
 
-void transform(const int16_t *block, int16_t *coeff, int size, int fast);
-void inverse_transform(const int16_t * coeff, int16_t * block, int size);
+void transform(const int16_t* block, int16_t* coeff, int size, int fast);
+void inverse_transform(const int16_t* coeff, int16_t* block, int size);
 
 #endif /* THOR_TRANSFORM_H */

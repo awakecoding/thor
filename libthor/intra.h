@@ -29,16 +29,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "thor.h"
 
-void get_dc_pred(uint8_t *rec,int yposY,int xposY,int stride,int size,uint8_t *pblock);
-void get_hor_pred(uint8_t *rec,int yposY,int xposY,int stride,int size,uint8_t *pblock);
-void get_ver_pred(uint8_t *rec,int yposY,int xposY,int stride,int size,uint8_t *pblock);
-void get_planar_pred(uint8_t *rec,int yposY,int xposY,int stride,int size,uint8_t *pblock);
-void get_upleft_pred(uint8_t *rec,int yposY,int xposY,int stride,int size,uint8_t *pblock);
-void get_upright_pred(uint8_t *rec,int yposY,int xposY,int stride,int size,int width,uint8_t *pblock,int upright_available);
-void get_upupright_pred(uint8_t *rec,int yposY,int xposY,int stride,int size,int width,uint8_t *pblock,int upright_available);
-void get_upupleft_pred(uint8_t *rec,int yposY,int xposY,int stride,int size,uint8_t *pblock);
-void get_upleftleft_pred(uint8_t *rec,int yposY,int xposY,int stride,int size,uint8_t *pblock);
-void get_downleftleft_pred(uint8_t *rec,int yposY,int xposY,int stride,int size,uint8_t *pblock);
-void get_intra_prediction(uint8_t *rec,int yposY,int xposY,int stride,int size,int width,uint8_t *pblock,intra_mode_t intra_mode,int upright_available);
+void get_dc_pred(uint8_t* rec, int yposY, int xposY, int stride, int size, uint8_t* pblock);
+void get_hor_pred(uint8_t* rec, int yposY, int xposY, int stride, int size, uint8_t* pblock);
+void get_ver_pred(uint8_t* rec, int yposY, int xposY, int stride, int size, uint8_t* pblock);
+void get_planar_pred(uint8_t* rec, int yposY, int xposY, int stride, int size, uint8_t* pblock);
+void get_upleft_pred(uint8_t* rec, int yposY, int xposY, int stride, int size, uint8_t* pblock);
+void get_upright_pred(uint8_t* rec, int yposY, int xposY, int stride, int size, int width, uint8_t* pblock, int upright_available);
+void get_upupright_pred(uint8_t* rec, int yposY, int xposY, int stride, int size, int width, uint8_t* pblock, int upright_available);
+void get_upupleft_pred(uint8_t* rec, int yposY, int xposY, int stride, int size, uint8_t* pblock);
+void get_upleftleft_pred(uint8_t* rec, int yposY, int xposY, int stride, int size, uint8_t* pblock);
+void get_downleftleft_pred(uint8_t* rec, int yposY, int xposY, int stride, int size, uint8_t* pblock);
+void get_intra_prediction(uint8_t* rec, int yposY, int xposY, int stride, int size, int width, uint8_t* pblock, intra_mode_t intra_mode, int upright_available);
 
 #endif /* THOR_INTRA_H */
