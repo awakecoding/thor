@@ -29,6 +29,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "simd.h"
 #include "thor.h"
 
+#if defined(_MSC_VER)
+#pragma warning(disable:4244) /* type cast possible loss of data */
+#endif
+
 static void get_inter_prediction_luma_edge(int width, int height, int xoff, int yoff,
 					   uint8_t* RESTRICT qp, int qstride,
 					   const uint8_t* RESTRICT ip, int istride)

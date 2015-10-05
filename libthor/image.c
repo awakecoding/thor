@@ -380,17 +380,17 @@ int thor_image_y4m_read_fp(thor_image_t* img, FILE* fp)
 		{
 			case 'W':
 				width = strtol(buf + pos, &end, 10);
-				pos = end - buf + 1;
+				pos = (int) (end - buf + 1);
 				break;
 			case 'H':
 				height = strtol(buf + pos, &end, 10);
-				pos = end - buf + 1;
+				pos = (int) (end - buf + 1);
 				break;
 			case 'F':
 				den = strtol(buf+pos, &end, 10);
-				pos = end - buf + 1;
+				pos = (int) (end - buf + 1);
 				num = strtol(buf + pos, &end, 10);
-				pos = end - buf + 1;
+				pos = (int) (end - buf + 1);
 				fps = (double) (den / num);
 				break;
 			case 'I':
