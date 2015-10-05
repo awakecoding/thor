@@ -321,11 +321,11 @@ typedef struct
 typedef struct
 {
 	/* putbits */
-	uint32_t bytesize;     //Buffer size - typically maximum compressed frame size
-	uint32_t bytepos;      //Byte position in bitstream
-	uint8_t *bitstream;   //Compressed bit stream
-	uint32_t bitbuf;       //Recent bits not written the bitstream yet
-	uint32_t bitrest;      //Empty bits in bitbuf
+	uint32_t bitrest;
+	uint32_t bitbuf;
+	uint32_t bytepos;
+	uint32_t bytesize;
+	uint8_t* bitstream;
 
 	/* getbits */
 	uint8_t* rdbfr;
@@ -387,18 +387,16 @@ typedef struct
 
 typedef struct
 {
-	block_info_t* block_info;
 	frame_info_t frame_info;
-	thor_encoder_settings_t* params;
-	yuv_frame_t* orig;
-	yuv_frame_t* rec;
 	yuv_frame_t* ref[MAX_REF_FRAMES];
-	yuv_frame_t* org[MAX_REF_FRAMES];
-	stream_t* stream;
-	deblock_data_t* deblock_data;
+	thor_encoder_settings_t* params;
+	yuv_frame_t* rec;
 	int width;
 	int height;
-	int depth;
+	deblock_data_t* deblock_data;
+	stream_t* stream;
+	yuv_frame_t* orig;
+	yuv_frame_t* org[MAX_REF_FRAMES];
 } encoder_info_t;
 
 typedef struct
