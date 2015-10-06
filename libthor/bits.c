@@ -1210,7 +1210,7 @@ void write_coeff(stream_t* stream, int16_t* coeff, int size, int type)
 	int vlc_adaptive=0;
 	int N = qsize*qsize;
 	int level_mode;
-	int16_t* zigzagptr = zigzag64;
+	const int16_t* zigzagptr = zigzag64;
 
 	if (qsize == 4)
 	{
@@ -1294,7 +1294,6 @@ void write_coeff(stream_t* stream, int16_t* coeff, int size, int type)
 		if (level_mode)
 		{
 			/* Level-mode */
-			//vlc_adaptive = (level > 3 && type==0) ? 1 : 0;
 			while (pos <= last_pos && level > 0)
 			{
 				c = scoeff[pos];
@@ -1362,7 +1361,6 @@ void write_coeff(stream_t* stream, int16_t* coeff, int size, int type)
 				run = 0;
 			}
 			pos++;
-			//vlc_adaptive = (level > 3 && type==0) ? 1 : 0;
 			level_mode = level > 1; //Set level_mode
 		} //while (c==0 && pos < last_pos)
 	} //while (pos <= last_pos){

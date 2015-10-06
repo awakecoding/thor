@@ -38,33 +38,44 @@ void get_dc_pred(uint8_t* rec, int ypos, int xpos, int stride, int size, uint8_t
 {
 	int i,j,dc=128,sum;
 
-	if (ypos>0 && xpos>0)
+	if ((ypos > 0) && (xpos > 0))
 	{
 		sum = 0;
-		for (j=0;j<size;j++) sum += rec[(ypos-1)*stride+xpos+j];
-		for (i=0;i<size;i++) sum += rec[(ypos+i)*stride+xpos-1];
+
+		for (j = 0; j < size; j++)
+			sum += rec[(ypos-1)*stride+xpos+j];
+
+		for (i = 0; i < size; i++)
+			sum += rec[(ypos+i)*stride+xpos-1];
+
 		dc = (sum + size)/(2*size);
 	}
-	else if (ypos>0 && xpos==0)
+	else if ((ypos > 0) && (xpos == 0))
 	{
 		sum = 0;
-		for (j=0;j<size;j++) sum += rec[(ypos-1)*stride+xpos+j];
+
+		for (j = 0; j < size; j++)
+			sum += rec[(ypos-1)*stride+xpos+j];
+
 		dc = (sum + size/2)/size;
 	}
-	else if (ypos==0 && xpos>0)
+	else if ((ypos == 0) && (xpos > 0))
 	{
 		sum = 0;
-		for (i=0;i<size;i++) sum += rec[(ypos+i)*stride+xpos-1];
+
+		for (i = 0; i < size; i++)
+			sum += rec[(ypos+i)*stride+xpos-1];
+
 		dc = (sum + size/2)/size;
 	}
-	else if (ypos==0 && xpos==0)
+	else if ((ypos == 0) && (xpos == 0))
 	{
 		dc = 128;
 	}
 
-	for (i=0;i<size;i++)
+	for (i = 0; i < size; i++)
 	{
-		for (j=0;j<size;j++)
+		for (j = 0; j < size; j++)
 		{
 			pblock[i*size+j] = dc;
 		}

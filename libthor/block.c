@@ -2610,10 +2610,10 @@ void encode_copy_deblock_data(encoder_info_t* encoder_info, block_info_t* block_
 	int block_stride = encoder_info->width/MIN_PB_SIZE;
 	int block_index;
 	int m,n,m0,n0,index;
+	deblock_data_t* deblock_data;
 	int div = size/(2*MIN_PB_SIZE);
 	int bwidth =  block_info->block_pos.bwidth;
 	int bheight =  block_info->block_pos.bheight;
-
 	uint8_t tb_split = block_info->tb_param > 0;
 	part_t pb_part = block_info->pred_data.mode == MODE_INTER ? block_info->pred_data.PBpart : PART_NONE; //TODO: Set PBpart properly for SKIP and BIPRED
 
@@ -2622,22 +2622,29 @@ void encode_copy_deblock_data(encoder_info_t* encoder_info, block_info_t* block_
 		for (n = 0; n < bwidth/MIN_PB_SIZE; n++)
 		{
 			block_index = (block_posy+m)*block_stride + block_posx+n;
+
 			m0 = div > 0 ? m/div : 0;
 			n0 = div > 0 ? n/div : 0;
+			
 			index = 2*m0+n0;
-			if (index > 3) printf("error: index=%4d\n",index);
-			encoder_info->deblock_data[block_index].cbp = block_info->cbp;
-			encoder_info->deblock_data[block_index].tb_split = tb_split;
-			encoder_info->deblock_data[block_index].pb_part = pb_part;
-			encoder_info->deblock_data[block_index].size = block_info->block_pos.size;
-			encoder_info->deblock_data[block_index].mvb.x0 = block_info->pred_data.mv_arr0[index].x;
-			encoder_info->deblock_data[block_index].mvb.y0 = block_info->pred_data.mv_arr0[index].y;
-			encoder_info->deblock_data[block_index].mvb.ref_idx0 = block_info->pred_data.ref_idx0;
-			encoder_info->deblock_data[block_index].mvb.x1 = block_info->pred_data.mv_arr1[index].x;
-			encoder_info->deblock_data[block_index].mvb.y1 = block_info->pred_data.mv_arr1[index].y;
-			encoder_info->deblock_data[block_index].mvb.ref_idx1 = block_info->pred_data.ref_idx1;
-			encoder_info->deblock_data[block_index].mvb.dir = block_info->pred_data.dir;
-			encoder_info->deblock_data[block_index].mode = block_info->pred_data.mode;
+			
+			if (index > 3)
+				printf("error: index=%4d\n",index);
+
+			deblock_data = &encoder_info->deblock_data[block_index];
+
+			deblock_data->cbp = block_info->cbp;
+			deblock_data->tb_split = tb_split;
+			deblock_data->pb_part = pb_part;
+			deblock_data->size = block_info->block_pos.size;
+			deblock_data->mvb.x0 = block_info->pred_data.mv_arr0[index].x;
+			deblock_data->mvb.y0 = block_info->pred_data.mv_arr0[index].y;
+			deblock_data->mvb.ref_idx0 = block_info->pred_data.ref_idx0;
+			deblock_data->mvb.x1 = block_info->pred_data.mv_arr1[index].x;
+			deblock_data->mvb.y1 = block_info->pred_data.mv_arr1[index].y;
+			deblock_data->mvb.ref_idx1 = block_info->pred_data.ref_idx1;
+			deblock_data->mvb.dir = block_info->pred_data.dir;
+			deblock_data->mode = block_info->pred_data.mode;
 		}
 	}
 }
@@ -3104,25 +3111,53 @@ int mode_decision_rdo(encoder_info_t* encoder_info, block_info_t* block_info)
 int check_early_skip_transform_coeff(int16_t* coeff, int qp, int size, double relative_threshold)
 {
 	int i, j;
+	int ithresh;
 	int tr_log2size = log2i(size);
 	const int qsize = min(MAX_QUANT_SIZE,size);
 	int cstride = size;
 	int scale = gquant_table[qp%6];
-	int c,flag = 0;
+	int c, flag = 0;
 	int shift2 = 21 - tr_log2size + qp/6;
+	const int16_t* pcoeff = coeff;
 
 	/* Derive threshold from first quantizer level */
 	double first_quantizer_level = (double)(1<<shift2)/(double)scale;
 	double threshold = relative_threshold * first_quantizer_level;
+	
+	ithresh = (int) threshold;
+	
+	if (threshold - ((double) ithresh))
+		ithresh += 1; /* round up if threshold has decimal part */
 
 	/* Compare each coefficient with threshold */
-	for (i = 0; i < qsize; i++)
+
+	if (qsize == 4)
 	{
-		for (j = 0; j < qsize; j++)
+		for (i = 0; i < qsize; i++)
 		{
-			c = (int)coeff[i*cstride+j];
-			if ((double)abs(c) > threshold)
-				flag = 1;
+			if (abs(pcoeff[0]) > ithresh) { flag = 1; break; }
+			if (abs(pcoeff[1]) > ithresh) { flag = 1; break; }
+			if (abs(pcoeff[2]) > ithresh) { flag = 1; break; }
+			if (abs(pcoeff[3]) > ithresh) { flag = 1; break; }
+			pcoeff += cstride;
+		}
+	}
+	else
+	{
+		for (i = 0; i < qsize; i++)
+		{
+			for (j = 0; j < qsize; j++)
+			{
+				c = (int) pcoeff[j];
+
+				if (abs(c) > ithresh)
+				{
+					flag = 1;
+					break;
+				}
+			}
+
+			pcoeff += cstride;
 		}
 	}
 
