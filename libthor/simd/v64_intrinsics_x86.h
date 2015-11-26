@@ -43,21 +43,27 @@ typedef __m128i v64;
 
 /* defined missing intrinsics with MSVC in 32-bit */
 
-__forceinline __int64 _mm_cvtsi128_si64(__m128i a) {
+static __forceinline __int64 _mm_cvtsi128_si64(__m128i a) {
 	union { __m128i b; int64_t c[2]; } u;
 	u.b = a;
 	return u.c[0];
 }
 
-__forceinline __m128i _mm_cvtsi64_si128(__int64 a) {
+static __forceinline __m128i _mm_cvtsi64_si128(__int64 a) {
 	union { __m128i b; int64_t c[2]; } u;
 	u.c[0] = a; u.c[1] = 0;
 	return u.b;
 }
 
-__forceinline __m128i _mm_set_epi64x(__int64 i1, __int64 i2) {
+static __forceinline __m64 _mm_cvtsi64_m64(long long a) {
+	union { __m64 b; long long c; } u;
+	u.c = a;
+	return u.b;
+}
+
+static __forceinline __m128i _mm_set_epi64x(__int64 i1, __int64 i2) {
 	union { __m128i b; int64_t c[2]; } u;
-	u.c[0] = i1; u.c[0] = i2;
+	u.c[1] = i1; u.c[0] = i2;
 	return u.b;
 }
 
