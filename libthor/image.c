@@ -93,8 +93,8 @@ int thor_bmp_write(const char* filename, uint8_t* data, int width, int height, i
 	bi.biPlanes = 1;
 	bi.biBitCount = bpp;
 	bi.biCompression = 0;
-	bi.biXPelsPerMeter = width;
-	bi.biYPelsPerMeter = height;
+	bi.biXPelsPerMeter = 0;
+	bi.biYPelsPerMeter = 0;
 	bi.biClrUsed = 0;
 	bi.biClrImportant = 0;
 	bi.biSize = sizeof(THOR_BITMAP_INFO_HEADER);
