@@ -410,7 +410,7 @@ SIMD_INLINE v128 v128_madd_s16(v128 a, v128 b) {
 }
 
 SIMD_INLINE v128 v128_madd_us8(v128 a, v128 b) {
-#if defined (__SSE3__)
+#if defined (__SSSE3__)
   return _mm_maddubs_epi16(a, b);
 #else
   return _mm_packs_epi32(_mm_madd_epi16(_mm_unpacklo_epi8(a, _mm_setzero_si128()),
